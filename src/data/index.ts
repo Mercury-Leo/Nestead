@@ -1,4 +1,5 @@
 import { createLocalStore } from './localStore';
+import { createSupabaseStore } from './supabaseStore';
 import type { DataStore } from './types';
 
 /**
@@ -12,9 +13,11 @@ export function createStore(familyId: string): DataStore {
   switch (backend) {
     case 'local':
       return createLocalStore(familyId);
+    case 'supabase':
+      return createSupabaseStore(familyId);
     default:
       throw new Error(
-        `VITE_BACKEND="${backend}" is not implemented yet. The only backend available today is "local".`,
+        `VITE_BACKEND="${backend}" is not a known backend. Use "local" or "supabase".`,
       );
   }
 }
