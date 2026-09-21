@@ -6,42 +6,80 @@ import type { DataStore } from './types';
  * The contract every backend must satisfy. A new backend is "done" when it
  * passes these cases unchanged; only then does it earn a case in src/data/index.ts.
  *
+ * Three things this contract deliberately does NOT require, because the
+ * Collection interface never promised them and demanding them would only
+ * describe localStorage:
+ *
+ *   * that a family label is the stored familyId. Rows are checked against
+ *     store.familyId, so a backend whose ids come from the database passes.
+ *   * that notifications are synchronous or exactly one per change. A change
+ *     must produce at least one notification, eventually.
+ *   * that reset() clears anything in particular, only that cases start from a
+ *     state where the store's collections are empty.
+ *
  * @param name  Label for the test suite, e.g. "local".
- * @param make  Builds a store for the given family id. It must return a store
+ * @param make  Builds a store for the given family label. The label picks
+ *              WHICH family, and need not be the id the backend stores. It
+ *              must return a store
  *              whose caller is genuinely authorised for that family, not one
  *              that merely claims the id. A backend with real auth therefore
  *              signs in as a user belonging to that family, which is why this
  *              may be async: under RLS a client cannot simply assert a family.
  * @param reset Clears all persisted state between cases, if the backend has any.
  */
+/** Polls until the predicate holds, so async backends are not raced. */
+async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() > deadline) throw new Error('timed out waiting for a change notification');
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
+/** Long enough for a stray notification to arrive, if one were coming. */
+async function settle(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+}
+
 export function runDataStoreContract(
   name: string,
   make: (familyId: string) => DataStore | Promise<DataStore>,
   reset?: () => void | Promise<void>,
 ): void {
-  /** A valid task. The contract tests storage, not the board, so the column is arbitrary. */
-  const newTask = (title: string): NewRow<Task> => ({
-    title,
-    columnId: 'column-1',
-    position: 1000,
-    done: false,
-    createdBy: 'member-1',
-  });
-
   describe(`DataStore contract: ${name}`, () => {
     const familyId = 'family-a';
     let store: DataStore;
+    let columnId: string;
+
+    /**
+     * A valid task. columnId must be a real column: a backend with foreign keys
+     * rejects an invented one, so the contract cannot use a placeholder.
+     * Attribution is left off because created_by references members, and this
+     * contract is about storage rather than people.
+     */
+    const newTask = (title: string): NewRow<Task> => ({
+      title,
+      columnId,
+      position: 1000,
+      done: false,
+    });
+
+    const aColumn = async (from: DataStore = store): Promise<string> => {
+      const column = await from.columns.create({ name: 'To do', position: 1000, isDone: false });
+      return column.id;
+    };
 
     beforeEach(async () => {
       await reset?.();
       store = await make(familyId);
+      columnId = await aColumn();
     });
 
     it('create fills id, familyId and timestamps', async () => {
       const task = await store.tasks.create(newTask('Take the bins out'));
 
       expect(task.id).toMatch(/\S/);
-      expect(task.familyId).toBe(familyId);
+      expect(task.familyId).toBe(store.familyId);
       expect(task.createdAt).toBe(task.updatedAt);
       expect(Number.isNaN(Date.parse(task.createdAt))).toBe(false);
       expect(new Date(task.createdAt).toISOString()).toBe(task.createdAt);
@@ -93,33 +131,51 @@ export function runDataStoreContract(
         changes += 1;
       });
 
+      // A backend that notifies locally AND echoes the change back over a
+      // realtime channel reports more than one per write. That is fine: a
+      // listener re-reads, so duplicates are idempotent. What matters is that
+      // every change produces at least one notification.
+      let seen = 0;
+      const changed = async (): Promise<void> => {
+        await waitFor(() => changes > seen);
+        seen = changes;
+      };
+
       const task = await store.tasks.create(newTask('Hoover'));
-      expect(changes).toBe(1);
+      await changed();
 
       await store.tasks.update(task.id, { done: true });
-      expect(changes).toBe(2);
+      await changed();
 
       await store.tasks.remove(task.id);
-      expect(changes).toBe(3);
+      await changed();
 
       unsubscribe();
       await store.tasks.create(newTask('After unsubscribe'));
-      expect(changes).toBe(3);
+      await settle();
+      expect(changes).toBe(seen);
     });
 
     it("two families never see each other's rows", async () => {
       const other = await make('family-b');
+      const theirColumnId = await aColumn(other);
 
       const mine = await store.tasks.create(newTask('Mine'));
-      const theirs = await other.tasks.create(newTask('Theirs'));
+      const theirs = await other.tasks.create({
+        title: 'Theirs',
+        columnId: theirColumnId,
+        position: 1000,
+        done: false,
+      });
 
       const myRows = await store.tasks.list();
       const theirRows = await other.tasks.list();
 
+      expect(store.familyId).not.toBe(other.familyId);
       expect(myRows.map((row) => row.id)).toEqual([mine.id]);
       expect(theirRows.map((row) => row.id)).toEqual([theirs.id]);
-      expect(myRows.every((row) => row.familyId === familyId)).toBe(true);
-      expect(theirRows.every((row) => row.familyId === 'family-b')).toBe(true);
+      expect(myRows.every((row) => row.familyId === store.familyId)).toBe(true);
+      expect(theirRows.every((row) => row.familyId === other.familyId)).toBe(true);
     });
   });
 }
