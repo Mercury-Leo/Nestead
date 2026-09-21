@@ -1,7 +1,7 @@
 # Nestead
 
-A shared home-organisation app for one family — recipes, shopping lists, tasks
-and photos, all visible to everyone in the family.
+A shared home-organisation app for one family. Today that is a kanban board of
+household tasks, visible to everyone in the family. More will follow.
 
 The main page is a kanban board. Underneath it sits the core: a family-scoped
 data layer, a fake session, the domain types, a single backend swap point and
@@ -44,11 +44,8 @@ silently doing the wrong thing.
 | Tests           | Vitest 2 + jsdom                   |
 | Data (today)    | `localStorage`, per family         |
 | Data (planned)  | Supabase Postgres + RLS            |
-| Blobs (today)   | Canvas resize → data URL           |
-| Blobs (planned) | Supabase Storage, private bucket   |
 | Auth (today)    | Fake: pick a member, per tab       |
 | Auth (planned)  | Supabase Auth + family join code   |
-| Prices          | Deterministic mock, `MOCK DATA`    |
 | Hosting         | Static: Cloudflare Pages or Vercel |
 
 Runtime dependencies: `react`, `react-dom`. Nothing else.
@@ -69,10 +66,9 @@ Runtime dependencies: `react`, `react-dom`. Nothing else.
 ```
 src/
   domain/                    Entities, Base, NewRow, board ordering.
-  data/                      Collection/DataStore/BlobStorage, local backend,
-                             the swap point, useCollection, the contract.
+  data/                      Collection/DataStore, local backend, the swap
+                             point, useCollection, the contract.
   auth/session.tsx           SessionProvider / useSession (fake for now).
-  prices/                    PriceProvider + deterministic mock.
   features/board/            The kanban board.
   components/                Shared UI. Empty.
   App.tsx  main.tsx  styles.css   Shell; App mounts the board.
@@ -116,10 +112,11 @@ in this repo.
 
 - **Auth is fake.** No access control at all: anyone who opens the app is in the
   demo family and can be anyone in it.
-- **~5 MB of storage.** `localStorage` is capped around 5 MB per origin and
-  photos are inline data URLs, so images fill it quickly.
+- **~5 MB of storage.** `localStorage` is capped around 5 MB per origin. Plenty
+  for text, but it is a ceiling, not a horizon.
 - **Last write wins.** No merge, no conflict detection.
 - **Same-browser sync only.** The `storage` event reaches other tabs, not other
   devices.
-- **Prices are fake**, and labelled as such.
 - **No recurring tasks yet.** The board is the base; recurrence comes next.
+- **Board and people only.** Recipes, shopping lists, photos and prices are not
+  built and are deliberately absent from the schema until they are.

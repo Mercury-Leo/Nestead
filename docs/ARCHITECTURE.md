@@ -1,7 +1,11 @@
 # Nestead architecture
 
-Nestead is a shared home-organisation app for one family: recipes, shopping
-lists, tasks and photos, all visible to everyone in the family.
+Nestead is a shared home-organisation app for one family. Today it is a kanban
+board of household tasks, shared by everyone in the family.
+
+Scope is kept to what exists. Recipes, shopping lists, photos and prices are
+planned but unbuilt, so they appear neither in the schema nor in the types: a
+table with no feature behind it is a guess that later has to be migrated.
 
 This document describes the **core** — the data layer, session and contracts —
 and the kanban board that sits on top of it. Further features get added the
@@ -16,11 +20,8 @@ same way the board was, without changing anything the core guarantees.
 | Tests           | Vitest 2 + jsdom              | `npm test`                                          |
 | Data (today)    | `localStorage`                | `src/data/localStore.ts`                            |
 | Data (planned)  | Supabase Postgres + RLS       | `supabase/schema.sql`, not applied                  |
-| Blobs (today)   | Canvas resize → data URL      | `src/data/localBlobs.ts`                            |
-| Blobs (planned) | Supabase Storage `photos`     | private bucket, family-scoped paths                 |
 | Auth (today)    | Fake: pick a member per tab   | `src/auth/session.tsx`                              |
 | Auth (planned)  | Supabase Auth + family join code | one account per person                           |
-| Prices          | Deterministic mock provider   | `src/prices/`, labelled `MOCK DATA`                 |
 | Hosting         | Static (Cloudflare Pages / Vercel) | no server of our own                           |
 
 Runtime dependencies are `react` and `react-dom`. Everything else is a dev
@@ -53,15 +54,13 @@ src/
     types.ts                 Entities and Base/NewRow. Mirrors the SQL schema.
     position.ts              Sparse ordering for board rows.
   data/
-    types.ts                 Collection, DataStore, BlobStorage interfaces.
+    types.ts                 Collection and DataStore interfaces.
     localStore.ts            localStorage backend. The only localStorage user.
-    localBlobs.ts            Canvas image resize → data URL.
-    index.ts                 THE swap point: createStore(), blobs.
+    index.ts                 THE swap point: createStore().
     useCollection.ts         Hook: live rows from a Collection.
     collection.contract.ts   runDataStoreContract() — the backend contract.
     localStore.test.ts       Runs the contract against the local backend.
   auth/session.tsx           SessionProvider / useSession. Fake session.
-  prices/                    PriceProvider interface + deterministic mock.
   components/                Shared UI. Empty.
   features/board/            The kanban board: Board, Column, TaskCard,
                              actions.ts (moves) and icons.ts (emoji set).
@@ -129,22 +128,10 @@ signs in as a user who belongs to that family, and `make` may be async for it.
 form of that list: seven Vitest cases, run today by
 [localStore.test.ts](../src/data/localStore.test.ts).
 
-### `BlobStorage`
-
-`putImage(file: File): Promise<string>` returns a URL a browser can render.
-Today that is a resized (max 900px, JPEG 0.8) data URL; later it will be a
-Storage object URL. Callers do not care which.
-
 ### `useSession()`
 
 Returns `{ store, me, members, setMe }`. This shape is fixed: real auth replaces
 the internals of `session.tsx` only.
-
-### `PriceProvider`
-
-`{ label, lookup(query): Promise<PriceQuote[]> }`. `label` is rendered next to
-any price; the mock provider's label is `MOCK DATA`, so fake numbers can never
-pass for real ones.
 
 ## Adding Supabase
 
@@ -153,10 +140,10 @@ throughout.
 
 1. **Apply the schema.** `supabase/schema.sql` is complete: tables, RLS and
    policies, `updated_at` triggers, `create_family()` / `join_family(code)` /
-   `rotate_join_code()`, the private `photos` bucket with its policy, and the
-   realtime publication. Apply it in one run, since a table that exists before
-   its policy is briefly world-readable. Then confirm RLS is on for every table
-   and that a second account sees nothing of the first family.
+   `rotate_join_code()`, and the realtime publication. Apply it in one run,
+   since a table that exists before its policy is briefly world-readable. Then
+   confirm RLS is on for every table and that a second account sees nothing of
+   the first family.
 2. **Add config.** Put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in
    `.env.local` (see `.env.example`). Only the anon key may ever be a `VITE_*`
    value — every `VITE_*` is inlined into the public bundle. A service-role key
@@ -172,9 +159,7 @@ throughout.
 5. **Add the case in `src/data/index.ts`.** One `case 'supabase':` in
    `createStore()`. This is the only file in `src/` that learns a second backend
    exists.
-6. **Swap the blob storage.** Point `blobs` at a Storage-backed implementation
-   of the same `BlobStorage` interface. No caller changes.
-7. **Replace the session internals.** Keep `SessionProvider` / `useSession` and
+6. **Replace the session internals.** Keep `SessionProvider` / `useSession` and
    their `{ store, me, members, setMe }` shape. Inside:
    - sign in with Supabase Auth, **one account per person** — email/magic link.
      Not a shared family password: a shared secret cannot be revoked for one
@@ -185,20 +170,22 @@ throughout.
    - `familyId` comes from the signed-in member's row, not from a constant;
    - `me` is the signed-in member; `setMe` becomes sign-out/switch-account, or
      goes away — that change is visible to screens, so do it deliberately.
-8. **Delete the demo seed** once real families exist.
+7. **Delete the demo seed** once real families exist.
 
 ## Known limits
 
 - **Auth is fake.** Anyone who opens the app is in the demo family and can be
   anyone in it. There is no access control of any kind until step 7 above.
-- **Storage is ~5 MB.** `localStorage` is capped at roughly 5 MB per origin, and
-  photos are stored inline as data URLs, so a handful of images will fill it.
-  Writes fail loudly when it is full; the local backend does not evict anything.
+- **Storage is ~5 MB.** `localStorage` is capped at roughly 5 MB per origin.
+  Ample for a board of text, but writes fail once it is full and the local
+  backend evicts nothing.
 - **Last write wins.** There is no merge or conflict detection. Two tabs editing
   the same row: the later `update` overwrites the earlier one wholesale. The
   same will be true of the first Supabase backend.
 - **Sync is same-browser only.** The `storage` event reaches other tabs on the
   same device, not other devices. Real sharing between two people starts at
   step 3.
-- **Prices are fake.** The mock provider returns invented numbers, labelled
-  `MOCK DATA`.
+- **Board and people only.** Recipes, shopping lists, photos and prices are not
+  built, and are deliberately absent from the schema and the types until they
+  are. Adding a table before the feature that uses it is a guess you later have
+  to migrate.

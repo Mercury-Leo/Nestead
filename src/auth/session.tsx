@@ -15,7 +15,6 @@ import type { Member } from '../domain/types';
 
 const DEMO_FAMILY_ID = 'demo-family';
 const ME_KEY = 'nestead:me';
-const DEMO_LIST_NAME = 'Groceries';
 
 const DEMO_MEMBERS: ReadonlyArray<{ name: string; color: string }> = [
   { name: 'Alex', color: '#4f8ef7' },
@@ -51,11 +50,6 @@ async function seed(store: DataStore): Promise<void> {
     if (!members.some((existing) => existing.name === member.name)) {
       await store.members.create(member);
     }
-  }
-
-  const lists = await store.lists.list();
-  if (!lists.some((list) => list.name === DEMO_LIST_NAME)) {
-    await store.lists.create({ name: DEMO_LIST_NAME });
   }
 
   // Columns are seeded only when there are none at all. Matching on name the

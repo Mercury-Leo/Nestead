@@ -35,36 +35,6 @@ export interface BoardColumn extends Base, Positioned {
   isDone: boolean;
 }
 
-export interface Ingredient {
-  name: string;
-  qty?: string;
-}
-
-export interface Recipe extends Base {
-  title: string;
-  ingredients: Ingredient[];
-  steps: string;
-  photoUrl?: string;
-  /** Member id. Cleared when that member is deleted. */
-  createdBy?: string;
-}
-
-export interface ShoppingList extends Base {
-  name: string;
-}
-
-export interface ShoppingItem extends Base {
-  /** ShoppingList id. */
-  listId: string;
-  name: string;
-  qty?: string;
-  checked: boolean;
-  /** Member id. Cleared when that member is deleted. */
-  addedBy?: string;
-  /** Set when the item was added from a recipe. */
-  recipeId?: string;
-}
-
 export interface Task extends Base, Positioned {
   title: string;
   /** A single emoji, stored as text. No icon set, no assets. */

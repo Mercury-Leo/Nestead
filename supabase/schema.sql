@@ -2,6 +2,10 @@
 --
 -- STATUS: reviewed only. This file has NOT been applied to any project.
 --
+-- Scope is what the app actually does today: a kanban board and the people who
+-- share it. Recipes, shopping lists, photos and prices are not here, and should
+-- be added when the feature that needs them is being built, not before.
+--
 -- It is the reference that src/domain/types.ts mirrors 1:1 (camelCase there,
 -- snake_case here). Change one, change the other.
 --
@@ -68,7 +72,7 @@ as $fn$
 $fn$;
 
 -- ---------------------------------------------------------------------------
--- Family tables
+-- The board
 -- ---------------------------------------------------------------------------
 
 -- Kanban columns. Families add, rename, reorder and delete these themselves,
@@ -86,42 +90,6 @@ create table board_columns (
   updated_at  timestamptz not null default now()
 );
 
-create table recipes (
-  id          uuid primary key default gen_random_uuid(),
-  family_id   uuid        not null references families (id) on delete cascade,
-  title       text        not null,
-  -- [{ "name": "Flour", "qty": "500g" }, ...] — mirrors Ingredient[].
-  ingredients jsonb       not null default '[]'::jsonb,
-  steps       text        not null default '',
-  photo_url   text,
-  -- Attribution is nullable on purpose: it must not block deleting a member.
-  -- NOT NULL plus ON DELETE SET NULL contradict, and the delete fails.
-  created_by  uuid        references members (id) on delete set null,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-
-create table shopping_lists (
-  id          uuid primary key default gen_random_uuid(),
-  family_id   uuid        not null references families (id) on delete cascade,
-  name        text        not null,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-
-create table shopping_items (
-  id          uuid primary key default gen_random_uuid(),
-  family_id   uuid        not null references families (id) on delete cascade,
-  list_id     uuid        not null references shopping_lists (id) on delete cascade,
-  name        text        not null,
-  qty         text,
-  checked     boolean     not null default false,
-  added_by    uuid        references members (id) on delete set null,
-  recipe_id   uuid        references recipes (id) on delete set null,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-
 create table tasks (
   id          uuid primary key default gen_random_uuid(),
   family_id   uuid        not null references families (id) on delete cascade,
@@ -135,33 +103,16 @@ create table tasks (
   assignee_id uuid        references members (id) on delete set null,
   due_date    date,
   done        boolean     not null default false,
+  -- Attribution is nullable on purpose: it must not block deleting a member.
+  -- NOT NULL plus ON DELETE SET NULL contradict, and the delete fails.
   created_by  uuid        references members (id) on delete set null,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 
--- Cached price lookups, so a family shares one set of results.
-create table prices (
-  id          uuid primary key default gen_random_uuid(),
-  family_id   uuid        not null references families (id) on delete cascade,
-  query       text        not null,
-  store       text        not null,
-  item        text        not null,
-  price       numeric(10, 2) not null,
-  currency    text        not null default 'GBP',
-  unit        text        not null default 'each',
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-
-create index board_columns_family_id_idx  on board_columns (family_id);
-create index recipes_family_id_idx        on recipes (family_id);
-create index shopping_lists_family_id_idx on shopping_lists (family_id);
-create index shopping_items_family_id_idx on shopping_items (family_id);
-create index shopping_items_list_id_idx   on shopping_items (list_id);
-create index tasks_family_id_idx          on tasks (family_id);
-create index tasks_column_id_idx          on tasks (column_id);
-create index prices_family_id_idx         on prices (family_id);
+create index board_columns_family_id_idx on board_columns (family_id);
+create index tasks_family_id_idx         on tasks (family_id);
+create index tasks_column_id_idx         on tasks (column_id);
 
 -- ---------------------------------------------------------------------------
 -- updated_at
@@ -186,35 +137,23 @@ begin
 end;
 $fn$;
 
-create trigger families_set_updated_at       before update on families
+create trigger families_set_updated_at      before update on families
   for each row execute function set_updated_at();
-create trigger members_set_updated_at        before update on members
+create trigger members_set_updated_at       before update on members
   for each row execute function set_updated_at();
-create trigger board_columns_set_updated_at  before update on board_columns
+create trigger board_columns_set_updated_at before update on board_columns
   for each row execute function set_updated_at();
-create trigger recipes_set_updated_at        before update on recipes
-  for each row execute function set_updated_at();
-create trigger shopping_lists_set_updated_at before update on shopping_lists
-  for each row execute function set_updated_at();
-create trigger shopping_items_set_updated_at before update on shopping_items
-  for each row execute function set_updated_at();
-create trigger tasks_set_updated_at          before update on tasks
-  for each row execute function set_updated_at();
-create trigger prices_set_updated_at         before update on prices
+create trigger tasks_set_updated_at         before update on tasks
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------------
 -- Row level security
 -- ---------------------------------------------------------------------------
 
-alter table families       enable row level security;
-alter table members        enable row level security;
-alter table board_columns  enable row level security;
-alter table recipes        enable row level security;
-alter table shopping_lists enable row level security;
-alter table shopping_items enable row level security;
-alter table tasks          enable row level security;
-alter table prices         enable row level security;
+alter table families      enable row level security;
+alter table members       enable row level security;
+alter table board_columns enable row level security;
+alter table tasks         enable row level security;
 
 -- families is keyed by id rather than family_id. There is no insert policy on
 -- purpose: families are only ever created through create_family().
@@ -233,23 +172,7 @@ create policy board_columns_all on board_columns
   for all to authenticated using (family_id = current_family_id())
   with check (family_id = current_family_id());
 
-create policy recipes_all on recipes
-  for all to authenticated using (family_id = current_family_id())
-  with check (family_id = current_family_id());
-
-create policy shopping_lists_all on shopping_lists
-  for all to authenticated using (family_id = current_family_id())
-  with check (family_id = current_family_id());
-
-create policy shopping_items_all on shopping_items
-  for all to authenticated using (family_id = current_family_id())
-  with check (family_id = current_family_id());
-
 create policy tasks_all on tasks
-  for all to authenticated using (family_id = current_family_id())
-  with check (family_id = current_family_id());
-
-create policy prices_all on prices
   for all to authenticated using (family_id = current_family_id())
   with check (family_id = current_family_id());
 
@@ -389,32 +312,6 @@ grant execute on function rotate_join_code()        to authenticated;
 grant execute on function current_family_id()       to authenticated;
 
 -- ---------------------------------------------------------------------------
--- Photo storage
---
--- Objects are keyed <family_id>/<uuid>.jpg and the first path segment is what
--- the policy checks, which is why the bucket is private. Replaces
--- src/data/localBlobs.ts.
---
--- Creating policies on storage.objects needs owner rights: run this in the
--- dashboard SQL editor, or create them under Storage -> Policies.
--- ---------------------------------------------------------------------------
-
-insert into storage.buckets (id, name, public)
-values ('photos', 'photos', false)
-on conflict (id) do nothing;
-
-create policy photos_family_scoped on storage.objects
-  for all to authenticated
-  using (
-    bucket_id = 'photos'
-    and (storage.foldername(name))[1] = current_family_id()::text
-  )
-  with check (
-    bucket_id = 'photos'
-    and (storage.foldername(name))[1] = current_family_id()::text
-  );
-
--- ---------------------------------------------------------------------------
 -- Realtime
 --
 -- This is what makes Collection.subscribe() fire for other clients, the same
@@ -429,7 +326,7 @@ create policy photos_family_scoped on storage.objects
 -- ---------------------------------------------------------------------------
 
 alter publication supabase_realtime add table
-  members, board_columns, recipes, shopping_lists, shopping_items, tasks;
+  members, board_columns, tasks;
 
 -- ---------------------------------------------------------------------------
 -- Known limits

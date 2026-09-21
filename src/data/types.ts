@@ -1,13 +1,4 @@
-import type {
-  Base,
-  BoardColumn,
-  Member,
-  NewRow,
-  Recipe,
-  ShoppingItem,
-  ShoppingList,
-  Task,
-} from '../domain/types';
+import type { Base, BoardColumn, Member, NewRow, Task } from '../domain/types';
 
 /** Called whenever the collection's rows may have changed. */
 export type ChangeListener = () => void;
@@ -36,13 +27,5 @@ export interface DataStore {
   familyId: string;
   members: Collection<Member>;
   columns: Collection<BoardColumn>;
-  recipes: Collection<Recipe>;
-  lists: Collection<ShoppingList>;
-  items: Collection<ShoppingItem>;
   tasks: Collection<Task>;
-}
-
-/** Somewhere to put binary blobs and get back a URL a browser can render. */
-export interface BlobStorage {
-  putImage(file: File): Promise<string>;
 }

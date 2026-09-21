@@ -1,6 +1,5 @@
-import { localBlobs } from './localBlobs';
 import { createLocalStore } from './localStore';
-import type { BlobStorage, DataStore } from './types';
+import type { DataStore } from './types';
 
 /**
  * The swap point. Screens never import a backend directly: they get their store
@@ -19,5 +18,3 @@ export function createStore(familyId: string): DataStore {
       );
   }
 }
-
-export const blobs: BlobStorage = localBlobs;

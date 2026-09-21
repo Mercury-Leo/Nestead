@@ -1,13 +1,4 @@
-import type {
-  Base,
-  BoardColumn,
-  Member,
-  NewRow,
-  Recipe,
-  ShoppingItem,
-  ShoppingList,
-  Task,
-} from '../domain/types';
+import type { Base, BoardColumn, Member, NewRow, Task } from '../domain/types';
 import type { ChangeListener, Collection, DataStore, Unsubscribe } from './types';
 
 /**
@@ -21,7 +12,7 @@ import type { ChangeListener, Collection, DataStore, Unsubscribe } from './types
 
 const NAMESPACE = 'nestead';
 
-type CollectionName = 'members' | 'columns' | 'recipes' | 'lists' | 'items' | 'tasks';
+type CollectionName = 'members' | 'columns' | 'tasks';
 
 export function storageKey(familyId: string, collection: CollectionName): string {
   return `${NAMESPACE}:${familyId}:${collection}`;
@@ -137,9 +128,6 @@ export function createLocalStore(familyId: string): DataStore {
     familyId,
     members: createCollection<Member>(familyId, 'members'),
     columns: createCollection<BoardColumn>(familyId, 'columns'),
-    recipes: createCollection<Recipe>(familyId, 'recipes'),
-    lists: createCollection<ShoppingList>(familyId, 'lists'),
-    items: createCollection<ShoppingItem>(familyId, 'items'),
     tasks: createCollection<Task>(familyId, 'tasks'),
   };
 }
