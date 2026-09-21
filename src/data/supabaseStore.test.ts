@@ -48,14 +48,19 @@ async function signIn(
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { error: authError } = await client.auth.signInWithPassword(credentials);
+  const { data: auth, error: authError } = await client.auth.signInWithPassword(credentials);
   if (authError !== null) {
     throw new Error(`${label}: could not sign in (${authError.message})`);
   }
+  const userId = auth.user.id;
 
-  // First run bootstraps the family. create_family() refuses a second time, so
-  // later runs fall through to the existing membership.
-  const existing = await client.from('members').select('family_id').maybeSingle();
+  // Filtered by id: RLS returns every member of the family, so an unfiltered
+  // maybeSingle() breaks as soon as a family has two people in it.
+  const existing = await client
+    .from('members')
+    .select('family_id')
+    .eq('id', userId)
+    .maybeSingle();
   if (existing.error !== null) {
     throw new Error(`${label}: could not read membership (${existing.error.message})`);
   }

@@ -31,8 +31,12 @@ async function connect() {
   const client = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  await client.auth.signInWithPassword({ email, password });
-  const { data } = await client.from('members').select('family_id').maybeSingle();
+  const { data: auth } = await client.auth.signInWithPassword({ email, password });
+  const { data } = await client
+    .from('members')
+    .select('family_id')
+    .eq('id', auth.user?.id ?? '')
+    .maybeSingle();
   return createSupabaseStore((data as { family_id: string }).family_id, client);
 }
 

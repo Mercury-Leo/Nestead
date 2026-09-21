@@ -362,3 +362,149 @@ button.danger:hover:not(:disabled) {
     flex-basis: 85vw;
   }
 }
+
+/* ------------------------------------------------- auth and onboarding -- */
+
+.centred {
+  padding: 3rem 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.gate {
+  max-width: 22rem;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.gate h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  letter-spacing: -0.01em;
+}
+
+.gate-sub {
+  margin: 0.25rem 0 1.5rem;
+  color: var(--muted);
+}
+
+.gate form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.gate label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.gate input {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.gate input:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.code-input {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.gate button[type='submit'] {
+  margin-top: 0.25rem;
+  padding: 0.55rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.gate button[type='submit']:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.link {
+  margin-top: 0.9rem;
+  padding: 0.2rem;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link.quiet {
+  color: var(--muted);
+}
+
+.error,
+.notice {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.error {
+  border-color: #d6453c;
+  color: #d6453c;
+}
+
+.notice {
+  color: var(--muted);
+}
+
+.who {
+  display: inline-flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.me-name {
+  padding: 0.2rem 0.6rem;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.invite {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.6rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.code {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-size: 0.95em;
+  letter-spacing: 0.12em;
+}
