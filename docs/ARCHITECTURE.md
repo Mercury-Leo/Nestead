@@ -109,12 +109,20 @@ Guarantees every backend owes:
 - `create` fills `id`, `familyId`, `createdAt` and `updatedAt`; callers supply
   only domain fields.
 - `update` merges the patch, bumps `updatedAt`, leaves `createdAt` alone, and
-  rejects for an unknown id. `id` and `familyId` are never patchable.
+  rejects for an unknown id. `id` and `familyId` are never patchable. Postgres
+  returns success with no rows for an update that matches nothing, so a SQL
+  backend has to detect that and throw rather than pass it off as a success.
 - `subscribe` fires after any change to that collection **including changes
   made by another tab or another client**, and stops firing after its
   unsubscribe is called. The local backend gets this from the window `storage`
   event; Supabase will get it from the realtime publication.
 - A store built for family A never returns, updates or deletes family B's rows.
+
+`make(familyId)` must hand back a store that is genuinely *authorised* for that
+family rather than one that merely names it. The local backend can fabricate
+either on demand; under RLS a client cannot, since a signed-in user belongs to
+one family and asserting another gets you nothing. So an auth-backed backend
+signs in as a user who belongs to that family, and `make` may be async for it.
 
 `runDataStoreContract(name, make, reset?)` in
 [collection.contract.ts](../src/data/collection.contract.ts) is the executable
@@ -143,10 +151,12 @@ pass for real ones.
 Each step is separately shippable; the app keeps working on the local backend
 throughout.
 
-1. **Apply the schema.** Review `supabase/schema.sql`, resolve its TODOs
-   (`create_family()`, `join_family(code)`, the `photos` bucket policy, the
-   realtime publication), then apply it to a project. Confirm RLS is on for
-   every table and that a second account sees nothing of the first family.
+1. **Apply the schema.** `supabase/schema.sql` is complete: tables, RLS and
+   policies, `updated_at` triggers, `create_family()` / `join_family(code)` /
+   `rotate_join_code()`, the private `photos` bucket with its policy, and the
+   realtime publication. Apply it in one run, since a table that exists before
+   its policy is briefly world-readable. Then confirm RLS is on for every table
+   and that a second account sees nothing of the first family.
 2. **Add config.** Put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in
    `.env.local` (see `.env.example`). Only the anon key may ever be a `VITE_*`
    value — every `VITE_*` is inlined into the public bundle. A service-role key

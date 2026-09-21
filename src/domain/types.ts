@@ -45,8 +45,8 @@ export interface Recipe extends Base {
   ingredients: Ingredient[];
   steps: string;
   photoUrl?: string;
-  /** Member id. */
-  createdBy: string;
+  /** Member id. Cleared when that member is deleted. */
+  createdBy?: string;
 }
 
 export interface ShoppingList extends Base {
@@ -59,8 +59,8 @@ export interface ShoppingItem extends Base {
   name: string;
   qty?: string;
   checked: boolean;
-  /** Member id. */
-  addedBy: string;
+  /** Member id. Cleared when that member is deleted. */
+  addedBy?: string;
   /** Set when the item was added from a recipe. */
   recipeId?: string;
 }
@@ -77,6 +77,6 @@ export interface Task extends Base, Positioned {
   dueDate?: string;
   /** Mirrors the column's isDone. Never written on its own. */
   done: boolean;
-  /** Member id. */
-  createdBy: string;
+  /** Member id. Cleared when that member is deleted. */
+  createdBy?: string;
 }

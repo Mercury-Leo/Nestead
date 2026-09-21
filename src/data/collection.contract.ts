@@ -7,13 +7,17 @@ import type { DataStore } from './types';
  * passes these cases unchanged; only then does it earn a case in src/data/index.ts.
  *
  * @param name  Label for the test suite, e.g. "local".
- * @param make  Builds a store for the given family id.
+ * @param make  Builds a store for the given family id. It must return a store
+ *              whose caller is genuinely authorised for that family, not one
+ *              that merely claims the id. A backend with real auth therefore
+ *              signs in as a user belonging to that family, which is why this
+ *              may be async: under RLS a client cannot simply assert a family.
  * @param reset Clears all persisted state between cases, if the backend has any.
  */
 export function runDataStoreContract(
   name: string,
-  make: (familyId: string) => DataStore,
-  reset?: () => void,
+  make: (familyId: string) => DataStore | Promise<DataStore>,
+  reset?: () => void | Promise<void>,
 ): void {
   /** A valid task. The contract tests storage, not the board, so the column is arbitrary. */
   const newTask = (title: string): NewRow<Task> => ({
@@ -28,9 +32,9 @@ export function runDataStoreContract(
     const familyId = 'family-a';
     let store: DataStore;
 
-    beforeEach(() => {
-      reset?.();
-      store = make(familyId);
+    beforeEach(async () => {
+      await reset?.();
+      store = await make(familyId);
     });
 
     it('create fills id, familyId and timestamps', async () => {
@@ -104,7 +108,7 @@ export function runDataStoreContract(
     });
 
     it("two families never see each other's rows", async () => {
-      const other = make('family-b');
+      const other = await make('family-b');
 
       const mine = await store.tasks.create(newTask('Mine'));
       const theirs = await other.tasks.create(newTask('Theirs'));
