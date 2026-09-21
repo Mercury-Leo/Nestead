@@ -1,3 +1,10 @@
+// @vitest-environment node
+//
+// Not jsdom. The realtime client opens a WebSocket, and jsdom's Event class is
+// not Node's, so undici throws "The 'event' argument must be an instance of
+// Event" when it dispatches the open event. Nothing here touches the DOM, so
+// node is both correct and the only environment where realtime can connect.
+
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, it } from 'vitest';
@@ -97,10 +104,12 @@ if (!configured) {
     });
   });
 } else {
+  // Both stores are built eagerly rather than only the ones already cached.
+  // family-b's store is otherwise first created inside the last case, so its
+  // rows survive the run and the next one starts dirty.
   runDataStoreContract('supabase', storeFor, async () => {
     for (const label of ['family-a', 'family-b']) {
-      const store = stores.get(label);
-      if (store !== undefined) await clear(store);
+      await clear(await storeFor(label));
     }
   });
 }
