@@ -620,3 +620,55 @@ button.danger:hover:not(:disabled) {
 .card-due.is-overdue {
   color: #d6453c;
 }
+
+/* --------------------------------------------------------- board filter -- */
+
+.board-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 1.25rem;
+}
+
+.board-filter input,
+.board-filter select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.board-filter input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.board-filter + .board {
+  margin-top: 0.75rem;
+}
+
+.filter-mine {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.filter-mine[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+/* .link carries a top margin for forms; here it has to sit on the row. */
+.board-filter .link {
+  margin-top: 0;
+}

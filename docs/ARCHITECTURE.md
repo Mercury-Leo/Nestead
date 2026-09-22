@@ -55,7 +55,7 @@ src/
     position.ts              Sparse ordering for board rows.
   data/
     types.ts                 Collection and DataStore interfaces.
-    localStore.ts            localStorage backend. The only localStorage user.
+    localStore.ts            localStorage backend and UI preferences. The only localStorage user.
     index.ts                 THE swap point: createStore().
     useCollection.ts         Hook: live rows from a Collection.
     collection.contract.ts   runDataStoreContract() — the backend contract.

@@ -123,6 +123,31 @@ function createCollection<T extends Base>(
   };
 }
 
+/**
+ * Small per-family UI preferences, such as the board filter. They live here
+ * because this module is the only localStorage user, and they stay local on
+ * every backend: they belong to this browser, not to the family.
+ *
+ * Storage can be unavailable (private windows, blocked site data), so reads
+ * fall back to undefined and failed writes are dropped.
+ */
+export function readPreference(familyId: string, name: string): unknown {
+  try {
+    const raw = localStorage.getItem(`${NAMESPACE}:${familyId}:pref:${name}`);
+    return raw === null ? undefined : (JSON.parse(raw) as unknown);
+  } catch {
+    return undefined;
+  }
+}
+
+export function writePreference(familyId: string, name: string, value: unknown): void {
+  try {
+    localStorage.setItem(`${NAMESPACE}:${familyId}:pref:${name}`, JSON.stringify(value));
+  } catch {
+    // Not worth interrupting anyone over.
+  }
+}
+
 export function createLocalStore(familyId: string): DataStore {
   return {
     familyId,

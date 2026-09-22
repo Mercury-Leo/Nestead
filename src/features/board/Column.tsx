@@ -11,6 +11,9 @@ interface ColumnProps {
   columns: BoardColumn[];
   /** This column's tasks, already sorted. */
   tasks: Task[];
+  /** The subset of tasks that pass the board's search and assignee filter. */
+  visibleTasks: Task[];
+  filtering: boolean;
   tasksInColumn: (columnId: string) => Task[];
   /** Narrow screens stack columns and let them fold away. */
   collapsible: boolean;
@@ -22,6 +25,8 @@ export function Column({
   column,
   columns,
   tasks,
+  visibleTasks,
+  filtering,
   tasksInColumn,
   collapsible,
   collapsed,
@@ -91,7 +96,9 @@ export function Column({
           >
             {collapsible && <span className="column-chevron">{collapsed ? '▶' : '▼'}</span>}
             {column.name}
-            <span className="column-count">{tasks.length}</span>
+            <span className="column-count">
+              {filtering ? `${visibleTasks.length}/${tasks.length}` : tasks.length}
+            </span>
           </button>
         )}
 
@@ -137,12 +144,13 @@ export function Column({
       {!folded && (
         <>
           <ul className="cards">
-            {tasks.map((task) => (
+            {visibleTasks.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}
                 columns={columns}
-                siblings={tasks}
+                // Up/down steps past the next visible card, not a hidden one.
+                siblings={visibleTasks}
                 tasksInColumn={tasksInColumn}
                 justCreated={task.id === createdId}
               />
