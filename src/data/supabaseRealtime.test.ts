@@ -1,7 +1,7 @@
 // @vitest-environment node
-import { createClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 import { createSupabaseStore } from './supabaseStore';
+import { signInTester } from './supabaseTestSession';
 
 /**
  * Collection.subscribe() promises to fire for changes made by other tabs and
@@ -28,16 +28,8 @@ const configured = [url, key, email, password].every(
 );
 
 async function connect() {
-  const client = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: auth } = await client.auth.signInWithPassword({ email, password });
-  const { data } = await client
-    .from('members')
-    .select('family_id')
-    .eq('id', auth.user?.id ?? '')
-    .maybeSingle();
-  return createSupabaseStore((data as { family_id: string }).family_id, client);
+  const session = await signInTester('realtime', url, key, email, password);
+  return createSupabaseStore(session.familyId, session.client);
 }
 
 describe.skipIf(!configured)('supabase realtime', () => {

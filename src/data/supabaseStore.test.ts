@@ -5,11 +5,10 @@
 // Event" when it dispatches the open event. Nothing here touches the DOM, so
 // node is both correct and the only environment where realtime can connect.
 
-import { createClient } from '@supabase/supabase-js';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, it } from 'vitest';
 import { runDataStoreContract } from './collection.contract';
 import { createSupabaseStore } from './supabaseStore';
+import { signInTester } from './supabaseTestSession';
 import type { DataStore } from './types';
 
 /**
@@ -39,47 +38,6 @@ const configured =
   [config.url, config.anonKey, config.a.email, config.a.password, config.b.email, config.b.password]
     .every((value) => typeof value === 'string' && value !== '');
 
-/** Signs in, and makes sure that user belongs to a family. */
-async function signIn(
-  label: string,
-  credentials: { email: string; password: string },
-): Promise<DataStore> {
-  const client: SupabaseClient = createClient(config.url as string, config.anonKey as string, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data: auth, error: authError } = await client.auth.signInWithPassword(credentials);
-  if (authError !== null) {
-    throw new Error(`${label}: could not sign in (${authError.message})`);
-  }
-  const userId = auth.user.id;
-
-  // Filtered by id: RLS returns every member of the family, so an unfiltered
-  // maybeSingle() breaks as soon as a family has two people in it.
-  const existing = await client
-    .from('members')
-    .select('family_id')
-    .eq('id', userId)
-    .maybeSingle();
-  if (existing.error !== null) {
-    throw new Error(`${label}: could not read membership (${existing.error.message})`);
-  }
-
-  let familyId = existing.data?.family_id as string | undefined;
-  if (familyId === undefined) {
-    const created = await client.rpc('create_family', {
-      family_name: `Contract test ${label}`,
-      display_name: `Test ${label}`,
-    });
-    if (created.error !== null) {
-      throw new Error(`${label}: create_family failed (${created.error.message})`);
-    }
-    familyId = (created.data as { id: string }).id;
-  }
-
-  return createSupabaseStore(familyId, client);
-}
-
 /** Built once and reused: signing in on every case would be needlessly slow. */
 const stores = new Map<string, DataStore>();
 
@@ -88,10 +46,14 @@ async function storeFor(label: string): Promise<DataStore> {
   if (cached !== undefined) return cached;
 
   const credentials = label === 'family-a' ? config.a : config.b;
-  const store = await signIn(label, {
-    email: credentials.email as string,
-    password: credentials.password as string,
-  });
+  const session = await signInTester(
+    label,
+    config.url as string,
+    config.anonKey as string,
+    credentials.email as string,
+    credentials.password as string,
+  );
+  const store = createSupabaseStore(session.familyId, session.client);
   stores.set(label, store);
   return store;
 }
