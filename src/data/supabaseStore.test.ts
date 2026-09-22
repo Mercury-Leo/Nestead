@@ -96,10 +96,31 @@ async function storeFor(label: string): Promise<DataStore> {
   return store;
 }
 
-/** Tasks reference columns with ON DELETE RESTRICT, so tasks go first. */
+/**
+ * Tasks reference columns with ON DELETE RESTRICT, so tasks go first.
+ *
+ * Retried, because this family is not necessarily ours alone: the app open in
+ * a browser on the same account is a real client, and a task appearing between
+ * the two loops makes the column delete fail on the foreign key. Deleting the
+ * tasks again and retrying is enough, and failing loudly after three attempts
+ * beats leaving the next case to start from a dirty board.
+ */
 async function clear(store: DataStore): Promise<void> {
-  for (const task of await store.tasks.list()) await store.tasks.remove(task.id);
-  for (const column of await store.columns.list()) await store.columns.remove(column.id);
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    for (const task of await store.tasks.list()) await store.tasks.remove(task.id);
+
+    const blocked: string[] = [];
+    for (const column of await store.columns.list()) {
+      try {
+        await store.columns.remove(column.id);
+      } catch (error) {
+        blocked.push(error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    if (blocked.length === 0) return;
+    if (attempt === 3) throw new Error(`could not clear columns: ${blocked[0]}`);
+  }
 }
 
 if (!configured) {
