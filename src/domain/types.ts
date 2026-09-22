@@ -43,8 +43,18 @@ export interface Task extends Base, Positioned {
   columnId: string;
   /** Member id. */
   assigneeId?: string;
-  /** ISO date string. */
+  /**
+   * ISO date (YYYY-MM-DD). For a repeating task this is when it next comes
+   * round; for a one-off it is simply a deadline.
+   */
   dueDate?: string;
+  /**
+   * Days between occurrences. Absent means the task does not repeat.
+   * Completing a repeating task sets dueDate to this many days from now, and
+   * it becomes outstanding again when that date arrives. The same row recurs,
+   * so a chore can never be duplicated.
+   */
+  recurEveryDays?: number;
   /** Mirrors the column's isDone. Never written on its own. */
   done: boolean;
   /** Member id. Cleared when that member is deleted. */

@@ -3,6 +3,7 @@ import { useSession } from '../../auth/session';
 import type { BoardColumn, Task } from '../../domain/types';
 import { moveTaskToColumn, reorderTask } from './actions';
 import { TASK_ICONS } from './icons';
+import { REPEAT_OPTIONS, isOverdue } from './recurrence';
 
 interface TaskCardProps {
   task: Task;
@@ -19,6 +20,8 @@ export function TaskCard({ task, columns, siblings, tasksInColumn }: TaskCardPro
 
   const assignee = members.find((member) => member.id === task.assigneeId);
   const index = siblings.findIndex((row) => row.id === task.id);
+  const overdue = isOverdue(task, new Date());
+  const repeat = REPEAT_OPTIONS.find((option) => option.days === task.recurEveryDays);
 
   const moveTo = async (columnId: string): Promise<void> => {
     const column = columns.find((row) => row.id === columnId);
@@ -37,7 +40,15 @@ export function TaskCard({ task, columns, siblings, tasksInColumn }: TaskCardPro
         <span className="card-icon" aria-hidden="true">
           {task.icon ?? '•'}
         </span>
-        <span className="card-title">{task.title}</span>
+        <span className="card-title">
+          {task.title}
+          {task.recurEveryDays !== undefined && (
+            <span className="card-repeat" title={repeat?.label ?? 'Repeats'}>
+              ⟳
+            </span>
+          )}
+          {overdue && <span className="card-overdue">Overdue</span>}
+        </span>
         {assignee !== undefined && (
           <span
             className="card-who"
@@ -80,6 +91,29 @@ export function TaskCard({ task, columns, siblings, tasksInColumn }: TaskCardPro
               ))}
             </select>
           </label>
+
+          <label>
+            Repeats
+            <select
+              value={task.recurEveryDays ?? ''}
+              onChange={(event) => {
+                const days = event.target.value === '' ? undefined : Number(event.target.value);
+                void store.tasks.update(task.id, { recurEveryDays: days });
+              }}
+            >
+              {REPEAT_OPTIONS.map((option) => (
+                <option key={option.label} value={option.days ?? ''}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {task.dueDate !== undefined && (
+            <p className={`card-due ${overdue ? 'is-overdue' : ''}`}>
+              {task.done ? 'Comes back' : 'Due'} {task.dueDate}
+            </p>
+          )}
 
           <div className="icon-picker" role="group" aria-label="Icon">
             {TASK_ICONS.map((icon) => (

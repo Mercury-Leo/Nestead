@@ -560,3 +560,33 @@ button.danger:hover:not(:disabled) {
   font-size: 0.95em;
   letter-spacing: 0.12em;
 }
+
+/* ------------------------------------------------------- recurrence ----- */
+
+.card-repeat {
+  margin-left: 0.4rem;
+  color: var(--accent);
+  font-size: 0.8em;
+}
+
+.card-overdue {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: #d6453c;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  vertical-align: 0.05em;
+}
+
+.card-due {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.card-due.is-overdue {
+  color: #d6453c;
+}

@@ -1,6 +1,7 @@
 import type { DataStore } from '../../data/types';
-import { comparePosition, positionBetween } from '../../domain/position';
-import type { BoardColumn, Task } from '../../domain/types';
+import { POSITION_STEP, comparePosition, positionBetween } from '../../domain/position';
+import type { BoardColumn, NewRow, Task } from '../../domain/types';
+import { isDueAgain, nextDueDate, reviveColumn } from './recurrence';
 
 /** Which way a row moves within its list. */
 export type Direction = 'up' | 'down';
@@ -21,13 +22,53 @@ export async function moveTaskToColumn(
   task: Task,
   column: BoardColumn,
   tasksInColumn: readonly Task[],
+  now: Date = new Date(),
 ): Promise<void> {
   if (task.columnId === column.id) return;
-  await store.tasks.update(task.id, {
+
+  const patch: Partial<NewRow<Task>> = {
     columnId: column.id,
     position: endPosition(tasksInColumn),
     done: column.isDone,
-  });
+  };
+
+  // Finishing a repeating chore is what schedules the next one. Measured from
+  // now rather than from the old due date, so doing it late does not make it
+  // come straight back overdue.
+  if (column.isDone && !task.done) {
+    const due = nextDueDate(task, now);
+    if (due !== undefined) patch.dueDate = due;
+  }
+
+  await store.tasks.update(task.id, patch);
+}
+
+/**
+ * Brings back repeating tasks whose next occurrence has arrived: the same row,
+ * marked outstanding again and moved out of the done column.
+ *
+ * There is no server, so this runs when somebody opens the app. A chore due on
+ * Monday appears when the app is next opened, which for a chores board is fine.
+ * Running it twice is harmless, since it only ever moves a task from done to
+ * not-done and the second pass finds nothing to do.
+ */
+export async function reviveRecurring(
+  store: DataStore,
+  tasks: readonly Task[],
+  columns: readonly BoardColumn[],
+  now: Date = new Date(),
+): Promise<number> {
+  const target = reviveColumn(columns);
+  if (target === undefined) return 0;
+
+  const due = tasks.filter((task) => isDueAgain(task, now));
+  let position = endPosition(tasks.filter((task) => task.columnId === target.id));
+
+  for (const task of due) {
+    await store.tasks.update(task.id, { done: false, columnId: target.id, position });
+    position += POSITION_STEP;
+  }
+  return due.length;
 }
 
 /** Swap a row with its neighbour by taking a position on the far side of it. */

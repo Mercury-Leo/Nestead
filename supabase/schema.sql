@@ -101,7 +101,12 @@ create table tasks (
   column_id   uuid        not null references board_columns (id) on delete restrict,
   position    double precision not null,
   assignee_id uuid        references members (id) on delete set null,
+  -- When the task next comes round, or just a deadline for a one-off.
   due_date    date,
+  -- Days between occurrences; null means it does not repeat. A repeating task
+  -- is one row that comes back, not a new row per occurrence, so there is no
+  -- way for two clients to create the same chore twice.
+  recur_every_days integer check (recur_every_days is null or recur_every_days > 0),
   done        boolean     not null default false,
   -- Attribution is nullable on purpose: it must not block deleting a member.
   -- NOT NULL plus ON DELETE SET NULL contradict, and the delete fails.

@@ -4,7 +4,7 @@ import { useIsNarrow } from '../../components/useIsNarrow';
 import { useCollection } from '../../data/useCollection';
 import { comparePosition } from '../../domain/position';
 import type { Task } from '../../domain/types';
-import { endPosition } from './actions';
+import { endPosition, reviveRecurring } from './actions';
 import { Column } from './Column';
 
 /**
@@ -33,6 +33,18 @@ export function Board(): JSX.Element {
     defaulted.current = true;
     setCollapsed(new Set(columns.filter((column) => column.isDone).map((column) => column.id)));
   }, [columns]);
+
+  // Repeating tasks whose date has come round are brought back when the app is
+  // opened, since there is no server to do it while nobody is looking. The ref
+  // stops a second pass running while the first one's writes are still landing.
+  const reviving = useRef(false);
+  useEffect(() => {
+    if (reviving.current || tasks.length === 0 || columns.length === 0) return;
+    reviving.current = true;
+    void reviveRecurring(store, tasks, [...columns].sort(comparePosition)).finally(() => {
+      reviving.current = false;
+    });
+  }, [store, tasks, columns]);
 
   const ordered = [...columns].sort(comparePosition);
 
