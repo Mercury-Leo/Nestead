@@ -39,6 +39,8 @@ export interface Task extends Base, Positioned {
   title: string;
   /** A single emoji, stored as text. No icon set, no assets. */
   icon?: string;
+  /** Free-form plain-text notes. Shown only when the card is expanded. */
+  description?: string;
   /** BoardColumn id. */
   columnId: string;
   /** Member id. */

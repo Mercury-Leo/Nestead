@@ -255,6 +255,19 @@ code {
   font-size: 0.8rem;
 }
 
+.card-description {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
 .card-options select {
   flex: 1;
   min-width: 0;
@@ -313,6 +326,23 @@ code {
 button.danger:hover:not(:disabled) {
   border-color: #d6453c;
   color: #d6453c;
+}
+
+.card-confirm {
+  align-items: center;
+}
+
+.card-confirm span {
+  flex: 1.4;
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.card-actions button.danger-solid,
+.card-actions button.danger-solid:hover {
+  border-color: #d6453c;
+  background: #d6453c;
+  color: #fff;
 }
 
 .composer {

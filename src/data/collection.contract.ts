@@ -111,6 +111,16 @@ export function runDataStoreContract(
       expect(stored).toEqual(updated);
     });
 
+    it('update with an undefined field clears it', async () => {
+      const task = await store.tasks.create({ ...newTask('Feed the cat'), icon: '🐱' });
+
+      const updated = await store.tasks.update(task.id, { icon: undefined });
+
+      expect(updated.icon).toBeUndefined();
+      const [stored] = await store.tasks.list();
+      expect(stored.icon).toBeUndefined();
+    });
+
     it('update rejects for an unknown id', async () => {
       await expect(store.tasks.update('no-such-id', { done: true })).rejects.toThrow();
     });

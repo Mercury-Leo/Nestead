@@ -52,12 +52,18 @@ function fromRow<T>(row: Record<string, unknown>): T {
   return out as T;
 }
 
-/** Domain object -> Postgres row, dropping anything the caller may not set. */
+/**
+ * Domain object -> Postgres row, dropping anything the caller may not set.
+ *
+ * undefined becomes NULL, the mirror of fromRow: a patch like
+ * `{ assigneeId: undefined }` means "clear it", but JSON would drop the key and
+ * leave the column untouched.
+ */
 function toRow(input: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(input)) {
     if (READONLY_KEYS.has(key)) continue;
-    out[toSnake(key)] = value;
+    out[toSnake(key)] = value === undefined ? null : value;
   }
   return out;
 }

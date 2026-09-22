@@ -96,6 +96,8 @@ create table tasks (
   title       text        not null,
   -- A single emoji, stored as text. No icon set, no assets.
   icon        text,
+  -- Plain-text notes; null means none.
+  description text,
   -- restrict, not cascade: deleting a column must not silently bin its tasks.
   -- The board blocks deleting a column that still has any.
   column_id   uuid        not null references board_columns (id) on delete restrict,

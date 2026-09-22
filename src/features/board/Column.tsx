@@ -31,6 +31,9 @@ export function Column({
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(column.name);
   const [title, setTitle] = useState('');
+  // The task this person just added here, so its card opens ready to fill in.
+  // Local state, so it opens only for the creator, not for everyone watching.
+  const [createdId, setCreatedId] = useState<string>();
 
   const index = columns.findIndex((row) => row.id === column.id);
   const folded = collapsible && collapsed;
@@ -39,7 +42,7 @@ export function Column({
     const trimmed = title.trim();
     if (trimmed === '') return;
     setTitle('');
-    await store.tasks.create({
+    const created = await store.tasks.create({
       title: trimmed,
       icon: DEFAULT_TASK_ICON,
       columnId: column.id,
@@ -47,6 +50,7 @@ export function Column({
       done: column.isDone,
       createdBy: me.id,
     });
+    setCreatedId(created.id);
   };
 
   const rename = async (): Promise<void> => {
@@ -140,6 +144,7 @@ export function Column({
                 columns={columns}
                 siblings={tasks}
                 tasksInColumn={tasksInColumn}
+                justCreated={task.id === createdId}
               />
             ))}
           </ul>

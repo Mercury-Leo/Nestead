@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSession } from '../../auth/session';
 import type { BoardColumn, Task } from '../../domain/types';
 import { moveTaskToColumn, reorderTask } from './actions';
@@ -12,11 +12,47 @@ interface TaskCardProps {
   siblings: Task[];
   /** Tasks in any column, so a move can append to the destination. */
   tasksInColumn: (columnId: string) => Task[];
+  /** This person just added the task, so it starts open. */
+  justCreated?: boolean;
 }
 
-export function TaskCard({ task, columns, siblings, tasksInColumn }: TaskCardProps): JSX.Element {
+export function TaskCard({
+  task,
+  columns,
+  siblings,
+  tasksInColumn,
+  justCreated = false,
+}: TaskCardProps): JSX.Element {
   const { store, members } = useSession();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(justCreated);
+
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  // Focus once, on creation. Reopening the card later should not steal focus.
+  const focusPending = useRef(false);
+
+  // The card can mount before create() resolves, so react to the flag arriving
+  // rather than reading it only once.
+  useEffect(() => {
+    if (!justCreated) return;
+    focusPending.current = true;
+    setOpen(true);
+  }, [justCreated]);
+
+  // Separate from the effect above: the textarea exists only once open renders.
+  useEffect(() => {
+    if (!open || !focusPending.current) return;
+    focusPending.current = false;
+    descriptionRef.current?.focus();
+  }, [open]);
+  // Edited locally and saved on blur, so typing does not write every keystroke.
+  const [description, setDescription] = useState(task.description ?? '');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const saveDescription = (): void => {
+    const next = description.trim() === '' ? undefined : description;
+    if (next === task.description) return;
+    void store.tasks.update(task.id, { description: next });
+  };
 
   const assignee = members.find((member) => member.id === task.assigneeId);
   const index = siblings.findIndex((row) => row.id === task.id);
@@ -35,7 +71,11 @@ export function TaskCard({ task, columns, siblings, tasksInColumn }: TaskCardPro
         type="button"
         className="card-head"
         aria-expanded={open}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (!open) setDescription(task.description ?? '');
+          setConfirmingDelete(false);
+          setOpen(!open);
+        }}
       >
         <span className="card-icon" aria-hidden="true">
           {task.icon ?? '•'}
@@ -62,6 +102,17 @@ export function TaskCard({ task, columns, siblings, tasksInColumn }: TaskCardPro
 
       {open && (
         <div className="card-options">
+          <textarea
+            ref={descriptionRef}
+            className="card-description"
+            aria-label="Description"
+            placeholder="Add a description…"
+            rows={3}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            onBlur={saveDescription}
+          />
+
           <label>
             Column
             <select value={task.columnId} onChange={(event) => void moveTo(event.target.value)}>
@@ -129,29 +180,41 @@ export function TaskCard({ task, columns, siblings, tasksInColumn }: TaskCardPro
             ))}
           </div>
 
-          <div className="card-actions">
-            <button
-              type="button"
-              disabled={index <= 0}
-              onClick={() => void reorderTask(store, task, siblings, 'up')}
-            >
-              ↑ Up
-            </button>
-            <button
-              type="button"
-              disabled={index >= siblings.length - 1}
-              onClick={() => void reorderTask(store, task, siblings, 'down')}
-            >
-              ↓ Down
-            </button>
-            <button
-              type="button"
-              className="danger"
-              onClick={() => void store.tasks.remove(task.id)}
-            >
-              Delete
-            </button>
-          </div>
+          {confirmingDelete ? (
+            <div className="card-actions card-confirm" role="group" aria-label="Confirm delete">
+              <span>Delete this task?</span>
+              <button type="button" autoFocus onClick={() => setConfirmingDelete(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger danger-solid"
+                onClick={() => void store.tasks.remove(task.id)}
+              >
+                Delete
+              </button>
+            </div>
+          ) : (
+            <div className="card-actions">
+              <button
+                type="button"
+                disabled={index <= 0}
+                onClick={() => void reorderTask(store, task, siblings, 'up')}
+              >
+                ↑ Up
+              </button>
+              <button
+                type="button"
+                disabled={index >= siblings.length - 1}
+                onClick={() => void reorderTask(store, task, siblings, 'down')}
+              >
+                ↓ Down
+              </button>
+              <button type="button" className="danger" onClick={() => setConfirmingDelete(true)}>
+                Delete
+              </button>
+            </div>
+          )}
         </div>
       )}
     </li>
