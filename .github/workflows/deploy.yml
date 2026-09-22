@@ -1,0 +1,78 @@
+name: Deploy
+
+# Every push to main is typechecked, tested and deployed to Cloudflare Pages.
+#
+# The Pages project was created as a Direct Upload project, which Cloudflare
+# cannot convert to a Git-connected one, so deployment runs from here with
+# wrangler rather than being driven by Cloudflare's own Git integration. That
+# also keeps the build in one place: the same `npm run build` that runs locally.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time, and let a newer push supersede an older one still
+# waiting, so main never deploys out of order.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The Supabase contract and realtime suites need .env.test, which is not
+      # in the repo, so they skip here. The local backend, ordering and
+      # recurrence suites all run.
+      - name: Test
+        run: npm test
+
+      # VITE_* values are inlined into the bundle and are public by design, so
+      # they are repository variables rather than secrets. Failing here is much
+      # better than shipping a build whose client throws on first use.
+      - name: Check deploy config is present
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          missing=""
+          [ -z "$VITE_SUPABASE_URL" ] && missing="$missing VITE_SUPABASE_URL"
+          [ -z "$VITE_SUPABASE_ANON_KEY" ] && missing="$missing VITE_SUPABASE_ANON_KEY"
+          if [ -n "$missing" ]; then
+            echo "Missing repository variables:$missing"
+            echo "Set them under Settings -> Secrets and variables -> Actions -> Variables."
+            exit 1
+          fi
+          case "$VITE_SUPABASE_ANON_KEY" in
+            sb_secret_*|*service_role*)
+              echo "That looks like a secret key. Only the publishable key belongs in a VITE_* value."
+              exit 1
+              ;;
+          esac
+
+      - name: Build
+        env:
+          VITE_BACKEND: supabase
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >
+          npx -y wrangler@4 pages deploy dist
+          --project-name nestead
+          --branch main
+          --commit-dirty=true
