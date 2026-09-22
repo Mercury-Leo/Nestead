@@ -12,15 +12,28 @@ interface ColumnProps {
   /** This column's tasks, already sorted. */
   tasks: Task[];
   tasksInColumn: (columnId: string) => Task[];
+  /** Narrow screens stack columns and let them fold away. */
+  collapsible: boolean;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 }
 
-export function Column({ column, columns, tasks, tasksInColumn }: ColumnProps): JSX.Element {
+export function Column({
+  column,
+  columns,
+  tasks,
+  tasksInColumn,
+  collapsible,
+  collapsed,
+  onToggleCollapsed,
+}: ColumnProps): JSX.Element {
   const { store, me } = useSession();
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(column.name);
   const [title, setTitle] = useState('');
 
   const index = columns.findIndex((row) => row.id === column.id);
+  const folded = collapsible && collapsed;
 
   const addTask = async (): Promise<void> => {
     const trimmed = title.trim();
@@ -47,7 +60,7 @@ export function Column({ column, columns, tasks, tasksInColumn }: ColumnProps): 
   };
 
   return (
-    <section className="column">
+    <section className={`column ${folded ? 'column-folded' : ''}`}>
       <header className="column-head">
         {renaming ? (
           <input
@@ -66,28 +79,43 @@ export function Column({ column, columns, tasks, tasksInColumn }: ColumnProps): 
             }}
           />
         ) : (
-          <button type="button" className="column-name" onClick={() => setRenaming(true)}>
+          <button
+            type="button"
+            className="column-name"
+            aria-expanded={collapsible ? !collapsed : undefined}
+            onClick={collapsible ? onToggleCollapsed : () => setRenaming(true)}
+          >
+            {collapsible && <span className="column-chevron">{collapsed ? '▶' : '▼'}</span>}
             {column.name}
             <span className="column-count">{tasks.length}</span>
           </button>
         )}
 
         <div className="column-tools">
+          {collapsible && (
+            <button
+              type="button"
+              aria-label={`Rename ${column.name}`}
+              onClick={() => setRenaming(true)}
+            >
+              ✎
+            </button>
+          )}
           <button
             type="button"
-            aria-label={`Move ${column.name} left`}
+            aria-label={`Move ${column.name} ${collapsible ? 'up' : 'left'}`}
             disabled={index <= 0}
             onClick={() => void moveColumn(store, column, columns, 'up')}
           >
-            ◀
+            {collapsible ? '↑' : '◀'}
           </button>
           <button
             type="button"
-            aria-label={`Move ${column.name} right`}
+            aria-label={`Move ${column.name} ${collapsible ? 'down' : 'right'}`}
             disabled={index >= columns.length - 1}
             onClick={() => void moveColumn(store, column, columns, 'down')}
           >
-            ▶
+            {collapsible ? '↓' : '▶'}
           </button>
           <button
             type="button"
@@ -102,35 +130,39 @@ export function Column({ column, columns, tasks, tasksInColumn }: ColumnProps): 
         </div>
       </header>
 
-      <ul className="cards">
-        {tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            columns={columns}
-            siblings={tasks}
-            tasksInColumn={tasksInColumn}
-          />
-        ))}
-      </ul>
+      {!folded && (
+        <>
+          <ul className="cards">
+            {tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                columns={columns}
+                siblings={tasks}
+                tasksInColumn={tasksInColumn}
+              />
+            ))}
+          </ul>
 
-      <form
-        className="composer"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void addTask();
-        }}
-      >
-        <input
-          value={title}
-          placeholder="Add a task"
-          aria-label={`Add a task to ${column.name}`}
-          onChange={(event) => setTitle(event.target.value)}
-        />
-        <button type="submit" disabled={title.trim() === ''}>
-          +
-        </button>
-      </form>
+          <form
+            className="composer"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void addTask();
+            }}
+          >
+            <input
+              value={title}
+              placeholder="Add a task"
+              aria-label={`Add a task to ${column.name}`}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+            <button type="submit" disabled={title.trim() === ''}>
+              +
+            </button>
+          </form>
+        </>
+      )}
     </section>
   );
 }

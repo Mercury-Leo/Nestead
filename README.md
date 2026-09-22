@@ -25,6 +25,10 @@ No drag and drop: cards move by an explicit picker, which works on touch and
 with a keyboard and costs no dependency. It can be added later without any
 change to stored data.
 
+On a phone the columns stack into collapsible sections, Done folded by default,
+so every column and its count stays on screen instead of hiding behind a
+horizontal swipe. Desktop keeps the side-by-side board.
+
 | Command         | What it does                                        |
 | --------------- | --------------------------------------------------- |
 | `npm run dev`   | Vite dev server                                      |

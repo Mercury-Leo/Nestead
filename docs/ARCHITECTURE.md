@@ -91,6 +91,14 @@ There is no drag and drop. Cards move by an explicit column picker and up/down
 buttons, which works on touch, works with a keyboard, and needs no dependency.
 A drag layer can be added later without touching any stored data.
 
+Below 768px the columns stop sitting side by side and stack into collapsible
+sections, with Done folded by default. A horizontally scrolling board on a phone
+shows one column at a time and tells you nothing about the others, whereas
+stacked headers keep every column and its count on screen. `useIsNarrow()` is a
+hook rather than pure CSS because the change is behavioural, not cosmetic: the
+header expands the section instead of renaming it, renaming moves to its own
+control, and the move arrows point up and down rather than left and right.
+
 ## Contracts
 
 ### `Collection<T>`

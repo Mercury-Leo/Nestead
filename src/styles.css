@@ -357,9 +357,61 @@ button.danger:hover:not(:disabled) {
   background: none;
 }
 
-@media (max-width: 640px) {
-  .column {
-    flex-basis: 85vw;
+/* ------------------------------------------------- phone: stacked -------- */
+
+/*
+ * Columns stack into collapsible sections below 768px. Side-by-side columns on
+ * a phone mean swiping to find anything and never seeing the whole board; the
+ * stacked headers keep every column and its count on screen.
+ */
+.board-stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  overflow-x: visible;
+  scroll-snap-type: none;
+}
+
+.board-stacked .column {
+  flex: 0 0 auto;
+  width: 100%;
+  max-height: none;
+}
+
+.board-stacked .cards {
+  overflow-y: visible;
+}
+
+.board-stacked .column-folded {
+  padding-bottom: 0.6rem;
+}
+
+.column-chevron {
+  display: inline-block;
+  width: 0.8rem;
+  color: var(--accent);
+  font-size: 0.6rem;
+}
+
+@media (max-width: 767px) {
+  .app {
+    padding: 1rem 0.75rem;
+  }
+
+  /* The whole header is the expand target, so give it real height. */
+  .column-name {
+    flex: 1;
+    justify-content: flex-start;
+    padding: 0.45rem 0.3rem;
+  }
+
+  /* Bigger touch targets: these are 12px glyphs otherwise. */
+  .column-tools button {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .card-head {
+    padding: 0.65rem 0.5rem;
   }
 }
 
