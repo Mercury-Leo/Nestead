@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { getSupabaseClient } from '../data/supabaseClient';
+import { getSupabaseClient, takeRecoveryLink } from '../data/supabaseClient';
 import { createSupabaseStore } from '../data/supabaseStore';
 import type { DataStore } from '../data/types';
 import { useCollection } from '../data/useCollection';
@@ -8,6 +8,7 @@ import { seedDefaultColumns } from './defaultColumns';
 import { JoinOrCreate } from './JoinOrCreate';
 import type { Family } from './session';
 import { SessionContext } from './session';
+import { SetNewPassword } from './SetNewPassword';
 import { SignIn } from './SignIn';
 
 /**
@@ -21,12 +22,19 @@ import { SignIn } from './SignIn';
 type Phase =
   | { kind: 'loading' }
   | { kind: 'signedOut' }
+  | { kind: 'recovering'; userId: string }
   | { kind: 'noFamily'; userId: string }
   | { kind: 'ready'; userId: string; store: DataStore; family: Family };
 
 export function SupabaseSession({ children }: { children: ReactNode }): JSX.Element {
   const client = getSupabaseClient();
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
+
+  // A reset link signs you in, but that must not let you into the app until
+  // you have chosen a new password. Every auth event while this is set lands
+  // on SetNewPassword instead of resolving the family.
+  const recovering = useRef<boolean | null>(null);
+  if (recovering.current === null) recovering.current = takeRecoveryLink();
 
   /** Works out which of the three states a signed-in user is actually in. */
   const resolve = useCallback(
@@ -73,7 +81,12 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
     const apply = (userId: string | undefined): void => {
       if (!active) return;
       if (userId === undefined) {
+        recovering.current = false;
         setPhase({ kind: 'signedOut' });
+        return;
+      }
+      if (recovering.current === true) {
+        setPhase({ kind: 'recovering', userId });
         return;
       }
       void resolve(userId);
@@ -81,7 +94,8 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
 
     void client.auth.getSession().then(({ data }) => apply(data.session?.user.id));
 
-    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = client.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') recovering.current = true;
       apply(session?.user.id);
     });
 
@@ -100,6 +114,16 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
       return <p className="centred">Loading…</p>;
     case 'signedOut':
       return <SignIn />;
+    case 'recovering':
+      return (
+        <SetNewPassword
+          onDone={() => {
+            recovering.current = false;
+            void resolve(phase.userId);
+          }}
+          onSignOut={signOut}
+        />
+      );
     case 'noFamily':
       return <JoinOrCreate onJoined={() => void resolve(phase.userId)} onSignOut={signOut} />;
     case 'ready':
