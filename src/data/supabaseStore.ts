@@ -1,17 +1,36 @@
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import type { Base, BoardColumn, Member, NewRow, Task } from '../domain/types';
+import type {
+  Base,
+  BoardColumn,
+  DietProfile,
+  ListItem,
+  Member,
+  NewRow,
+  PantryItem,
+  Recipe,
+  Task,
+} from '../domain/types';
 import { getSupabaseClient } from './supabaseClient';
-import type { ChangeListener, Collection, DataStore, Unsubscribe } from './types';
+import type { ChangeListener, Collection, DataStore, PhotoStore, Unsubscribe } from './types';
 
 /**
  * Supabase backend. Mirrors localStore.ts through the same Collection
  * interface, so screens cannot tell which one they are talking to.
  *
  * This module is the only place that knows about snake_case. Everything above
- * it works in the camelCase domain types.
+ * it works in the camelCase domain types. Only top-level keys are converted:
+ * nested structures (ingredient lines, steps, list parts) are jsonb and keep
+ * their camelCase keys inside it.
  */
 
-type TableName = 'members' | 'board_columns' | 'tasks';
+type TableName =
+  | 'members'
+  | 'board_columns'
+  | 'tasks'
+  | 'recipes'
+  | 'pantry_items'
+  | 'diet_profiles'
+  | 'list_items';
 
 /** Timestamps arrive from Postgres as e.g. 2026-09-22T10:00:00.123456+00:00. */
 const TIMESTAMP_KEYS = new Set(['createdAt', 'updatedAt']);
@@ -180,5 +199,49 @@ export function createSupabaseStore(
     members: createCollection<Member>(client, familyId, 'members'),
     columns: createCollection<BoardColumn>(client, familyId, 'board_columns'),
     tasks: createCollection<Task>(client, familyId, 'tasks'),
+    recipes: createCollection<Recipe>(client, familyId, 'recipes'),
+    pantry: createCollection<PantryItem>(client, familyId, 'pantry_items'),
+    dietProfiles: createCollection<DietProfile>(client, familyId, 'diet_profiles'),
+    listItems: createCollection<ListItem>(client, familyId, 'list_items'),
+    photos: createPhotoStore(client, familyId),
+  };
+}
+
+const PHOTO_BUCKET = 'recipe-photos';
+/** Signed URLs last an hour; re-sign a little before that. */
+const SIGNED_FOR_S = 3600;
+
+/**
+ * Photos in a private Storage bucket, one folder per family. Storage policies
+ * (see schema.sql) only let a member read or write their own family's folder,
+ * so the folder is the security boundary, the same way family_id is for rows.
+ */
+function createPhotoStore(client: SupabaseClient, familyId: string): PhotoStore {
+  const signed = new Map<string, { url: string; until: number }>();
+
+  return {
+    async put(blob) {
+      const id = `${familyId}/${crypto.randomUUID()}.jpg`;
+      const { error } = await client.storage
+        .from(PHOTO_BUCKET)
+        .upload(id, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
+      if (error !== null) throw new Error(`photos.put: ${error.message}`);
+      return id;
+    },
+
+    async url(id) {
+      const cached = signed.get(id);
+      if (cached !== undefined && cached.until > Date.now()) return cached.url;
+      const { data, error } = await client.storage.from(PHOTO_BUCKET).createSignedUrl(id, SIGNED_FOR_S);
+      if (error !== null || data === null) return null;
+      signed.set(id, { url: data.signedUrl, until: Date.now() + (SIGNED_FOR_S - 300) * 1000 });
+      return data.signedUrl;
+    },
+
+    async remove(id) {
+      signed.delete(id);
+      const { error } = await client.storage.from(PHOTO_BUCKET).remove([id]);
+      if (error !== null) throw new Error(`photos.remove: ${error.message}`);
+    },
   };
 }

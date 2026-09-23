@@ -1,0 +1,299 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.sectionTitle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  margin: 14px 0 4px;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.sectionTitle:first-child {
+  margin-top: 0;
+}
+
+.sectionAside {
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.tile {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  padding: 14px 14px 14px 18px;
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  background: var(--card);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tile:hover {
+  background: var(--paper);
+}
+
+.tileOn,
+.tileOn:hover {
+  border-color: var(--sage-soft);
+  background: var(--tile-on);
+}
+
+.tileText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tileName {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tileRule {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.track {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--sunk-2);
+  transition: background-color 150ms;
+}
+
+.thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(41, 35, 30, 0.25);
+  transition: transform 150ms;
+}
+
+.trackOn {
+  background: var(--sage);
+}
+
+.trackOn .thumb {
+  transform: translateX(20px);
+}
+
+.ruleForm {
+  display: flex;
+  gap: 10px;
+}
+
+.ruleInput {
+  flex: 1;
+}
+
+.rules {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rule {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 10px 12px 18px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--on-accent);
+}
+
+.ruleText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ruleLabel {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ruleHint {
+  color: #d9cfc2;
+  font-size: 13.5px;
+}
+
+.ruleRemove {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.12);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.ruleRemove:hover {
+  background: rgba(255, 253, 248, 0.22);
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.cardTitleRow {
+  display: flex;
+  justify-content: space-between;
+}
+
+.count {
+  color: var(--ink-2);
+}
+
+.sample {
+  display: block;
+  margin-top: 10px;
+}
+
+.conflicts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conflict {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--paper);
+  color: inherit;
+  text-decoration: none;
+}
+
+.conflict:hover .conflictTitle {
+  color: var(--accent-ink);
+}
+
+.recipeThumb {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.conflictText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.conflictTitle {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.muted {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+
+.info {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--sunk);
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+
+.info svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 400px;
+    gap: 32px;
+  }
+
+  .tiles,
+  .rules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
+  .card {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .side .card {
+    padding: 20px;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+}

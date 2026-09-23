@@ -166,6 +166,38 @@ export function runDataStoreContract(
       expect(changes).toBe(seen);
     });
 
+    it('kitchen rows round-trip nested structures and camelCase fields', async () => {
+      const recipe = await store.recipes.create({
+        title: 'Soup',
+        source: { kind: 'web', url: 'https://example.com/soup', site: 'example.com' },
+        servings: 4,
+        prepMin: 10,
+        cookMin: 20,
+        ingredients: [{ id: 'i1', qty: 1.5, unit: 'tsp', item: 'fine salt', canonicalId: 'salt', note: 'to taste' }],
+        equipment: ['Large pot'],
+        steps: [{ id: 's1', text: 'Simmer 20 min.', ingredientIds: ['i1'] }],
+        tags: ['Vegan'],
+        kcalEstimated: true,
+        sourceRating: 4.5,
+      });
+      const listItem = await store.listItems.create({
+        name: 'Fresh dill',
+        section: 'Produce',
+        parts: [{ recipeId: recipe.id, recipeTitle: 'Soup', qty: 1, unit: 'bunch' }],
+        checked: false,
+      });
+      await store.pantry.create({ name: 'Salt', canonicalId: 'salt', section: 'Spices & dried herbs', kind: 'staple' });
+
+      const [storedRecipe] = await store.recipes.list();
+      expect(storedRecipe).toEqual(recipe);
+      expect(storedRecipe?.ingredients[0]?.canonicalId).toBe('salt');
+      expect(storedRecipe?.sourceRating).toBeCloseTo(4.5);
+
+      const updated = await store.listItems.update(listItem.id, { checked: true });
+      expect(updated.parts).toEqual(listItem.parts);
+      expect((await store.pantry.list()).map((row) => row.kind)).toEqual(['staple']);
+    });
+
     it("two families never see each other's rows", async () => {
       const other = await make('family-b');
       const theirColumnId = await aColumn(other);

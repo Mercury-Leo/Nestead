@@ -1,0 +1,429 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 32px;
+  align-items: start;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.cardHead {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.cardMeta {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.cardMeta strong {
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------- typeahead -- */
+
+.typeahead {
+  position: relative;
+}
+
+.addField {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.addField:focus-within {
+  border: 2px solid var(--accent);
+  padding: 0 15px;
+  box-shadow: 0 0 0 4px var(--accent-tint);
+}
+
+.addField input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+}
+
+.addField input::placeholder {
+  color: var(--ink-3);
+}
+
+.addIcon {
+  flex-shrink: 0;
+  color: var(--ink-2);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: 0;
+  z-index: 10;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--shadow-drop);
+}
+
+.typeaheadInline .dropdown {
+  position: static;
+  margin-top: 8px;
+  box-shadow: none;
+}
+
+.options {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 52px;
+  padding: 6px 8px 6px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.optionActive {
+  background: var(--sunk);
+}
+
+.optionText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.optionName {
+  font-size: 16px;
+}
+
+.optionName strong {
+  font-weight: 700;
+}
+
+.optionNeeded {
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.optionSection {
+  color: var(--ink-3);
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+.optionPlus {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(41, 35, 30, 0.12);
+}
+
+.dropdownHint {
+  margin: 6px 0 0;
+  padding: 10px 14px 6px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+/* -------------------------------------------------------------- items -- */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.groupEyebrow {
+  margin: 8px 0 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.groupCount {
+  margin-left: 4px;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  list-style: none;
+  overflow: hidden;
+}
+
+.swipe {
+  position: relative;
+  background: var(--accent);
+}
+
+.swipe + .swipe {
+  border-top: 1px solid var(--line);
+}
+
+.swipeAction {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 96px;
+  border: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.swipeFront {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 4px 0 16px;
+  background: var(--card);
+  touch-action: pan-y;
+  transition: transform 160ms;
+}
+
+.swipeName {
+  flex: 1;
+  font-size: 16px;
+}
+
+.rowRemove {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.rowRemove:hover {
+  background: var(--sunk);
+  color: var(--ink);
+}
+
+.swipeHint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------ staples -- */
+
+.staplesNote {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+
+.staples {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.staples li {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-height: 52px;
+  border-bottom: 1px solid var(--line);
+}
+
+.stapleName {
+  flex: 1;
+  font-size: 15.5px;
+}
+
+.stapleForm {
+  display: flex;
+  gap: 10px;
+}
+
+.stapleInput {
+  flex: 1;
+}
+
+/* -------------------------------------------------------- empty state -- */
+
+.emptyCard {
+  align-items: stretch;
+}
+
+.empty {
+  padding: 16px 0 4px;
+}
+
+.pasteLink {
+  align-self: center;
+  color: var(--accent-ink);
+}
+
+.quickLabel {
+  margin: 8px 0 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* --------------------------------------------------------------- bulk -- */
+
+.bulkLabel {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink-2);
+}
+
+.bulkText {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  font-size: 16px;
+  resize: vertical;
+}
+
+.bulkText:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
+.bulkPreview {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bulkPreview li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.bulkStatus {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+/* ------------------------------------------------------------- mobile -- */
+
+.tabs {
+  display: flex;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.mobileBulk {
+  margin-top: 16px;
+}
+
+@media (max-width: 1023px) {
+  .card {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .staplesCard {
+    gap: 12px;
+  }
+
+  .staples {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+  }
+
+  .staples li {
+    padding: 0 4px 0 14px;
+  }
+
+  .staples li:last-child {
+    border-bottom: 0;
+  }
+}

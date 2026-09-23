@@ -1,0 +1,239 @@
+.shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.main {
+  min-width: 0;
+  padding: 24px 16px calc(var(--tabbar) + 24px);
+  padding-top: calc(24px + env(safe-area-inset-top));
+}
+
+.noTabBar .main {
+  padding-bottom: 32px;
+}
+
+.fullscreen .main {
+  padding: 0;
+}
+
+/* ------------------------------------------------------------ sidebar -- */
+
+.sidebar {
+  display: none;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navGroupStart {
+  margin-top: 14px;
+}
+
+.navGroup {
+  margin: 0 0 6px 14px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.navItem {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: var(--ink-2);
+  font-size: 15.5px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.navItem:hover {
+  background: rgba(255, 253, 248, 0.55);
+  color: var(--ink);
+}
+
+.navActive,
+.navActive:hover {
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: var(--shadow-card);
+}
+
+.navActive svg {
+  color: var(--accent);
+}
+
+.navLabel {
+  flex: 1;
+}
+
+.navCount {
+  color: var(--ink-3);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.dietCard {
+  margin-top: auto;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(232, 222, 207, 0.55);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.dietChips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.dietNone {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13.5px;
+}
+
+.dietLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin-top: 6px;
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dietLink:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------- tabbar -- */
+
+.tabbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  height: var(--tabbar);
+  padding: 8px 4px calc(24px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: rgba(247, 242, 234, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.tab {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  min-height: 44px;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tabIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+}
+
+.tabActive {
+  color: var(--accent-ink);
+}
+
+.tabActive .tabIcon {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
+.tabLabel {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .tabIcon {
+    width: 48px;
+  }
+
+  .tab {
+    font-size: 11px;
+  }
+}
+
+/* ------------------------------------------------------------ desktop -- */
+
+@media (min-width: 1024px) {
+  .shell {
+    display: grid;
+    grid-template-columns: var(--sidebar) minmax(0, 1fr);
+  }
+
+  .fullscreen {
+    display: block;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    height: 100vh;
+    height: 100dvh;
+    padding: 28px 16px 20px;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+    background: var(--side);
+  }
+
+  .main,
+  .noTabBar .main {
+    width: 100%;
+    max-width: 1280px;
+    padding: 40px 48px 64px;
+  }
+
+  .fullscreen .main {
+    max-width: none;
+    padding: 0;
+  }
+
+  .tabbar {
+    display: none;
+  }
+}

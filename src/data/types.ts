@@ -1,4 +1,14 @@
-import type { Base, BoardColumn, Member, NewRow, Task } from '../domain/types';
+import type {
+  Base,
+  BoardColumn,
+  DietProfile,
+  ListItem,
+  Member,
+  NewRow,
+  PantryItem,
+  Recipe,
+  Task,
+} from '../domain/types';
 
 /** Called whenever the collection's rows may have changed. */
 export type ChangeListener = () => void;
@@ -22,10 +32,28 @@ export interface Collection<T extends Base> {
   subscribe(onChange: ChangeListener): Unsubscribe;
 }
 
+/**
+ * Recipe photos. Blobs are not rows: they live beside the tables (IndexedDB
+ * locally, a private Storage bucket on Supabase) and a recipe keeps the id.
+ */
+export interface PhotoStore {
+  /** Stores a JPEG and returns its id. */
+  put(blob: Blob): Promise<string>;
+  /** A URL an <img> can load, or null if the photo is gone. */
+  url(id: string): Promise<string | null>;
+  remove(id: string): Promise<void>;
+}
+
 /** Every collection one family owns. */
 export interface DataStore {
   familyId: string;
   members: Collection<Member>;
   columns: Collection<BoardColumn>;
   tasks: Collection<Task>;
+  recipes: Collection<Recipe>;
+  pantry: Collection<PantryItem>;
+  /** At most one row per family. */
+  dietProfiles: Collection<DietProfile>;
+  listItems: Collection<ListItem>;
+  photos: PhotoStore;
 }

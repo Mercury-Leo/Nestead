@@ -1,9 +1,21 @@
-import type { Base, BoardColumn, Member, NewRow, Task } from '../domain/types';
+import type {
+  Base,
+  BoardColumn,
+  DietProfile,
+  ListItem,
+  Member,
+  NewRow,
+  PantryItem,
+  Recipe,
+  Task,
+} from '../domain/types';
+import { createLocalPhotoStore } from './localPhotos';
 import type { ChangeListener, Collection, DataStore, Unsubscribe } from './types';
 
 /**
  * localStorage-backed DataStore. This is the only module in src/ that is
- * allowed to touch localStorage.
+ * allowed to touch localStorage. Photos are too big for it and go to
+ * IndexedDB instead, in localPhotos.ts.
  *
  * Layout: one JSON array per collection under `nestead:<familyId>:<collection>`.
  * Cross-tab changes arrive through the window `storage` event, which fires in
@@ -12,7 +24,7 @@ import type { ChangeListener, Collection, DataStore, Unsubscribe } from './types
 
 const NAMESPACE = 'nestead';
 
-type CollectionName = 'members' | 'columns' | 'tasks';
+type CollectionName = 'members' | 'columns' | 'tasks' | 'recipes' | 'pantry' | 'diet' | 'list';
 
 export function storageKey(familyId: string, collection: CollectionName): string {
   return `${NAMESPACE}:${familyId}:${collection}`;
@@ -20,14 +32,19 @@ export function storageKey(familyId: string, collection: CollectionName): string
 
 /**
  * Date.now() has millisecond resolution, so two writes in the same tick would
- * otherwise produce an unchanged updatedAt. Step forward when that happens.
+ * otherwise produce an unchanged updatedAt, or two rows created back to back
+ * the same createdAt (and "newest first" would come out in random order).
+ * Every stamp this tab hands out is strictly later than the last one.
  */
+let lastStamp = 0;
+
 function nextIso(after?: string): string {
-  let ms = Date.now();
+  let ms = Math.max(Date.now(), lastStamp + 1);
   if (after !== undefined) {
     const prev = Date.parse(after);
     if (!Number.isNaN(prev) && ms <= prev) ms = prev + 1;
   }
+  lastStamp = ms;
   return new Date(ms).toISOString();
 }
 
@@ -154,5 +171,10 @@ export function createLocalStore(familyId: string): DataStore {
     members: createCollection<Member>(familyId, 'members'),
     columns: createCollection<BoardColumn>(familyId, 'columns'),
     tasks: createCollection<Task>(familyId, 'tasks'),
+    recipes: createCollection<Recipe>(familyId, 'recipes'),
+    pantry: createCollection<PantryItem>(familyId, 'pantry'),
+    dietProfiles: createCollection<DietProfile>(familyId, 'diet'),
+    listItems: createCollection<ListItem>(familyId, 'list'),
+    photos: createLocalPhotoStore(familyId),
   };
 }

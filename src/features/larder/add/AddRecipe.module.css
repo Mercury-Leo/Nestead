@@ -1,0 +1,507 @@
+.back {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  margin: -12px 0 8px;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+.tabs {
+  margin-bottom: 24px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+.left,
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.count {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.aside {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.error {
+  margin: -6px 0 0;
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.summaryError {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--accent-soft);
+  border-radius: 12px;
+  background: var(--missing-row);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+/* -------------------------------------------------------------- photo -- */
+
+.dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  overflow: hidden;
+  border: 2px dashed var(--line-2);
+  border-radius: var(--radius-card);
+  background: var(--sunk);
+}
+
+.dropzoneOver {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.dropzoneFilled {
+  border-style: solid;
+  border-color: var(--line);
+  background: var(--card);
+}
+
+.dropText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.dropIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--accent);
+}
+
+.dropTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.dropHint {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.browse {
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--accent-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.preview {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+}
+
+.photoActions {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+/* ------------------------------------------------------------- basics -- */
+
+.numbers {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.tagBox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-control);
+}
+
+.tagBox:focus-within {
+  border-color: var(--accent);
+}
+
+.inlineInput {
+  flex: 1 1 100px;
+  min-width: 100px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+}
+
+.mine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.mineBadge,
+.webBadge {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.mineBadge {
+  background: var(--ink);
+  color: var(--on-accent);
+}
+
+.webBadge {
+  border: 1px solid var(--line-2);
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------- ingredients -- */
+
+.paste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--sunk);
+}
+
+.pasteActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  font-size: 15px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.textarea:focus,
+.qty:focus,
+.itemInput:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
+.ingredientHead,
+.ingredientRow {
+  display: grid;
+  grid-template-columns: 56px 76px minmax(0, 1fr) 44px;
+  gap: 8px;
+  align-items: center;
+}
+
+.ingredientHead {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.ingredientHead > span:first-child {
+  display: none;
+}
+
+.ingredientRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qty,
+.itemInput {
+  width: 100%;
+  min-width: 0;
+  height: 52px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  font-size: 15px;
+}
+
+.qty::placeholder,
+.itemInput::placeholder {
+  color: var(--ink-3);
+}
+
+.unit {
+  min-width: 0;
+}
+
+.handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-3);
+  cursor: grab;
+}
+
+.handle:hover {
+  background: var(--sunk);
+  color: var(--ink);
+}
+
+.handleSpace {
+  display: block;
+  width: 32px;
+}
+
+.addButton {
+  align-self: flex-start;
+}
+
+/* ---------------------------------------------------------- equipment -- */
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toolInput {
+  flex: 1 1 180px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px dashed var(--line-2);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-size: 15px;
+}
+
+.toolInput:focus {
+  border-color: var(--accent);
+  border-style: solid;
+  outline: none;
+}
+
+/* -------------------------------------------------------------- steps -- */
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 32px 34px minmax(0, 1fr) 44px;
+  gap: 8px;
+  align-items: start;
+}
+
+.stepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--on-accent);
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.stepNumberNext {
+  background: var(--sunk-2);
+  color: var(--ink-2);
+}
+
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.detected {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  color: var(--accent-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.danger {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  color: var(--ink-2);
+}
+
+/* ------------------------------------------------------------- mobile -- */
+
+.topBar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin: -8px -8px 16px;
+}
+
+.topTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.topSave {
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+.bottomSave {
+  margin-top: 24px;
+}
+
+@media (max-width: 1023px) {
+  .step {
+    grid-template-columns: 32px 32px minmax(0, 1fr) 44px;
+  }
+
+  .numbers {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .numbers > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .card {
+    padding: 18px 14px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: 400px minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ingredientHead,
+  .ingredientRow {
+    grid-template-columns: 32px 80px 112px minmax(0, 1fr) 44px;
+  }
+
+  .ingredientHead > span:first-child {
+    display: block;
+  }
+}

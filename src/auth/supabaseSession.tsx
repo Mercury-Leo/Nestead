@@ -4,6 +4,7 @@ import { getSupabaseClient, takeRecoveryLink } from '../data/supabaseClient';
 import { createSupabaseStore } from '../data/supabaseStore';
 import type { DataStore } from '../data/types';
 import { useCollection } from '../data/useCollection';
+import { ensureKitchen } from '../features/larder/seed/seedKitchen';
 import { seedDefaultColumns } from './defaultColumns';
 import { JoinOrCreate } from './JoinOrCreate';
 import type { Family } from './session';
@@ -60,6 +61,7 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
 
       const store = createSupabaseStore(familyId, client);
       await seedDefaultColumns(store);
+      await ensureKitchen(store);
 
       setPhase({
         kind: 'ready',

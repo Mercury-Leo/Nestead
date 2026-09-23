@@ -1,0 +1,129 @@
+/*
+ * Design tokens. Every colour, radius and shadow a component uses comes from
+ * here. The palette is Larder's; the board's older variable names (--bg,
+ * --surface, --text, ...) are mapped onto it so the whole app is one look.
+ *
+ * There is no app-wide dark mode. Only cook mode is dark, and it sets its own
+ * tokens on its own root (see CookMode.module.css).
+ */
+
+:root {
+  --paper: #f7f2ea;
+  --side: #f0e8dc;
+  --card: #fffdf8;
+  --sunk: #efe7da;
+  --sunk-2: #e8decf;
+  --line: #e3d9c9;
+  --line-2: #d3c6b2;
+  --ink: #29231e;
+  --ink-2: #5b5047;
+  --ink-3: #72665b;
+  --accent: #b04a2a;
+  --accent-ink: #8e3a20;
+  --accent-tint: #f4dfd4;
+  --accent-soft: #de9b7f;
+  --missing-row: #fbede5;
+  --sage: #4a6638;
+  --sage-tint: #e2ead7;
+  --sage-soft: #9db386;
+  --tile-on: #eef2e6;
+  --staple: #6e6358;
+  --staple-tint: #ece5d9;
+  --honey: #c08517;
+  --star-empty: #d8cbb6;
+  --warn-bg: #f7e4b8;
+  --warn-ink: #5e3c00;
+  --warn-line: #e2bf6e;
+  --on-accent: #fffdf8;
+
+  --serif: 'Newsreader Variable', 'Newsreader', Georgia, 'Times New Roman', serif;
+  --sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 20px;
+  --radius-card-sm: 18px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+  --radius-sheet: 26px;
+
+  --shadow-card: 0 1px 2px rgba(41, 35, 30, 0.05);
+  --shadow-drop: 0 14px 30px rgba(41, 35, 30, 0.14);
+  --shadow-sheet: 0 -12px 40px rgba(20, 14, 10, 0.25);
+  --scrim: rgba(28, 20, 14, 0.45);
+
+  --sidebar: 248px;
+  --tabbar: calc(86px + env(safe-area-inset-bottom));
+
+  /* The board's names, pointed at the same palette. */
+  --bg: var(--paper);
+  --surface: var(--card);
+  --text: var(--ink);
+  --muted: var(--ink-3);
+  --border: var(--line);
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

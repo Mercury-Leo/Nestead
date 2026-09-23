@@ -1,0 +1,672 @@
+/* ------------------------------------------------------------ desktop -- */
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -12px 0 20px;
+}
+
+.back {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+.top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.photo {
+  overflow: hidden;
+  aspect-ratio: 540 / 518;
+  border-radius: 22px;
+  background: var(--sunk);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.sourceLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.sourceBadge {
+  border: 1px solid var(--line);
+}
+
+.siteLink {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.siteLink:hover {
+  text-decoration: underline;
+}
+
+.sourceTags {
+  color: var(--ink-3);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 50px;
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  margin: 0;
+  color: var(--ink-2);
+  font-family: var(--serif);
+  font-size: 19px;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.dietWarn {
+  align-self: flex-start;
+}
+
+.ratingRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ratingTop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  align-items: center;
+}
+
+.eyebrow {
+  margin-right: 4px;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.readOnlyStars {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+
+.ratingNote {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.ratingNote strong {
+  color: var(--ink);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card-sm);
+  background: var(--card);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 18px 20px;
+}
+
+.stat + .stat {
+  border-left: 1px solid var(--line);
+}
+
+.statLabel {
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.statValue {
+  margin-top: 4px;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.statAccent {
+  color: var(--accent);
+}
+
+.statSub {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.estimated {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--sunk);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: help;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.cookButton,
+.listButton {
+  width: 100%;
+}
+
+.below {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+  margin-top: 48px;
+}
+
+.requires {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--sunk);
+}
+
+.summaryItem {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.summaryItem strong {
+  display: block;
+  font-weight: 700;
+}
+
+.summaryIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--accent);
+}
+
+.summarySub {
+  display: block;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.cardHead {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.legend > span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.legend .marker {
+  width: 18px;
+  height: 18px;
+}
+
+.legend .marker svg {
+  width: 11px;
+  height: 11px;
+}
+
+.ingredients {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ingredient {
+  display: grid;
+  grid-template-columns: 26px minmax(62px, auto) minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  min-height: 58px;
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ingredientMissing {
+  margin: 6px 0;
+  border-bottom: 0;
+  border-radius: 12px;
+  background: var(--missing-row);
+}
+
+.marker {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.markerHave {
+  background: var(--sage);
+  color: var(--on-accent);
+}
+
+.markerStaple {
+  border: 1.5px dashed var(--staple);
+}
+
+.stapleDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--staple);
+}
+
+.markerMissing {
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+}
+
+.qty {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 15px;
+}
+
+.note {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.stapleLabel {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.toBuy {
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.equipment {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.equipment li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 15px;
+}
+
+.equipmentIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--sunk);
+  color: var(--ink-2);
+}
+
+.steps {
+  min-width: 0;
+}
+
+.stepsHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.stepsMeta {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.stepList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.stepNumber {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--on-accent);
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.stepText {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.chip {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 1px 10px;
+  border: 1.5px solid var(--accent-soft);
+  border-radius: var(--radius-pill);
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.footnote {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 20px 0 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--sunk);
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.footnote svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+/* From 1280 there is room for the design's fixed columns. */
+@media (min-width: 1280px) {
+  .top {
+    grid-template-columns: minmax(0, 540px) minmax(0, 1fr);
+    gap: 44px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .below {
+    grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
+    gap: 48px;
+  }
+}
+
+/* ------------------------------------------------------------- mobile -- */
+
+.mobile {
+  margin: calc(-24px - env(safe-area-inset-top)) -16px 0;
+}
+
+.hero {
+  position: relative;
+  height: 330px;
+  overflow: hidden;
+  background: var(--sunk);
+}
+
+.heroBack {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-drop);
+  cursor: pointer;
+}
+
+.heroAction {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  right: 16px;
+}
+
+.heroAction > * {
+  background: var(--card);
+  box-shadow: var(--shadow-drop);
+}
+
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: -28px;
+  padding: 24px 16px 120px;
+  border-radius: 28px 28px 0 0;
+  background: var(--paper);
+}
+
+.sheet .title {
+  font-size: 34px;
+}
+
+.sheet .description {
+  font-size: 17px;
+}
+
+.sheet .stats {
+  gap: 10px;
+  border: 0;
+  background: none;
+}
+
+.sheet .stat {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.sheet .stat + .stat {
+  border-left: 1px solid var(--line);
+}
+
+.sheet .statValue {
+  font-size: 24px;
+}
+
+.sheet .sectionTitle {
+  margin-top: 12px;
+  font-size: 28px;
+}
+
+.sheet .card {
+  padding: 16px 12px;
+}
+
+.sheet .ingredient {
+  grid-template-columns: 24px minmax(52px, auto) minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 10px 6px;
+}
+
+.sheet .steps {
+  margin-top: 12px;
+}
+
+.sheet .step {
+  gap: 14px;
+}
+
+.sheet .stepText {
+  font-size: 16px;
+}
+
+.equipmentCard {
+  gap: 12px;
+}
+
+.stickyBar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: rgba(255, 253, 248, 0.97);
+  backdrop-filter: blur(12px);
+}
+
+.stickyBar .actions {
+  grid-template-columns: auto 1fr;
+}
+
+.stickyBar .cookButton {
+  order: 2;
+}
+
+.stickyBar .listButton {
+  order: 1;
+}

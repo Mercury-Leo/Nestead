@@ -1,11 +1,12 @@
 # Nestead architecture
 
-Nestead is a shared home-organisation app for one family. Today it is a kanban
-board of household tasks, shared by everyone in the family.
+Nestead is a shared home-organisation app for one family: a kanban board of
+household tasks and a kitchen (Larder) of recipes, pantry, diet profile and
+shopping list, all shared by everyone in the family.
 
-Scope is kept to what exists. Recipes, shopping lists, photos and prices are
-planned but unbuilt, so they appear neither in the schema nor in the types: a
-table with no feature behind it is a guess that later has to be migrated.
+Scope is kept to what exists. Prices are planned but unbuilt, so they appear
+neither in the schema nor in the types: a table with no feature behind it is a
+guess that later has to be migrated.
 
 This document describes the **core** — the data layer, session and contracts —
 and the kanban board that sits on top of it. Further features get added the
@@ -22,10 +23,11 @@ same way the board was, without changing anything the core guarantees.
 | Data (planned)  | Supabase Postgres + RLS       | `supabase/schema.sql`, not applied                  |
 | Auth (today)    | Fake: pick a member per tab   | `src/auth/session.tsx`                              |
 | Auth (planned)  | Supabase Auth + family join code | one account per person                           |
-| Hosting         | Static (Cloudflare Pages / Vercel) | no server of our own                           |
+| Hosting         | Cloudflare Pages               | static, plus one Pages Function: `/api/import`      |
 
-Runtime dependencies are `react` and `react-dom`. Everything else is a dev
-dependency.
+Runtime dependencies are `react`, `react-dom`, `@supabase/supabase-js`,
+`react-router-dom`, `lucide-react` and two self-hosted font packages. Everything
+else is a dev dependency.
 
 ## Principles
 
@@ -61,10 +63,13 @@ src/
     collection.contract.ts   runDataStoreContract() — the backend contract.
     localStore.test.ts       Runs the contract against the local backend.
   auth/session.tsx           SessionProvider / useSession. Fake session.
-  components/                Shared UI. Empty.
-  features/board/            The kanban board: Board, Column, TaskCard,
-                             actions.ts (moves) and icons.ts (emoji set).
-  App.tsx  main.tsx  styles.css   Shell; App mounts the board.
+  components/                Shared UI kit (ui.tsx), page header, error boundary.
+  features/board/            The kanban board: BoardPage, Board, Column,
+                             TaskCard, actions.ts (moves) and icons.ts (emoji set).
+  features/larder/           The kitchen: screens, seed, timers, actions.ts.
+  domain/kitchen/            Pure kitchen logic, unit-tested.
+  styles/tokens.css          The palette and type for the whole app.
+  Shell.tsx App.tsx main.tsx styles.css   Sidebar/tab bar, routes, board styles.
 supabase/schema.sql          Target Postgres schema. Not applied.
 ```
 
@@ -98,6 +103,63 @@ stacked headers keep every column and its count on screen. `useIsNarrow()` is a
 hook rather than pure CSS because the change is behavioural, not cosmetic: the
 header expands the section instead of renaming it, renaming moves to its own
 control, and the move arrows point up and down rather than left and right.
+
+## The kitchen (Larder)
+
+The kitchen is four family-scoped collections on the same `DataStore`, plus a
+photo store:
+
+| Collection      | Table           | Holds                                                     |
+| --------------- | --------------- | --------------------------------------------------------- |
+| `recipes`       | `recipes`       | Recipes; ingredient lines, steps and tags as jsonb         |
+| `pantry`        | `pantry_items`  | "Have now" (`kind = 'have'`) and staples (`'staple'`)     |
+| `dietProfiles`  | `diet_profiles` | One row per family (unique `family_id`)                    |
+| `listItems`     | `list_items`    | Shopping list rows; `parts` records which recipe needs what |
+| `photos`        | Storage bucket  | `recipe-photos/<family_id>/<uuid>.jpg`, private            |
+
+Nested structures are jsonb and keep their camelCase keys inside: they are
+always read and written whole with their row, never queried on their own. Only
+top-level keys are mapped to snake_case, as before.
+
+Photos are not rows. The local backend keeps them in IndexedDB (localStorage
+would fill up after two or three); the Supabase backend uses a private bucket
+whose storage policies only admit the member's own family folder, the same
+boundary `family_id` draws for rows. Photos are resized in the browser to 1600px
+JPEGs before they are stored.
+
+**Setting up a family's kitchen.** The diet profile row is the marker: a family
+with one has been set up. `ensureKitchen()` runs at sign-in and, for a family
+without one, creates an empty profile and the eight default staples. The
+unique constraint means two devices racing to do it cannot both succeed. It
+never throws: a kitchen that cannot be set up must not keep anyone off the
+board. The demo family gets the full seed instead (`seedDemoKitchen()`).
+
+**Pure logic lives in `src/domain/kitchen/`**, with no React and no storage:
+the ingredient catalog (about 250 items with store section, diet flags, calories,
+carbs and unit weights), the ingredient-line parser, pantry fit, the diet engine,
+scaling and formatting, timer detection in step text, calorie estimates, the
+shopping-list merge and search. All of it is unit-tested, including the numbers
+the design shows, computed from the seed rather than typed in.
+
+**Cook-mode timers are per device**, in `features/larder/timers/store.ts`, kept
+through `readPreference`/`writePreference` so this module is still the only
+localStorage user. A running timer stores when it ends, never time left, so it
+stays right in a background tab and after a reload. `TimerHost` in the shell
+ticks them and raises the alert on whatever screen is open.
+
+**Recipe import** is `server/import.ts`, a `(Request) => Promise<Response>`
+handler with no dependencies. It runs as a Cloudflare Pages Function
+(`functions/api/import.ts`, deployed by the existing `wrangler pages deploy`)
+and as Vite dev-server middleware. It reads schema.org JSON-LD, falling back to
+microdata, and refuses non-http(s) URLs, private, loopback and link-local
+addresses (re-checked on every redirect), pages over 5 MB and anything slower
+than 10 seconds. Ingredient lines come back as text; the app parses them with
+the same parser it uses everywhere.
+
+**Screens load lazily.** The board is home, so each kitchen screen is its own
+chunk, fetched on first visit. An error boundary around the routes turns a
+chunk that has gone missing (a tab left open across a deploy) into a Reload
+button rather than a blank page.
 
 ## Contracts
 
@@ -193,7 +255,5 @@ throughout.
 - **Sync is same-browser only.** The `storage` event reaches other tabs on the
   same device, not other devices. Real sharing between two people starts at
   step 3.
-- **Board and people only.** Recipes, shopping lists, photos and prices are not
-  built, and are deliberately absent from the schema and the types until they
-  are. Adding a table before the feature that uses it is a guess you later have
-  to migrate.
+- **No prices.** Adding a table before the feature that uses it is a guess you
+  later have to migrate, so costs wait for a feature that needs them.

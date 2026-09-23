@@ -68,6 +68,10 @@ async function storeFor(label: string): Promise<DataStore> {
  * beats leaving the next case to start from a dirty board.
  */
 async function clear(store: DataStore): Promise<void> {
+  for (const collection of [store.listItems, store.recipes, store.pantry, store.dietProfiles] as const) {
+    for (const row of await collection.list()) await collection.remove(row.id);
+  }
+
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     for (const task of await store.tasks.list()) await store.tasks.remove(task.id);
 

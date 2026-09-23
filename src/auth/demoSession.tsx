@@ -4,6 +4,7 @@ import { createStore } from '../data';
 import type { DataStore } from '../data/types';
 import { useCollection } from '../data/useCollection';
 import type { Member } from '../domain/types';
+import { clearKitchen, seedDemoKitchen } from '../features/larder/seed/seedKitchen';
 import { seedDefaultColumns } from './defaultColumns';
 import { SessionContext } from './session';
 
@@ -43,6 +44,15 @@ async function seed(store: DataStore): Promise<void> {
     }
   }
   await seedDefaultColumns(store);
+
+  // Development aid: open the app with ?reset-kitchen to start the kitchen over.
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('reset-kitchen')) {
+    await clearKitchen(store);
+    url.searchParams.delete('reset-kitchen');
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+  }
+  await seedDemoKitchen(store);
 }
 
 function seedOnce(store: DataStore): Promise<void> {

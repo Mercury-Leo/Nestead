@@ -62,3 +62,172 @@ export interface Task extends Base, Positioned {
   /** Member id. Cleared when that member is deleted. */
   createdBy?: string;
 }
+
+/* -------------------------------------------------------------- kitchen -- */
+/*
+ * Larder, the kitchen feature: recipes, the pantry, the diet profile and the
+ * shopping list. Every one of these is shared by the whole family.
+ *
+ * Nested structures (ingredient lines, steps, list parts, rules) are stored as
+ * jsonb in Postgres, so only the top-level keys are snake_cased there.
+ */
+
+export type Unit =
+  | 'g'
+  | 'kg'
+  | 'ml'
+  | 'l'
+  | 'tsp'
+  | 'tbsp'
+  | 'cup'
+  | 'pinch'
+  | 'clove'
+  | 'can'
+  | 'bunch'
+  | 'head'
+  | 'slice'
+  | 'sheet'
+  | null;
+
+export type StoreSection =
+  | 'Produce'
+  | 'Meat & fish'
+  | 'Dairy & eggs'
+  | 'Bakery'
+  | 'Grains & pasta'
+  | 'Cans & jars'
+  | 'International aisle'
+  | 'Spices & dried herbs'
+  | 'Baking'
+  | 'Frozen'
+  | 'Drinks'
+  | 'Other';
+
+export type DietFlag =
+  | 'meat'
+  | 'poultry'
+  | 'pork'
+  | 'fish'
+  | 'shellfish'
+  | 'dairy'
+  | 'egg'
+  | 'gluten'
+  | 'peanut'
+  | 'treeNut'
+  | 'sesame'
+  | 'alcohol'
+  | 'animal';
+
+export interface IngredientLine {
+  id: string;
+  qty: number | null;
+  qtyMax?: number;
+  unit: Unit;
+  item: string;
+  note?: string;
+  canonicalId?: string;
+  raw?: string;
+  /** The parser could not read an amount, e.g. "a handful of basil". */
+  needsFix?: boolean;
+}
+
+/** Durations are detected from the text when shown, never stored. */
+export interface Step {
+  id: string;
+  text: string;
+  /** A short name for cook mode ("Bake", "Rest and serve"). Optional. */
+  title?: string;
+  ingredientIds?: string[];
+}
+
+export type RecipeSource = { kind: 'mine' } | { kind: 'web'; url: string; site: string };
+
+/**
+ * A recipe's content. Library recipes are stored rows (Recipe); recipes found
+ * on the web are the same shape with an id but no row until they are saved.
+ */
+export interface RecipeContent {
+  title: string;
+  description?: string;
+  source: RecipeSource;
+  /** Key into DataStore.photos. */
+  photoId?: string;
+  /** A remote image, for recipes imported from the web. */
+  photoUrl?: string;
+  servings: number;
+  /** e.g. 'slice', for "280 kcal/slice". */
+  servingUnit?: string;
+  prepMin: number;
+  cookMin: number;
+  ingredients: IngredientLine[];
+  equipment: string[];
+  steps: Step[];
+  tags: string[];
+  kcalPerServing?: number;
+  kcalEstimated: boolean;
+  sourceRating?: number;
+  /** The family's own rating, 1-5. */
+  userRating?: number;
+}
+
+export interface Recipe extends Base, RecipeContent {
+  /** Member id. Cleared when that member is deleted. */
+  createdBy?: string;
+}
+
+/** Anything the kitchen logic can work on: a stored recipe or a web result. */
+export type AnyRecipe = RecipeContent & { id: string; inLibrary?: boolean };
+
+/**
+ * Something in the kitchen. 'have' is the pantry ("Have now"); 'staple' is
+ * assumed to be there always and never lands on a shopping list.
+ */
+export interface PantryItem extends Base {
+  name: string;
+  canonicalId?: string;
+  section: StoreSection;
+  kind: 'have' | 'staple';
+}
+
+export type PresetId =
+  | 'vegetarian'
+  | 'vegan'
+  | 'pescatarian'
+  | 'lowCarb'
+  | 'glutenFree'
+  | 'dairyFree'
+  | 'nutAllergy'
+  | 'eggAllergy'
+  | 'shellfishAllergy'
+  | 'halal'
+  | 'kosher';
+
+export interface CustomDietRule {
+  id: string;
+  label: string;
+  terms: string[];
+  hint: string;
+}
+
+/** One per family: the rules every search and import is checked against. */
+export interface DietProfile extends Base {
+  presets: Partial<Record<PresetId, boolean>>;
+  custom: CustomDietRule[];
+  conflictMode: 'hide' | 'warn';
+}
+
+export interface ListPart {
+  recipeId: string;
+  /** Kept so the list still reads well if the recipe is deleted. */
+  recipeTitle: string;
+  qty: number | null;
+  unit: Unit;
+}
+
+export interface ListItem extends Base {
+  name: string;
+  canonicalId?: string;
+  section: StoreSection;
+  parts: ListPart[];
+  checked: boolean;
+}
