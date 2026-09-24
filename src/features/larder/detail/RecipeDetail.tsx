@@ -28,6 +28,7 @@ import { pantryFit } from '../../../domain/kitchen/fit';
 import type { LineStatus } from '../../../domain/kitchen/fit';
 import { formatDuration } from '../../../domain/kitchen/quantity';
 import { totalMinutes } from '../../../domain/kitchen/search';
+import type { ListHandoff } from '../../lists/ShoppingList';
 import { addRecipeToList, saveToLibrary } from '../actions';
 import { useKitchen } from '../KitchenContext';
 import { RecipePhoto } from '../RecipePhoto';
@@ -153,8 +154,9 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
   const makeList = async (): Promise<void> => {
     setBusy(true);
     try {
-      await addRecipeToList(store, kitchen.listItems, recipe, servings, kitchen.pantry);
-      navigate('/lists');
+      const added = await addRecipeToList(store, kitchen.listItems, recipe, servings, kitchen.pantry);
+      const handoff: ListHandoff = { added };
+      navigate('/lists', { state: handoff });
     } finally {
       setBusy(false);
     }

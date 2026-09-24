@@ -40,6 +40,12 @@
   font-size: 14px;
 }
 
+.progressWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .progressHead {
   display: flex;
   justify-content: space-between;
@@ -60,6 +66,21 @@
   border-radius: 3px;
   background: var(--sage);
   transition: width 200ms;
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.groupHead {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
 }
 
 .group {
@@ -93,6 +114,19 @@
   justify-content: space-between;
   min-height: 72px;
   border-bottom: 1px solid var(--line);
+  /* The just-added highlight fades out rather than snapping off. */
+  transition:
+    background-color 700ms ease-out,
+    box-shadow 700ms ease-out;
+}
+
+/* Just added from a recipe. The shadows carry the colour past the row's edges. */
+.rowJustAdded {
+  background-color: var(--flash);
+  box-shadow:
+    -12px 0 0 var(--flash),
+    12px 0 0 var(--flash);
+  transition-duration: 150ms;
 }
 
 .rowCheck {
@@ -122,6 +156,64 @@
   flex-shrink: 0;
   font-size: 15px;
   text-align: right;
+}
+
+.rowEdit {
+  flex-shrink: 0;
+  margin-right: -8px;
+  color: var(--ink-2);
+}
+
+.addItem {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.addField {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheetForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.legend {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sheetActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.sheetActions > :last-child {
+  margin-left: auto;
+}
+
+.danger {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 14px;
+  background: var(--missing-row);
+  font-size: 15px;
+}
+
+.danger > span {
+  flex: 1 1 100%;
 }
 
 .rowChecked .rowName,
@@ -219,6 +311,10 @@ a.recipeTitle:hover {
 
 .addAnother {
   display: flex;
+  width: 100%;
+  background: none;
+  font: inherit;
+  cursor: pointer;
   gap: 8px;
   align-items: center;
   justify-content: center;
@@ -352,12 +448,14 @@ a.recipeTitle:hover {
   background: linear-gradient(to top, var(--paper) 70%, rgba(247, 242, 234, 0));
 }
 
-.stickySpace {
-  height: 80px;
+/* Takes what Clear leaves; width: 100% beside it would overflow. */
+.moveMobile {
+  flex: 1;
+  min-width: 0;
 }
 
-.clearMobile {
-  min-height: 56px;
+.stickySpace {
+  height: 80px;
 }
 
 @media (max-width: 1023px) {
@@ -370,6 +468,10 @@ a.recipeTitle:hover {
 
   .row {
     min-height: 64px;
+  }
+
+  .groups {
+    gap: 32px;
   }
 
   .emptyCard {

@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest';
 import type { DietProfile, ListItem, PantryItem } from '../../../domain/types';
 import { checkDiet } from '../../../domain/kitchen/diet';
 import { pantryFit, pantryIndex } from '../../../domain/kitchen/fit';
-import { leftOffList, planAddRecipe, recipesOnList } from '../../../domain/kitchen/list';
+import {
+  GENERAL,
+  SUPERMARKET,
+  groupOf,
+  isGrocery,
+  leftOffList,
+  planAddOwn,
+  planAddRecipe,
+  planRemoveGroup,
+  planRemoveRecipe,
+  recipesOnList,
+} from '../../../domain/kitchen/list';
 import { formatAmount, scaleQty } from '../../../domain/kitchen/quantity';
 import { defaultFilters, search, suggestions } from '../../../domain/kitchen/search';
 import { DEFAULT_STAPLES, SEED_CUSTOM_RULES, SEED_HAVE, SEED_LIST, SEED_PRESETS, listRow, pantryRow } from './kitchen';
@@ -182,5 +193,69 @@ describe('shopping list on the seed', () => {
     const scallions = plan.update.find((u) => u.id === 'l3');
     expect(scallions?.patch.parts?.map((p) => p.recipeTitle)).toEqual(['Miso-Glazed Salmon & Bok Choy', 'Peanut Noodle Stir-Fry']);
     expect(plan.create.map((row) => row.name)).toEqual(['Peanut butter', 'Sesame oil', 'Red bell pepper']);
+  });
+});
+
+describe('shopping list groups and things added by hand', () => {
+  const own = (name: string, groupId: string, extra: Partial<ListItem> = {}): ListItem => {
+    const [row] = planAddOwn([], [name], groupId).create;
+    if (row === undefined) throw new Error(`nothing planned for ${name}`);
+    return { ...base, id: `own-${name}`, ...row, ...extra };
+  };
+
+  it('puts recipe groceries in Supermarket, and reads older rows as Supermarket too', () => {
+    const recipe = byTitle('Peanut Noodle Stir-Fry');
+    const plan = planAddRecipe([], recipe, recipe.servings, pantry);
+    expect(plan.create.every((row) => row.groupId === SUPERMARKET)).toBe(true);
+    expect(groupOf({})).toBe(SUPERMARKET);
+  });
+
+  it('adds by hand into a group, sorting Supermarket items into their aisle', () => {
+    const plan = planAddOwn([], ['milk', 'Bin bags', 'milk'], SUPERMARKET);
+    expect(plan.create.map((row) => [row.name, row.section, row.manual, row.parts])).toEqual([
+      ['Milk', 'Dairy & eggs', true, []],
+      ['Bin bags', 'Other', true, []],
+    ]);
+  });
+
+  it('only takes an exact catalog name for food outside Supermarket', () => {
+    const [cups] = planAddOwn([], ['Egg cups'], GENERAL).create;
+    const [eggs] = planAddOwn([], ['Eggs'], GENERAL).create;
+    expect(cups?.canonicalId).toBeUndefined();
+    expect(eggs?.canonicalId).toBe('eggs');
+  });
+
+  it('unticks rather than duplicates something already in that group', () => {
+    const batteries = own('AA batteries', GENERAL, { checked: true });
+    const plan = planAddOwn([batteries], ['aa batteries'], GENERAL);
+    expect(plan.create).toEqual([]);
+    expect(plan.update).toEqual([{ id: batteries.id, patch: { checked: false, manual: true } }]);
+    expect(planAddOwn([batteries], ['AA batteries'], 'chemist').create).toHaveLength(1);
+  });
+
+  it('keeps something added by hand when the recipe that also needed it comes off', () => {
+    const recipe = byTitle('Shakshuka with Feta');
+    const feta = own('Feta', SUPERMARKET);
+    const added = planAddRecipe([feta], recipe, recipe.servings, pantry);
+    const merged = added.update.find((u) => u.id === feta.id);
+    expect(merged?.patch.parts?.map((part) => part.recipeTitle)).toEqual(['Shakshuka with Feta']);
+    expect(added.create.map((row) => row.name)).not.toContain('Feta');
+
+    const withParts: ListItem = { ...feta, parts: merged?.patch.parts ?? [] };
+    const removed = planRemoveRecipe([withParts], recipe.id);
+    expect(removed.remove).toEqual([]);
+    expect(removed.update).toEqual([{ id: feta.id, patch: { parts: [] } }]);
+  });
+
+  it('moves a deleted group’s items to General', () => {
+    const plasters = own('Plasters', 'chemist');
+    const bags = own('Bin bags', GENERAL);
+    expect(planRemoveGroup([plasters, bags], 'chemist').update).toEqual([{ id: plasters.id, patch: { groupId: GENERAL } }]);
+  });
+
+  it('sends groceries to the pantry, not batteries', () => {
+    expect(isGrocery(own('Coffee pods', SUPERMARKET))).toBe(true);
+    expect(isGrocery(own('Eggs', 'farm-shop'))).toBe(true);
+    expect(isGrocery(own('AA batteries', GENERAL))).toBe(false);
   });
 });

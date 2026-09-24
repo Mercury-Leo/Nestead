@@ -1,5 +1,6 @@
 import type { CustomDietRule, ListItem, NewRow, PantryItem, PresetId } from '../../../domain/types';
 import { catalogFor } from '../../../domain/kitchen/calories';
+import { GENERAL, SUPERMARKET } from '../../../domain/kitchen/list';
 import { canonicalId } from '../../../domain/kitchen/normalize';
 
 /** Pantry, staples, diet profile and shopping list for the demo family. */
@@ -69,12 +70,19 @@ export const SEED_LIST: readonly SeedListSpec[] = [
   { name: 'Feta', recipeId: 'shakshuka-with-feta', recipeTitle: 'Shakshuka with Feta', qty: 150, unit: 'g', checked: true },
 ];
 
+/** Things the demo family added by hand, so General is not empty. */
+export const SEED_OWN: readonly { name: string; groupId: string }[] = [
+  { name: 'Bin bags', groupId: GENERAL },
+  { name: 'AA batteries', groupId: GENERAL },
+];
+
 export function listRow(spec: SeedListSpec, recipeId: string): NewRow<ListItem> {
   const id = canonicalId(spec.name);
   const line = { id: '', qty: null, unit: null, item: spec.name, canonicalId: id };
   const row: NewRow<ListItem> = {
     name: spec.name,
     section: catalogFor(line)?.section ?? 'Other',
+    groupId: SUPERMARKET,
     parts: [{ recipeId, recipeTitle: spec.recipeTitle, qty: spec.qty, unit: spec.unit }],
     checked: spec.checked,
   };

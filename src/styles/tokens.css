@@ -35,6 +35,8 @@
   --warn-ink: #5e3c00;
   --warn-line: #e2bf6e;
   --on-accent: #fffdf8;
+  /* Shopping-list rows a recipe has just added. */
+  --flash: #f7e4b8;
 
   --serif: 'Newsreader Variable', 'Newsreader', Georgia, 'Times New Roman', serif;
   --sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;

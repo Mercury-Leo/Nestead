@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useSession } from '../../auth/session';
 import { useCollectionState } from '../../data/useCollection';
-import type { AnyRecipe, DietProfile, ListItem, PantryItem, Recipe } from '../../domain/types';
+import type { AnyRecipe, DietProfile, ListGroup, ListItem, PantryItem, Recipe } from '../../domain/types';
 import { pantryIndex } from '../../domain/kitchen/fit';
 import type { PantryIndex } from '../../domain/kitchen/fit';
 import { offlineProvider } from './seed/webIndex';
@@ -23,6 +23,8 @@ export interface Kitchen {
   /** The family's diet profile; null until it exists. */
   profile: DietProfile | null;
   listItems: ListItem[];
+  /** The family's own list groups, oldest first. */
+  listGroups: ListGroup[];
   provider: RecipeSearchProvider;
   web: readonly AnyRecipe[];
   /** A library recipe by row id, or a web recipe by its "web:" id. */
@@ -48,6 +50,7 @@ export function KitchenProvider({ children }: { children: ReactNode }): JSX.Elem
   const pantryRows = useCollectionState(store.pantry);
   const profiles = useCollectionState(store.dietProfiles);
   const list = useCollectionState(store.listItems);
+  const groups = useCollectionState(store.listGroups);
 
   const value = useMemo<Kitchen>(() => {
     const sorted = [...recipes.rows].sort(byNewest);
@@ -56,7 +59,7 @@ export function KitchenProvider({ children }: { children: ReactNode }): JSX.Elem
 
     const byAdded = (a: PantryItem, b: PantryItem): number => a.createdAt.localeCompare(b.createdAt);
     return {
-      loaded: recipes.loaded && pantryRows.loaded && profiles.loaded && list.loaded,
+      loaded: recipes.loaded && pantryRows.loaded && profiles.loaded && list.loaded && groups.loaded,
       recipes: sorted,
       have: pantryRows.rows.filter((row) => row.kind === 'have').sort(byAdded),
       staples: pantryRows.rows.filter((row) => row.kind === 'staple').sort(byAdded),
@@ -64,11 +67,12 @@ export function KitchenProvider({ children }: { children: ReactNode }): JSX.Elem
       // Oldest wins if two devices ever raced to create one.
       profile: [...profiles.rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0] ?? null,
       listItems: [...list.rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+      listGroups: [...groups.rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)),
       provider: offlineProvider,
       web: offlineProvider.all(),
       findRecipe: (id) => byId.get(id),
     };
-  }, [recipes, pantryRows, profiles, list]);
+  }, [recipes, pantryRows, profiles, list, groups]);
 
   return <KitchenContext.Provider value={value}>{children}</KitchenContext.Provider>;
 }

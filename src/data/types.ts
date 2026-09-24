@@ -2,6 +2,7 @@ import type {
   Base,
   BoardColumn,
   DietProfile,
+  ListGroup,
   ListItem,
   Member,
   NewRow,
@@ -55,5 +56,7 @@ export interface DataStore {
   /** At most one row per family. */
   dietProfiles: Collection<DietProfile>;
   listItems: Collection<ListItem>;
+  /** The family's own shopping-list groups. */
+  listGroups: Collection<ListGroup>;
   photos: PhotoStore;
 }

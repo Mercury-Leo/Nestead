@@ -3,6 +3,7 @@ import type {
   Base,
   BoardColumn,
   DietProfile,
+  ListGroup,
   ListItem,
   Member,
   NewRow,
@@ -30,7 +31,8 @@ type TableName =
   | 'recipes'
   | 'pantry_items'
   | 'diet_profiles'
-  | 'list_items';
+  | 'list_items'
+  | 'list_groups';
 
 /** Timestamps arrive from Postgres as e.g. 2026-09-22T10:00:00.123456+00:00. */
 const TIMESTAMP_KEYS = new Set(['createdAt', 'updatedAt']);
@@ -203,6 +205,7 @@ export function createSupabaseStore(
     pantry: createCollection<PantryItem>(client, familyId, 'pantry_items'),
     dietProfiles: createCollection<DietProfile>(client, familyId, 'diet_profiles'),
     listItems: createCollection<ListItem>(client, familyId, 'list_items'),
+    listGroups: createCollection<ListGroup>(client, familyId, 'list_groups'),
     photos: createPhotoStore(client, familyId),
   };
 }

@@ -1,16 +1,42 @@
 import type { AnyRecipe, IngredientLine, ListItem, ListPart, NewRow, StoreSection, Unit } from '../types';
 import { catalogFor } from './calories';
+import { catalogItem } from './catalog';
 import { lineKey, lineStatus } from './fit';
 import type { PantryIndex } from './fit';
+import { canonicalId, exactCatalogId } from './normalize';
 import { formatAmount } from './quantity';
 
 /**
- * The shopping list. Only missing lines go on it, merged across recipes by
+ * The shopping list. It is split into groups by where things are bought:
+ * Supermarket, where recipes put their groceries; General, for everything
+ * else; and any groups the family adds (ListGroup rows).
+ *
+ * Only a recipe's missing lines go on it, merged across recipes by
  * ingredient. Adding a recipe again replaces its share rather than doubling it.
  *
  * Planning functions are pure: they return the writes to make, and the caller
  * makes them through the store.
  */
+
+export const SUPERMARKET = 'supermarket';
+export const GENERAL = 'general';
+
+export const BUILT_IN_GROUPS: readonly { id: string; name: string }[] = [
+  { id: SUPERMARKET, name: 'Supermarket' },
+  { id: GENERAL, name: 'General' },
+];
+
+export function groupOf(item: Pick<ListItem, 'groupId'>): string {
+  return item.groupId ?? SUPERMARKET;
+}
+
+/**
+ * Food, so it belongs in the pantry once bought: anything from the
+ * supermarket, from a recipe, or that the catalog knows. Batteries are not.
+ */
+export function isGrocery(item: Pick<ListItem, 'groupId' | 'canonicalId' | 'parts'>): boolean {
+  return groupOf(item) === SUPERMARKET || item.canonicalId !== undefined || item.parts.length > 0;
+}
 
 export interface ListPlan {
   create: NewRow<ListItem>[];
@@ -43,7 +69,8 @@ function withoutRecipe(items: readonly ListItem[], recipeId: string): { kept: Ma
     const parts = item.parts.filter((part) => part.recipeId !== recipeId);
     kept.set(item.id, parts);
     if (parts.length === item.parts.length) continue;
-    if (parts.length === 0) plan.remove.push(item.id);
+    // Something added by hand was wanted anyway, so it stays.
+    if (parts.length === 0 && item.manual !== true) plan.remove.push(item.id);
     else plan.update.push({ id: item.id, patch: { parts } });
   }
   return { kept, plan };
@@ -87,7 +114,8 @@ export function planAddRecipe(
       const parts = [...(updates.get(existing.id)?.patch.parts ?? kept.get(existing.id) ?? []), part];
       const patch: Partial<NewRow<ListItem>> = { parts };
       // Something new to buy on an item you had ticked off: untick it.
-      if (!removed.has(existing.id) && (kept.get(existing.id)?.length ?? 0) > 0) patch.checked = false;
+      const wanted = (kept.get(existing.id)?.length ?? 0) > 0 || existing.manual === true;
+      if (!removed.has(existing.id) && wanted) patch.checked = false;
       removed.delete(existing.id);
       updates.set(existing.id, { id: existing.id, patch });
       continue;
@@ -103,6 +131,7 @@ export function planAddRecipe(
     const row: NewRow<ListItem> = {
       name: capitalise(line.item),
       section: sectionFor(line),
+      groupId: SUPERMARKET,
       parts: [part],
       checked: false,
     };
@@ -111,6 +140,53 @@ export function planAddRecipe(
   }
 
   return { create: [...created.values()], update: [...updates.values()], remove: [...removed] };
+}
+
+/**
+ * Things typed into a group by hand. Already in that group means untick it
+ * rather than add it twice. In Supermarket the catalog is asked loosely, so
+ * the item lands in its aisle and merges with what recipes need; elsewhere
+ * only an exact name counts, so "egg cups" is not taken for eggs.
+ */
+export function planAddOwn(items: readonly ListItem[], names: readonly string[], groupId: string): ListPlan {
+  const plan: ListPlan = { create: [], update: [], remove: [] };
+  const inGroup = new Map(items.filter((item) => groupOf(item) === groupId).map((item) => [itemKey(item), item]));
+  const seen = new Set<string>();
+
+  for (const raw of names) {
+    const name = capitalise(raw.trim());
+    if (name === '') continue;
+    const id = groupId === SUPERMARKET ? canonicalId(name) : exactCatalogId(name);
+    const key = itemKey({ canonicalId: id, name });
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const existing = inGroup.get(key);
+    if (existing !== undefined) {
+      if (existing.checked || existing.manual !== true) plan.update.push({ id: existing.id, patch: { checked: false, manual: true } });
+      continue;
+    }
+    const row: NewRow<ListItem> = {
+      name,
+      section: catalogItem(id)?.section ?? 'Other',
+      groupId,
+      parts: [],
+      manual: true,
+      checked: false,
+    };
+    if (id !== undefined) row.canonicalId = id;
+    plan.create.push(row);
+  }
+  return plan;
+}
+
+/** A group is going: what was in it moves to General rather than vanishing. */
+export function planRemoveGroup(items: readonly ListItem[], groupId: string): ListPlan {
+  return {
+    create: [],
+    update: items.filter((item) => groupOf(item) === groupId).map((item) => ({ id: item.id, patch: { groupId: GENERAL } })),
+    remove: [],
+  };
 }
 
 /* ------------------------------------------------------------- display -- */

@@ -1,8 +1,9 @@
 # Nestead architecture
 
 Nestead is a shared home-organisation app for one family: a kanban board of
-household tasks and a kitchen (Larder) of recipes, pantry, diet profile and
-shopping list, all shared by everyone in the family.
+household tasks, a shopping list for everything the house needs, and a
+kitchen (Larder) of recipes, pantry and diet profile, all shared by everyone in
+the family.
 
 Scope is kept to what exists. Prices are planned but unbuilt, so they appear
 neither in the schema nor in the types: a table with no feature behind it is a
@@ -106,8 +107,9 @@ control, and the move arrows point up and down rather than left and right.
 
 ## The kitchen (Larder)
 
-The kitchen is four family-scoped collections on the same `DataStore`, plus a
-photo store:
+The kitchen is five family-scoped collections on the same `DataStore`, plus a
+photo store. The shopping list's two are here because recipes write to it,
+though the list itself is for anything and its screen is `features/lists/`:
 
 | Collection      | Table           | Holds                                                     |
 | --------------- | --------------- | --------------------------------------------------------- |
@@ -115,6 +117,7 @@ photo store:
 | `pantry`        | `pantry_items`  | "Have now" (`kind = 'have'`) and staples (`'staple'`)     |
 | `dietProfiles`  | `diet_profiles` | One row per family (unique `family_id`)                    |
 | `listItems`     | `list_items`    | Shopping list rows; `parts` records which recipe needs what |
+| `listGroups`    | `list_groups`   | Sections the family added; Supermarket and General are built in |
 | `photos`        | Storage bucket  | `recipe-photos/<family_id>/<uuid>.jpg`, private            |
 
 Nested structures are jsonb and keep their camelCase keys inside: they are

@@ -224,10 +224,36 @@ export interface ListPart {
   unit: Unit;
 }
 
+/**
+ * Something to buy. Recipes put groceries on the list; anything else is added
+ * by hand ("manual"), and every item sits in one of the list's groups.
+ */
 export interface ListItem extends Base {
   name: string;
   canonicalId?: string;
+  /** The supermarket aisle, from the catalog. Only Supermarket is split by it. */
   section: StoreSection;
+  /**
+   * 'supermarket', 'general' or a ListGroup id. Absent on rows written before
+   * groups existed, which were all from recipes: they read as Supermarket.
+   */
+  groupId?: string;
+  /** One per recipe that needs this. Empty for something added by hand. */
   parts: ListPart[];
+  /** Free text, e.g. "2 packs". Shown beside what the recipes add up to. */
+  note?: string;
+  /**
+   * Added by hand, so it stays when the last recipe that also needs it comes
+   * off the list. Recipe-only items go with their recipes.
+   */
+  manual?: boolean;
   checked: boolean;
+}
+
+/**
+ * A group on the shopping list that the family made, e.g. "Chemist". The two
+ * built-in groups, Supermarket and General, are not rows.
+ */
+export interface ListGroup extends Base {
+  name: string;
 }

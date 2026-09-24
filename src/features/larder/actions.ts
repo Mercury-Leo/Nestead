@@ -2,7 +2,7 @@ import type { DataStore } from '../../data/types';
 import type { AnyRecipe, ListItem, NewRow, PantryItem, Recipe } from '../../domain/types';
 import { keyForText } from '../../domain/kitchen/fit';
 import type { PantryIndex } from '../../domain/kitchen/fit';
-import { planAddRecipe, planRemoveRecipe } from '../../domain/kitchen/list';
+import { planAddOwn, planAddRecipe, planRemoveGroup, planRemoveRecipe } from '../../domain/kitchen/list';
 import type { ListPlan } from '../../domain/kitchen/list';
 import { pantryRow } from './seed/kitchen';
 
@@ -11,25 +11,46 @@ import { pantryRow } from './seed/kitchen';
  * store, so every write goes the same way whichever screen asked.
  */
 
-async function applyPlan(store: DataStore, plan: ListPlan): Promise<void> {
+/** Returns the ids of the rows it created. */
+async function applyPlan(store: DataStore, plan: ListPlan): Promise<string[]> {
   for (const id of plan.remove) await store.listItems.remove(id);
   for (const { id, patch } of plan.update) await store.listItems.update(id, patch);
-  for (const row of plan.create) await store.listItems.create(row);
+  const created: string[] = [];
+  for (const row of plan.create) created.push((await store.listItems.create(row)).id);
+  return created;
 }
 
-/** Adds only what is missing, at these servings. Re-adding replaces. */
+/**
+ * Adds only what is missing, at these servings. Re-adding replaces.
+ * Returns the ids of the items this recipe now puts on the list, new or not.
+ */
 export async function addRecipeToList(
   store: DataStore,
   items: readonly ListItem[],
   recipe: AnyRecipe,
   servings: number,
   pantry: PantryIndex,
-): Promise<void> {
-  await applyPlan(store, planAddRecipe(items, recipe, servings, pantry));
+): Promise<string[]> {
+  const plan = planAddRecipe(items, recipe, servings, pantry);
+  const created = await applyPlan(store, plan);
+  // Updates also cover items that lost this recipe's share; those were not added.
+  const topped = plan.update.filter(({ patch }) => patch.parts?.some((part) => part.recipeId === recipe.id) === true).map(({ id }) => id);
+  return [...topped, ...created];
 }
 
 export async function removeRecipeFromList(store: DataStore, items: readonly ListItem[], recipeId: string): Promise<void> {
   await applyPlan(store, planRemoveRecipe(items, recipeId));
+}
+
+/** Things typed into one group of the list by hand. */
+export async function addOwnToList(store: DataStore, items: readonly ListItem[], names: readonly string[], groupId: string): Promise<void> {
+  await applyPlan(store, planAddOwn(items, names, groupId));
+}
+
+/** Deletes a family-made group; its items move to General first. */
+export async function removeListGroup(store: DataStore, items: readonly ListItem[], groupId: string): Promise<void> {
+  await applyPlan(store, planRemoveGroup(items, groupId));
+  await store.listGroups.remove(groupId);
 }
 
 /** Keeps a web recipe in the library. Returns the new row. */

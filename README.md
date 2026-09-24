@@ -43,7 +43,7 @@ horizontal swipe. Desktop keeps the side-by-side board.
 | Add / edit      | `/add`             | Write a recipe; `?edit=:id` edits one                               |
 | Import          | `/import`          | Read a recipe from a link, or pick one from the offline web index   |
 | Pantry          | `/pantry`          | What you have now, and the staples assumed always present           |
-| Shopping list   | `/lists`           | Only what's missing, merged across recipes, grouped by aisle        |
+| Shopping list   | `/lists`           | Everything to buy, by shop: recipes' missing groceries by aisle, General, your own sections |
 | Diet profile    | `/profile`         | Rules every search and import is checked against                    |
 
 The local (demo) backend seeds a full kitchen: 9 recipes, 34 pantry items, 8
@@ -105,6 +105,7 @@ src/
                              contract.
   auth/                      SessionProvider / useSession, sign-in screens.
   features/board/            The kanban board.
+  features/lists/            The shopping list: Supermarket, General, your own sections.
   features/larder/           The kitchen screens, seed data and timer engine.
   components/                Shared UI kit, page header, error boundary.
   styles/tokens.css          Design tokens: the one palette for the whole app.

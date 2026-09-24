@@ -1,10 +1,12 @@
 import type { DataStore } from '../../../data/types';
 import type { NewRow, Recipe } from '../../../domain/types';
+import { planAddOwn } from '../../../domain/kitchen/list';
 import {
   DEFAULT_STAPLES,
   SEED_CUSTOM_RULES,
   SEED_HAVE,
   SEED_LIST,
+  SEED_OWN,
   SEED_PRESETS,
   listRow,
   pantryRow,
@@ -61,11 +63,15 @@ export async function seedDemoKitchen(store: DataStore): Promise<void> {
   for (const spec of SEED_LIST) {
     await store.listItems.create(listRow(spec, ids.get(spec.recipeId) ?? spec.recipeId));
   }
+  for (const { name, groupId } of SEED_OWN) {
+    for (const row of planAddOwn([], [name], groupId).create) await store.listItems.create(row);
+  }
 }
 
 /** Development only: empty the kitchen so the demo seed runs again. */
 export async function clearKitchen(store: DataStore): Promise<void> {
   for (const row of await store.listItems.list()) await store.listItems.remove(row.id);
+  for (const row of await store.listGroups.list()) await store.listGroups.remove(row.id);
   for (const row of await store.recipes.list()) await store.recipes.remove(row.id);
   for (const row of await store.pantry.list()) await store.pantry.remove(row.id);
   for (const row of await store.dietProfiles.list()) await store.dietProfiles.remove(row.id);

@@ -77,9 +77,26 @@ create table list_items (
   name         text        not null,
   canonical_id text,
   section      text        not null,
+  -- 'supermarket', 'general' or a list_groups id. Text, not a foreign key,
+  -- because the two built-in groups are not rows. Deleting a group moves its
+  -- items to 'general' first.
+  group_id     text        not null default 'supermarket',
   -- One part per recipe that needs this: recipeId, recipeTitle, qty, unit.
+  -- Empty for something added by hand.
   parts        jsonb       not null default '[]',
+  note         text,
+  -- Added by hand: stays when the last recipe needing it leaves the list.
+  manual       boolean     not null default false,
   checked      boolean     not null default false,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+-- The family's own shopping-list groups, beside Supermarket and General.
+create table list_groups (
+  id           uuid primary key default gen_random_uuid(),
+  family_id    uuid        not null references families (id) on delete cascade,
+  name         text        not null,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
@@ -87,6 +104,7 @@ create table list_items (
 create index recipes_family_id_idx      on recipes (family_id);
 create index pantry_items_family_id_idx on pantry_items (family_id);
 create index list_items_family_id_idx   on list_items (family_id);
+create index list_groups_family_id_idx  on list_groups (family_id);
 
 create trigger recipes_set_updated_at       before update on recipes
   for each row execute function set_updated_at();
@@ -96,11 +114,14 @@ create trigger diet_profiles_set_updated_at before update on diet_profiles
   for each row execute function set_updated_at();
 create trigger list_items_set_updated_at    before update on list_items
   for each row execute function set_updated_at();
+create trigger list_groups_set_updated_at   before update on list_groups
+  for each row execute function set_updated_at();
 
 alter table recipes       enable row level security;
 alter table pantry_items  enable row level security;
 alter table diet_profiles enable row level security;
 alter table list_items    enable row level security;
+alter table list_groups   enable row level security;
 
 create policy recipes_all on recipes
   for all to authenticated using (family_id = current_family_id())
@@ -118,8 +139,12 @@ create policy list_items_all on list_items
   for all to authenticated using (family_id = current_family_id())
   with check (family_id = current_family_id());
 
+create policy list_groups_all on list_groups
+  for all to authenticated using (family_id = current_family_id())
+  with check (family_id = current_family_id());
+
 alter publication supabase_realtime add table
-  recipes, pantry_items, diet_profiles, list_items;
+  recipes, pantry_items, diet_profiles, list_items, list_groups;
 
 -- Photos: a private bucket with one folder per family. The folder name is the
 -- family id and these policies are the only way in, so a member reads and

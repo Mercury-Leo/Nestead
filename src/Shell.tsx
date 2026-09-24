@@ -19,7 +19,7 @@ const Library = lazy(() => import('./features/larder/Library').then((m) => ({ de
 const Search = lazy(() => import('./features/larder/search/Search').then((m) => ({ default: m.Search })));
 const RecipeDetail = lazy(() => import('./features/larder/detail/RecipeDetail').then((m) => ({ default: m.RecipeDetail })));
 const Pantry = lazy(() => import('./features/larder/pantry/Pantry').then((m) => ({ default: m.Pantry })));
-const ShoppingList = lazy(() => import('./features/larder/lists/ShoppingList').then((m) => ({ default: m.ShoppingList })));
+const ShoppingList = lazy(() => import('./features/lists/ShoppingList').then((m) => ({ default: m.ShoppingList })));
 const DietProfilePage = lazy(() => import('./features/larder/profile/DietProfile').then((m) => ({ default: m.DietProfilePage })));
 const CookMode = lazy(() => import('./features/larder/cook/CookMode'));
 const AddRecipe = lazy(() => import('./features/larder/add/AddRecipe'));
@@ -31,6 +31,8 @@ interface NavItem {
   icon: LucideIcon;
   count?: number;
   end?: boolean;
+  /** The first of the kitchen items, under the "Larder" heading. */
+  larder?: boolean;
 }
 
 function useNavItems(): NavItem[] {
@@ -39,10 +41,11 @@ function useNavItems(): NavItem[] {
   const kitchen = useKitchen();
   return [
     { to: '/', label: 'Board', icon: LayoutGrid, count: tasks.filter((task) => !task.done).length, end: true },
-    { to: '/library', label: 'Library', icon: BookOpen, count: kitchen.recipes.length },
+    // The shopping list is for everything, not only food, so it sits with the board.
+    { to: '/lists', label: 'Lists', icon: ListChecks, count: kitchen.listItems.filter((item) => !item.checked).length },
+    { to: '/library', label: 'Library', icon: BookOpen, count: kitchen.recipes.length, larder: true },
     { to: '/search', label: 'Search', icon: SearchIcon },
     { to: '/pantry', label: 'Pantry', icon: Milk, count: kitchen.have.length },
-    { to: '/lists', label: 'Lists', icon: ListChecks, count: kitchen.listItems.length },
     { to: '/profile', label: 'Profile', icon: Leaf },
   ];
 }
@@ -64,11 +67,11 @@ function Sidebar(): JSX.Element {
       <Brand />
       <nav aria-label="Main">
         <ul className={s.nav}>
-          {items.map((item, index) => {
+          {items.map((item) => {
             const active = isActive(item, pathname);
             return (
-              <li key={item.to} className={cx(index === 1 && s.navGroupStart)}>
-                {index === 1 && <p className={s.navGroup}>Larder</p>}
+              <li key={item.to} className={cx(item.larder === true && s.navGroupStart)}>
+                {item.larder === true && <p className={s.navGroup}>Larder</p>}
                 <NavLink to={item.to} end={item.end} className={cx(s.navItem, active && s.navActive)} aria-current={active ? 'page' : undefined}>
                   <item.icon size={20} strokeWidth={2} aria-hidden />
                   <span className={s.navLabel}>{item.label}</span>

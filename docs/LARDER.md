@@ -18,7 +18,7 @@ onto the code, and every place the integration departs from the original brief.
 | Import from web (desktop, mobile)            | `/import`                             | `features/larder/import/`              |
 | Diet profile (desktop, mobile)               | `/profile`                            | `features/larder/profile/`             |
 | Pantry, and its empty state                  | `/pantry`                             | `features/larder/pantry/`              |
-| Shopping list, and its empty state           | `/lists`                              | `features/larder/lists/`               |
+| Shopping list, and its empty state           | `/lists`                              | `features/lists/`                      |
 | Cook mode, and timer done                    | `/recipe/:id/cook?step=6`             | `features/larder/cook/`, `timers/`     |
 
 Shared pieces: `components/ui.tsx` (buttons, chips, segmented, switch,
@@ -49,8 +49,19 @@ empty state, sheet), `RecipeCard.tsx` (card and row), `RecipePhoto.tsx`.
 ## Where it differs from the Larder brief
 
 - **Routes.** `/` is the board, so the library is `/library`.
-- **Tab bar.** Six tabs, not five: Board, Library, Search, Pantry, Lists,
+- **Tab bar.** Six tabs, not five: Board, Lists, Library, Search, Pantry,
   Profile. Member switching and sign-out stay on the board page.
+- **The shopping list is for everything, not only food**, so it sits with the
+  board, above the "Larder" heading, and its screen lives in `features/lists/`.
+  It is split by where things are bought: **Supermarket**, where recipes put
+  their groceries (still grouped by aisle); **General**, for everything else;
+  and any sections the family adds (`list_groups`). Anything can be typed into
+  any section, and an item's menu renames it, adds a note ("2 packs"), moves it
+  to another section or takes it off. Something added by hand stays when the
+  last recipe that also needed it comes off the list. Deleting a section moves
+  its items to General. "Move to pantry" takes only groceries (Supermarket,
+  recipe or catalog items); "Clear checked" takes everything ticked. The
+  sidebar count is what is still to buy, not everything on the list.
 - **Copy.** "Rules apply everywhere…" adds "Everyone in the family shares
   them."; the sidebar wordmark is Nestead with the jar mark.
 - **Library ratings** show the family's own rating when set, as the brief says,
