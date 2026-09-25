@@ -60,8 +60,10 @@ leaving cook mode, and alert (sound, vibration, notification) on any screen.
 | `npm test`      | Vitest: domain, seed, import and data-store suites   |
 
 Copy `.env.example` to `.env.local` if you want to change `VITE_BACKEND`. The
-default is `local`; any other value makes `createStore()` throw rather than
-silently doing the wrong thing.
+default is `local`, the no-accounts demo. `npm run build` refuses to build
+unless `VITE_BACKEND=supabase` and both `VITE_SUPABASE_*` values are set, so a
+build without `.env.local` cannot ship demo mode by accident. For a deliberate
+demo build, run `npx vite build --mode demo`.
 
 ## Stack
 
