@@ -35,7 +35,11 @@ empty state, sheet), `RecipeCard.tsx` (card and row), `RecipePhoto.tsx`.
   board is the first item and the home page; the kitchen items sit under a
   "Larder" heading. The board adopted Larder's palette and fonts; its
   behaviour did not change. The old dark mode went with it, since the kitchen
-  design has none (cook mode is the only dark screen).
+  design had none. Dark mode has since come back as "Slate and clay": the same
+  token names redefined under `:root[data-theme='dark']` in
+  `styles/tokens.css`, following the system setting unless someone picks
+  Light or Dark (sidebar, or the Family page on a phone). Cook mode keeps its
+  own dark tokens in both themes.
 - **Essentials only.** Added `react-router-dom`, `lucide-react` and the two
   font packages, plus `@types/node` as a dev dependency for the dev-server
   import middleware. Not added: Zustand (the session and `useCollection`

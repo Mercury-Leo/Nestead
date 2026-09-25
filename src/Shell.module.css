@@ -59,7 +59,7 @@
 }
 
 .navItem:hover {
-  background: rgba(255, 253, 248, 0.55);
+  background: var(--nav-hover);
   color: var(--ink);
 }
 
@@ -89,7 +89,7 @@
   margin-top: auto;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(232, 222, 207, 0.55);
+  background: var(--side-card);
 }
 
 .eyebrow {
@@ -129,6 +129,11 @@
   text-decoration: underline;
 }
 
+.theme {
+  display: flex;
+  margin-top: -12px;
+}
+
 /* ------------------------------------------------------------- tabbar -- */
 
 .tabbar {
@@ -141,7 +146,7 @@
   height: var(--tabbar);
   padding: 8px 4px calc(24px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
-  background: rgba(247, 242, 234, 0.96);
+  background: var(--paper-glass);
   backdrop-filter: blur(12px);
 }
 

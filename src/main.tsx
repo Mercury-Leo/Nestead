@@ -8,6 +8,7 @@ import '@fontsource/hanken-grotesk/600.css';
 import '@fontsource/hanken-grotesk/700.css';
 import { App } from './App';
 import { SessionProvider } from './auth/session';
+import { ThemeProvider } from './components/theme';
 import './styles/tokens.css';
 import './styles.css';
 
@@ -16,9 +17,11 @@ const container = document.getElementById('root');
 if (container === null) throw new Error('#root is missing from index.html');
 
 createRoot(container).render(
-  <BrowserRouter>
-    <SessionProvider>
-      <App />
-    </SessionProvider>
-  </BrowserRouter>,
+  <ThemeProvider>
+    <BrowserRouter>
+      <SessionProvider>
+        <App />
+      </SessionProvider>
+    </BrowserRouter>
+  </ThemeProvider>,
 );

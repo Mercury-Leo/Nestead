@@ -445,7 +445,7 @@ a.recipeTitle:hover {
   display: flex;
   gap: 8px;
   padding: 10px 16px;
-  background: linear-gradient(to top, var(--paper) 70%, rgba(247, 242, 234, 0));
+  background: linear-gradient(to top, var(--paper) 70%, var(--paper-clear));
 }
 
 /* Takes what Clear leaves; width: 100% beside it would overflow. */

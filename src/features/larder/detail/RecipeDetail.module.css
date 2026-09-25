@@ -655,7 +655,7 @@
   z-index: 20;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
-  background: rgba(255, 253, 248, 0.97);
+  background: var(--card-glass);
   backdrop-filter: blur(12px);
 }
 

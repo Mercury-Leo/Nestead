@@ -3,8 +3,14 @@
  * here. The palette is Larder's; the board's older variable names (--bg,
  * --surface, --text, ...) are mapped onto it so the whole app is one look.
  *
- * There is no app-wide dark mode. Only cook mode is dark, and it sets its own
- * tokens on its own root (see CookMode.module.css).
+ * Dark mode ("Slate and clay") redefines the same names under
+ * :root[data-theme='dark']. The attribute is set before first paint by the
+ * script in index.html and kept up to date by ThemeProvider, which resolves
+ * the "system" choice from prefers-color-scheme. Components never branch on
+ * the theme: if a colour differs between modes, it belongs here.
+ *
+ * Cook mode is dark in both themes and keeps its own tokens on its own root
+ * (see CookMode.module.css).
  */
 
 :root {
@@ -35,8 +41,26 @@
   --warn-ink: #5e3c00;
   --warn-line: #e2bf6e;
   --on-accent: #fffdf8;
+  --danger: #d6453c;
+  --on-danger: #ffffff;
   /* Shopping-list rows a recipe has just added. */
   --flash: #f7e4b8;
+
+  /* Secondary text and washes on --ink fills (dark chips, diet rules). */
+  --on-ink-2: #d9cfc2;
+  --on-ink-wash: rgba(255, 253, 248, 0.12);
+  --on-ink-wash-2: rgba(255, 253, 248, 0.22);
+  /* Hover wash on plain surfaces. */
+  --hover-wash: rgba(41, 35, 30, 0.08);
+  --thumb: #fffdf8;
+  /* Translucent bars and sidebar tints. */
+  --nav-hover: rgba(255, 253, 248, 0.55);
+  --side-card: rgba(232, 222, 207, 0.55);
+  --paper-glass: rgba(247, 242, 234, 0.96);
+  --paper-clear: rgba(247, 242, 234, 0);
+  --card-glass: rgba(255, 253, 248, 0.97);
+  /* Recipe placeholders are pale linens; dark mode tones them down. */
+  --photo-filter: none;
 
   --serif: 'Newsreader Variable', 'Newsreader', Georgia, 'Times New Roman', serif;
   --sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -50,6 +74,8 @@
   --shadow-card: 0 1px 2px rgba(41, 35, 30, 0.05);
   --shadow-drop: 0 14px 30px rgba(41, 35, 30, 0.14);
   --shadow-sheet: 0 -12px 40px rgba(20, 14, 10, 0.25);
+  --shadow-raise: 0 1px 2px rgba(41, 35, 30, 0.12);
+  --shadow-thumb: 0 1px 3px rgba(41, 35, 30, 0.25);
   --scrim: rgba(28, 20, 14, 0.45);
 
   --sidebar: 248px;
@@ -63,6 +89,61 @@
   --border: var(--line);
 
   color-scheme: light;
+}
+
+/* Slate and clay: a cool night, with the kitchen's warm colours lifted to show on it. */
+:root[data-theme='dark'] {
+  --paper: #14181d;
+  --side: #181d23;
+  --card: #1e242b;
+  --sunk: #101318;
+  --sunk-2: #283039;
+  --line: #2c343e;
+  --line-2: #3b4551;
+  --ink: #eceae6;
+  --ink-2: #c3c6cb;
+  --ink-3: #939ba6;
+  --accent: #e8875f;
+  --accent-ink: #f5a584;
+  --accent-tint: #3a2620;
+  --accent-soft: #9a5a3f;
+  --missing-row: #2a1f1c;
+  --sage: #a3cc9d;
+  --sage-tint: #1f2d22;
+  --sage-soft: #5e7d5a;
+  --tile-on: #1c2a22;
+  --staple: #a3aab4;
+  --staple-tint: #262d35;
+  --honey: #e6b04e;
+  --star-empty: #3b4551;
+  --warn-bg: #352c14;
+  --warn-ink: #f0d08c;
+  --warn-line: #7a6128;
+  --on-accent: #14181d;
+  --danger: #f07a70;
+  --on-danger: #14181d;
+  --flash: #352c14;
+
+  --on-ink-2: #4a525d;
+  --on-ink-wash: rgba(20, 24, 29, 0.08);
+  --on-ink-wash-2: rgba(20, 24, 29, 0.16);
+  --hover-wash: rgba(236, 234, 230, 0.08);
+  --thumb: #eceae6;
+  --nav-hover: rgba(236, 234, 230, 0.06);
+  --side-card: rgba(40, 48, 57, 0.6);
+  --paper-glass: rgba(20, 24, 29, 0.94);
+  --paper-clear: rgba(20, 24, 29, 0);
+  --card-glass: rgba(30, 36, 43, 0.97);
+  --photo-filter: brightness(0.72) saturate(0.85);
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-drop: 0 14px 30px rgba(0, 0, 0, 0.45);
+  --shadow-sheet: 0 -12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-raise: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --scrim: rgba(5, 7, 10, 0.6);
+
+  color-scheme: dark;
 }
 
 *,

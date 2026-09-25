@@ -106,8 +106,8 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: var(--card);
-  box-shadow: 0 1px 3px rgba(41, 35, 30, 0.25);
+  background: var(--thumb);
+  box-shadow: var(--shadow-thumb);
   transition: transform 150ms;
 }
 
@@ -160,7 +160,7 @@
 }
 
 .ruleHint {
-  color: #d9cfc2;
+  color: var(--on-ink-2);
   font-size: 13.5px;
 }
 
@@ -173,13 +173,13 @@
   height: 44px;
   border: 0;
   border-radius: 10px;
-  background: rgba(255, 253, 248, 0.12);
+  background: var(--on-ink-wash);
   color: var(--on-accent);
   cursor: pointer;
 }
 
 .ruleRemove:hover {
-  background: rgba(255, 253, 248, 0.22);
+  background: var(--on-ink-wash-2);
 }
 
 .cardTitle {

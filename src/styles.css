@@ -279,8 +279,8 @@ code {
 }
 
 button.danger:hover:not(:disabled) {
-  border-color: #d6453c;
-  color: #d6453c;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .card-confirm {
@@ -295,9 +295,9 @@ button.danger:hover:not(:disabled) {
 
 .card-actions button.danger-solid,
 .card-actions button.danger-solid:hover {
-  border-color: #d6453c;
-  background: #d6453c;
-  color: #fff;
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--on-danger);
 }
 
 .composer {
@@ -477,7 +477,7 @@ button.danger:hover:not(:disabled) {
   border: 1px solid var(--accent);
   border-radius: 0.5rem;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font: inherit;
   font-weight: 500;
   cursor: pointer;
@@ -514,8 +514,8 @@ button.danger:hover:not(:disabled) {
 }
 
 .error {
-  border-color: #d6453c;
-  color: #d6453c;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .notice {
@@ -568,8 +568,8 @@ button.danger:hover:not(:disabled) {
   margin-left: 0.4rem;
   padding: 0.05rem 0.35rem;
   border-radius: 999px;
-  background: #d6453c;
-  color: #fff;
+  background: var(--danger);
+  color: var(--on-danger);
   font-size: 0.65rem;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -583,7 +583,7 @@ button.danger:hover:not(:disabled) {
 }
 
 .card-due.is-overdue {
-  color: #d6453c;
+  color: var(--danger);
 }
 
 /* --------------------------------------------------------- board filter -- */
@@ -630,7 +630,7 @@ button.danger:hover:not(:disabled) {
 .filter-mine[aria-pressed='true'] {
   border-color: var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 /* .link carries a top margin for forms; here it has to sit on the row. */

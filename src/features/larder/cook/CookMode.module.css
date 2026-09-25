@@ -1,18 +1,22 @@
-/* Cook mode: the only dark screen. Its tokens live here, on its own root. */
+/*
+ * Cook mode: dark in both themes, in the app's dark palette (Slate and clay,
+ * see styles/tokens.css). The values are repeated here rather than read from
+ * the app tokens, which are light when the app is.
+ */
 
 .root {
-  --c-bg: #1c1713;
-  --c-surface: #28211b;
-  --c-surface-2: #342b23;
-  --c-line: rgba(245, 239, 230, 0.14);
-  --c-text: #f5efe6;
-  --c-text-2: #d3c8ba;
-  --c-text-3: #a89b8c;
-  --c-accent: #e27a52;
-  --c-on-accent: #1c1713;
-  --c-accent-tint: rgba(226, 122, 82, 0.16);
-  --c-done: #c9dbb2;
-  --c-on-done: #1f2a16;
+  --c-bg: #14181d;
+  --c-surface: #1e242b;
+  --c-surface-2: #283039;
+  --c-line: rgba(236, 234, 230, 0.14);
+  --c-text: #eceae6;
+  --c-text-2: #c3c6cb;
+  --c-text-3: #939ba6;
+  --c-accent: #e8875f;
+  --c-on-accent: #14181d;
+  --c-accent-tint: rgba(232, 135, 95, 0.16);
+  --c-done: #b9d9b3;
+  --c-on-done: #16261a;
 
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -193,7 +197,7 @@
   min-height: 48px;
   margin: 2px 0;
   padding: 0 18px 0 6px;
-  border: 2px solid rgba(245, 239, 230, 0.55);
+  border: 2px solid rgba(236, 234, 230, 0.55);
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--c-text);
@@ -229,7 +233,7 @@
 }
 
 .chip_running .chipIcon {
-  background: rgba(28, 23, 19, 0.14);
+  background: rgba(20, 24, 29, 0.14);
 }
 
 .chip_paused {
@@ -249,7 +253,7 @@
 }
 
 .chip_done .chipIcon {
-  background: rgba(31, 42, 22, 0.12);
+  background: rgba(22, 38, 26, 0.12);
   color: var(--c-on-done);
 }
 
@@ -321,7 +325,7 @@
   height: 52px;
   margin-left: -10px;
   border-radius: 50%;
-  background: rgba(28, 23, 19, 0.12);
+  background: rgba(20, 24, 29, 0.12);
 }
 
 .cardText {
@@ -397,7 +401,7 @@
 }
 
 .cardGhost {
-  background: rgba(28, 23, 19, 0.12);
+  background: rgba(20, 24, 29, 0.12);
   color: var(--c-on-accent);
 }
 
@@ -578,7 +582,7 @@
   z-index: 50;
   display: flex;
   align-items: flex-end;
-  background: rgba(10, 8, 6, 0.55);
+  background: rgba(5, 7, 10, 0.6);
 }
 
 .sheet {

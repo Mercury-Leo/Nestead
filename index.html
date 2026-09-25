@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nestead</title>
+    <script>
+      // Set the theme before first paint so a dark-mode page never flashes
+      // light. ThemeProvider (src/components/theme.tsx) takes over from here;
+      // the key is the device preference it writes through data/localStore.ts.
+      (function () {
+        var choice = 'system';
+        try {
+          choice = JSON.parse(localStorage.getItem('nestead:device:pref:theme')) || 'system';
+        } catch (e) {}
+        var dark = choice === 'dark' || (choice !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

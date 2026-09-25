@@ -6,6 +6,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useSession } from './auth/session';
 import { Brand } from './components/Brand';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ThemeToggle } from './components/ThemeToggle';
 import { cx, Tag } from './components/ui';
 import { useCollection } from './data/useCollection';
 import { BoardPage } from './features/board/BoardPage';
@@ -99,6 +100,8 @@ function Sidebar(): JSX.Element {
           Edit diet profile
         </NavLink>
       </div>
+
+      <ThemeToggle compact className={s.theme} />
     </aside>
   );
 }

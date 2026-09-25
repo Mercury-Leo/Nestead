@@ -459,7 +459,7 @@
   gap: 10px;
   padding: 10px 16px;
   border-top: 1px solid var(--line);
-  background: rgba(255, 253, 248, 0.97);
+  background: var(--card-glass);
 }
 
 @media (max-width: 1023px) {

@@ -62,7 +62,7 @@ function SwipeRow({ item, onRemove }: { item: PantryItem; onRemove: () => void }
   };
 
   return (
-    <li className={s.swipe}>
+    <li className={cx(s.swipe, dx !== 0 && s.swipeOpen)}>
       <button type="button" className={s.swipeAction} tabIndex={dx === 0 ? -1 : 0} onClick={onRemove}>
         Remove
       </button>

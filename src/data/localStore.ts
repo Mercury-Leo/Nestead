@@ -166,6 +166,28 @@ export function writePreference(familyId: string, name: string, value: unknown):
   }
 }
 
+/**
+ * Preferences for this device whoever is signed in, such as the theme. They
+ * are read before sign-in (and, for the theme, by the script in index.html
+ * before first paint), so they are not scoped to a family.
+ */
+export function readDevicePreference(name: string): unknown {
+  try {
+    const raw = localStorage.getItem(`${NAMESPACE}:device:pref:${name}`);
+    return raw === null ? undefined : (JSON.parse(raw) as unknown);
+  } catch {
+    return undefined;
+  }
+}
+
+export function writeDevicePreference(name: string, value: unknown): void {
+  try {
+    localStorage.setItem(`${NAMESPACE}:device:pref:${name}`, JSON.stringify(value));
+  } catch {
+    // Not worth interrupting anyone over.
+  }
+}
+
 export function createLocalStore(familyId: string): DataStore {
   return {
     familyId,

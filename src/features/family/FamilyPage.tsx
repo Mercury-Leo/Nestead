@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, Copy, RefreshCw } from 'lucide-react';
 import { useSession } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { Button, Sheet } from '../../components/ui';
 import s from './FamilyPage.module.css';
 
@@ -114,6 +115,14 @@ export function FamilyPage(): JSX.Element {
               </li>
             ))}
           </ul>
+        </section>
+
+        <section className={s.card} aria-labelledby="theme-title">
+          <h2 id="theme-title" className={s.cardTitle}>
+            Theme
+          </h2>
+          <p className={s.muted}>Just for this device. System follows its light or dark setting.</p>
+          <ThemeToggle className={s.theme} />
         </section>
       </div>
 

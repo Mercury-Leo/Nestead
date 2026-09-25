@@ -25,6 +25,10 @@
   font-weight: 700;
 }
 
+.theme {
+  align-self: flex-start;
+}
+
 .count {
   color: var(--ink-2);
 }

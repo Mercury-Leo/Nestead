@@ -1,4 +1,4 @@
-/* The done alert. Same terracotta everywhere: on the light app and in cook mode. */
+/* The done alert. The same clay everywhere: light app, dark app and cook mode. */
 
 .bannerLayer {
   position: fixed;
@@ -15,9 +15,9 @@
   width: min(560px, 100%);
   padding: 18px;
   border-radius: 26px;
-  background: #e27a52;
-  color: #1c1713;
-  box-shadow: 0 18px 40px rgba(20, 14, 10, 0.35);
+  background: #e8875f;
+  color: #14181d;
+  box-shadow: 0 18px 40px rgba(10, 12, 16, 0.35);
   pointer-events: auto;
 }
 
@@ -35,7 +35,7 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: rgba(28, 23, 19, 0.12);
+  background: rgba(20, 24, 29, 0.12);
 }
 
 .bannerTitle {
@@ -71,17 +71,17 @@
 }
 
 .plusMinute {
-  background: rgba(28, 23, 19, 0.12);
-  color: #1c1713;
+  background: rgba(20, 24, 29, 0.12);
+  color: #14181d;
 }
 
 .dismiss {
-  background: #1c1713;
-  color: #f5efe6;
+  background: #14181d;
+  color: #eceae6;
 }
 
 .plusMinute:focus-visible,
 .dismiss:focus-visible {
-  outline: 3px solid #1c1713;
+  outline: 3px solid #14181d;
   outline-offset: 2px;
 }
