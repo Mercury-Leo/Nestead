@@ -18,7 +18,7 @@ import { SupabaseSession } from './supabaseSession';
 export interface Family {
   id: string;
   name: string;
-  /** Share this so somebody can join. Rotatable from the database. */
+  /** Share this so somebody can join. Rotatable, see Session.rotateJoinCode. */
   joinCode: string;
 }
 
@@ -30,6 +30,16 @@ export interface Session {
   signOut: () => Promise<void>;
   /** Real auth only: there is no family row to read in demo mode. */
   family?: Family;
+  /**
+   * Real auth only. Swaps the join code for a fresh one; the old code stops
+   * working at once. Members already in the family are unaffected.
+   */
+  rotateJoinCode?: () => Promise<void>;
+  /**
+   * Real auth only. Re-reads the family row. families is not in the realtime
+   * publication, so a code rotated by someone else only shows up this way.
+   */
+  refreshFamily?: () => Promise<void>;
   /** Demo mode only: with real auth you cannot choose to be someone else. */
   setMe?: (memberId: string) => void;
 }

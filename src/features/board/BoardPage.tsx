@@ -1,12 +1,14 @@
-import { LogOut } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { LogOut, Users } from 'lucide-react';
 import { useSession } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
-import { Button } from '../../components/ui';
+import { Button, ButtonLink } from '../../components/ui';
 import { Board } from './Board';
 
 /**
- * The board as a page in the shell. Who you are, signing out and the invite
- * code live here, as they did in the old header: the board is still home.
+ * The board as a page in the shell. Who you are, signing out and the way to
+ * the family page live here, as they did in the old header: the board is still
+ * home.
  */
 export function BoardPage(): JSX.Element {
   const { me, members, setMe, signOut, family } = useSession();
@@ -37,6 +39,9 @@ export function BoardPage(): JSX.Element {
                 </select>
               </label>
             )}
+            <ButtonLink variant="ghost" icon={Users} to="/family">
+              Family
+            </ButtonLink>
             <Button variant="ghost" icon={LogOut} onClick={() => void signOut()}>
               Sign out
             </Button>
@@ -47,7 +52,7 @@ export function BoardPage(): JSX.Element {
       {inviteCode !== null && (
         <p className="invite">
           You are the only one here. Share this code so someone can join:{' '}
-          <code className="code">{inviteCode}</code>
+          <code className="code">{inviteCode}</code>. It stays on the <Link to="/family">Family</Link> page.
         </p>
       )}
 

@@ -24,6 +24,7 @@ const DietProfilePage = lazy(() => import('./features/larder/profile/DietProfile
 const CookMode = lazy(() => import('./features/larder/cook/CookMode'));
 const AddRecipe = lazy(() => import('./features/larder/add/AddRecipe'));
 const ImportRecipe = lazy(() => import('./features/larder/import/ImportRecipe'));
+const FamilyPage = lazy(() => import('./features/family/FamilyPage').then((m) => ({ default: m.FamilyPage })));
 
 interface NavItem {
   to: string;
@@ -153,6 +154,8 @@ export function Shell(): JSX.Element {
           <Route path="/pantry" element={page(<Pantry />)} />
           <Route path="/lists" element={page(<ShoppingList />)} />
           <Route path="/profile" element={page(<DietProfilePage />)} />
+          {/* Not a kitchen screen, so it does not wait for the kitchen's first read. */}
+          <Route path="/family" element={<Suspense fallback={<Loading />}><FamilyPage /></Suspense>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </ErrorBoundary>

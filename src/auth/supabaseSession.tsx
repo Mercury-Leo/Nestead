@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseClient, takeRecoveryLink } from '../data/supabaseClient';
 import { createSupabaseStore } from '../data/supabaseStore';
 import type { DataStore } from '../data/types';
@@ -26,6 +27,16 @@ type Phase =
   | { kind: 'recovering'; userId: string }
   | { kind: 'noFamily'; userId: string }
   | { kind: 'ready'; userId: string; store: DataStore; family: Family };
+
+async function readFamily(client: SupabaseClient, familyId: string): Promise<Family> {
+  const row = await client.from('families').select('id, name, join_code').eq('id', familyId).single();
+  if (row.error !== null) throw new Error(row.error.message);
+  return {
+    id: row.data.id as string,
+    name: row.data.name as string,
+    joinCode: row.data.join_code as string,
+  };
+}
 
 export function SupabaseSession({ children }: { children: ReactNode }): JSX.Element {
   const client = getSupabaseClient();
@@ -56,23 +67,13 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
         return;
       }
 
-      const row = await client.from('families').select('id, name, join_code').eq('id', familyId).single();
-      if (row.error !== null) throw new Error(row.error.message);
+      const family = await readFamily(client, familyId);
 
       const store = createSupabaseStore(familyId, client);
       await seedDefaultColumns(store);
       await ensureKitchen(store);
 
-      setPhase({
-        kind: 'ready',
-        userId,
-        store,
-        family: {
-          id: row.data.id as string,
-          name: row.data.name as string,
-          joinCode: row.data.join_code as string,
-        },
-      });
+      setPhase({ kind: 'ready', userId, store, family });
     },
     [client],
   );
@@ -130,7 +131,7 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
       return <JoinOrCreate onJoined={() => void resolve(phase.userId)} onSignOut={signOut} />;
     case 'ready':
       return (
-        <Ready userId={phase.userId} store={phase.store} family={phase.family} signOut={signOut}>
+        <Ready client={client} userId={phase.userId} store={phase.store} initialFamily={phase.family} signOut={signOut}>
           {children}
         </Ready>
       );
@@ -140,27 +141,43 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
 /**
  * Split out so useCollection is only called once a store exists: hooks cannot
  * be conditional, and the store does not exist in the earlier phases.
+ *
+ * The family is state here, not a prop, so a rotated join code shows up
+ * without going back through resolve() and reseeding.
  */
 function Ready({
+  client,
   userId,
   store,
-  family,
+  initialFamily,
   signOut,
   children,
 }: {
+  client: SupabaseClient;
   userId: string;
   store: DataStore;
-  family: Family;
+  initialFamily: Family;
   signOut: () => Promise<void>;
   children: ReactNode;
 }): JSX.Element | null {
   const members = useCollection(store.members);
   const me = members.find((member) => member.id === userId) ?? null;
+  const [family, setFamily] = useState(initialFamily);
+
+  const rotateJoinCode = useCallback(async (): Promise<void> => {
+    const { data, error } = await client.rpc('rotate_join_code');
+    if (error !== null) throw new Error(error.message);
+    setFamily((current) => ({ ...current, joinCode: data as string }));
+  }, [client]);
+
+  const refreshFamily = useCallback(async (): Promise<void> => {
+    setFamily(await readFamily(client, initialFamily.id));
+  }, [client, initialFamily.id]);
 
   if (me === null) return <p className="centred">Loading…</p>;
 
   return (
-    <SessionContext.Provider value={{ store, me, members, family, signOut }}>
+    <SessionContext.Provider value={{ store, me, members, family, rotateJoinCode, refreshFamily, signOut }}>
       {children}
     </SessionContext.Provider>
   );
