@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { Info, Plus, X } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
-import { Button, RadioList, TextField, WarningBadge, cx } from '../../../components/ui';
+import { Button, RadioList, TextField, cx } from '../../../components/ui';
+import { WarningBadge } from '../recipe/badges';
 import type { DietProfile, PresetId } from '../../../domain/types';
 import { checkDiet, parseCustomRule, PRESETS } from '../../../domain/kitchen/diet';
 import type { Preset } from '../../../domain/kitchen/diet';
 import { useKitchen } from '../KitchenContext';
-import { RecipePhoto } from '../RecipePhoto';
-import { recipePath } from '../recipeView';
+import { RecipePhoto } from '../recipe/RecipePhoto';
+import { recipePath } from '../recipe/recipeView';
 import s from './DietProfile.module.css';
 
 type Patch = Partial<Pick<DietProfile, 'presets' | 'custom' | 'conflictMode'>>;

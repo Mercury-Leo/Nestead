@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { readPreference, writePreference } from '../../../data/localStore';
+import { readPreference, writePreference } from '../../../data/local/localStore';
 
 /**
  * Cook-mode timers. They belong to this device, not the family: the oven

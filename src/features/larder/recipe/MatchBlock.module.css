@@ -1,0 +1,59 @@
+.match {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.matchCompact {
+  gap: 8px;
+}
+
+.matchTop {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.matchText {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.matchText strong {
+  color: var(--ink);
+}
+
+.matchCompact .matchText {
+  font-size: 15px;
+}
+
+.matchBar {
+  display: flex;
+  gap: 3px;
+  height: 5px;
+}
+
+.matchBar > span {
+  flex: 1;
+  border-radius: 3px;
+}
+
+.segHave {
+  background: var(--sage);
+}
+
+.segMissing {
+  background: var(--accent-soft);
+}
+
+.need {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13.5px;
+}
+
+.need strong {
+  color: var(--ink-2);
+  font-weight: 600;
+}

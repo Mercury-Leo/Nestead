@@ -1,12 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import type { DragEvent, KeyboardEvent, ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, GripVertical, ImagePlus, List, Plus, Timer, Trash2, User, X } from 'lucide-react';
+import { ArrowLeft, Check, ImagePlus, List, Plus, Timer, Trash2, User, X } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
-import { SelectButton } from '../../../components/SelectButton';
-import { useIsDesktop } from '../../../components/useMediaQuery';
-import { Button, IconButton, RemovableChip, Segmented, Stepper, TextField, cx } from '../../../components/ui';
+import { Button, IconButton, RemovableChip, Segmented, SelectButton, Stepper, TextField, cx } from '../../../components/ui';
+import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import type { AnyRecipe, NewRow, Recipe, Unit } from '../../../domain/types';
 import { CATALOG } from '../../../domain/kitchen/catalog';
 import { detectDurations } from '../../../domain/kitchen/durations';
@@ -14,91 +12,18 @@ import { parseIngredientBlock } from '../../../domain/kitchen/parse';
 import { formatDuration } from '../../../domain/kitchen/quantity';
 import { removeRecipeFromList } from '../actions';
 import { useKitchen } from '../KitchenContext';
-import { equipmentIcon } from '../detail/RecipeDetail';
-import { recipePath } from '../recipeView';
+import { equipmentIcon } from '../recipe/equipment';
+import { recipePath } from '../recipe/recipeView';
 import { emptyDraft, emptyIngredient, emptyStep, fromRecipe, rowFromLine, toRecipe, UNITS, validate } from './draft';
 import type { Draft, DraftErrors, IngredientRow, StepRow } from './draft';
 import { PHOTO_TYPES, resizePhoto } from './photo';
 import s from './AddRecipe.module.css';
+import { Card, ErrorText } from './FormCard';
+import { Handle, move, useDragList } from './reorder';
 
 /** State handed over by the import screen's "Edit before saving". */
 export interface ImportHandoff {
   draft: AnyRecipe;
-}
-
-function move<T>(list: T[], from: number, to: number): T[] {
-  if (to < 0 || to >= list.length || from === to) return list;
-  const next = [...list];
-  const [item] = next.splice(from, 1);
-  next.splice(to, 0, item as T);
-  return next;
-}
-
-/**
- * The reorder handle: drag it with a mouse, or focus it and use the arrow
- * keys. Either way the rows move; nothing here depends on dragging.
- */
-function Handle({ label, onMove }: { label: string; onMove: (delta: number) => void }): JSX.Element {
-  return (
-    <button
-      type="button"
-      className={s.handle}
-      aria-label={`${label}. Press up or down to move.`}
-      onKeyDown={(event: KeyboardEvent) => {
-        if (event.key === 'ArrowUp') {
-          event.preventDefault();
-          onMove(-1);
-        } else if (event.key === 'ArrowDown') {
-          event.preventDefault();
-          onMove(1);
-        }
-      }}
-    >
-      <GripVertical size={18} strokeWidth={2} aria-hidden />
-    </button>
-  );
-}
-
-function useDragList<T>(list: T[], onChange: (next: T[]) => void) {
-  const from = useRef<number | null>(null);
-  return (index: number) => ({
-    draggable: true,
-    onDragStart: (event: DragEvent) => {
-      from.current = index;
-      event.dataTransfer.effectAllowed = 'move';
-    },
-    onDragOver: (event: DragEvent) => {
-      if (from.current !== null) event.preventDefault();
-    },
-    onDrop: (event: DragEvent) => {
-      event.preventDefault();
-      if (from.current !== null) onChange(move(list, from.current, index));
-      from.current = null;
-    },
-    onDragEnd: () => {
-      from.current = null;
-    },
-  });
-}
-
-function Card({ title, aside, children, className }: { title: ReactNode; aside?: ReactNode; children: ReactNode; className?: string }): JSX.Element {
-  return (
-    <section className={cx(s.card, className)}>
-      <header className={s.cardHead}>
-        <h2 className={s.cardTitle}>{title}</h2>
-        {aside}
-      </header>
-      {children}
-    </section>
-  );
-}
-
-function ErrorText({ children }: { children: ReactNode }): JSX.Element {
-  return (
-    <p className={s.error} role="alert">
-      {children}
-    </p>
-  );
 }
 
 export default function AddRecipe(): JSX.Element {

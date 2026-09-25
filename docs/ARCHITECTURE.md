@@ -20,7 +20,7 @@ same way the board was, without changing anything the core guarantees.
 | UI              | React 18 + TypeScript strict  | `noUnusedLocals`, ES modules                        |
 | Build           | Vite 5                        | `npm run build` = `tsc --noEmit && vite build`      |
 | Tests           | Vitest 2 + jsdom              | `npm test`                                          |
-| Data (today)    | `localStorage`                | `src/data/localStore.ts`                            |
+| Data (today)    | `localStorage`                | `src/data/local/localStore.ts`                      |
 | Data (planned)  | Supabase Postgres + RLS       | `supabase/schema.sql`, not applied                  |
 | Auth (today)    | Fake: pick a member per tab   | `src/auth/session.tsx`                              |
 | Auth (planned)  | Supabase Auth + family join code | one account per person                           |
@@ -46,33 +46,80 @@ else is a dev dependency.
    `supabase/schema.sql` are the same shapes — camelCase in TypeScript,
    snake_case in Postgres. Change one, change the other.
 5. **Features are additive.** New screens go in `src/features/`, shared widgets
-   in `src/components/`. Adding a feature must not require editing the data
+   in `src/components/ui/`. Adding a feature must not require editing the data
    layer, the session, or the contract.
 
 ## File layout
 
 ```
 src/
-  domain/
-    types.ts                 Entities and Base/NewRow. Mirrors the SQL schema.
-    position.ts              Sparse ordering for board rows.
+  main.tsx                   Entry: providers, fonts, and the global stylesheets.
+  app/
+    App.tsx                  The signed-in app: KitchenProvider around the Shell.
+    Shell.tsx                The frame: sidebar or tab bar, the page, timers.
+    Nav.tsx                  Sidebar and TabBar, from one list of nav items.
+    AppRoutes.tsx            Every route; kitchen screens load lazily.
+  auth/
+    session.tsx              SessionProvider / useSession: the Session shape.
+    demoSession.tsx          Local backend: pick a member per tab.
+    supabaseSession.tsx      Supabase Auth: one account per person.
+    screens/                 SignIn, JoinOrCreate, SetNewPassword.
+    auth.css                 Styles for those screens (global class names).
   data/
     types.ts                 Collection and DataStore interfaces.
-    localStore.ts            localStorage backend and UI preferences. The only localStorage user.
     index.ts                 THE swap point: createStore().
     useCollection.ts         Hook: live rows from a Collection.
     collection.contract.ts   runDataStoreContract() — the backend contract.
-    localStore.test.ts       Runs the contract against the local backend.
-  auth/session.tsx           SessionProvider / useSession. Fake session.
-  components/                Shared UI kit (ui.tsx), page header, error boundary.
-  features/board/            The kanban board: BoardPage, Board, Column,
-                             TaskCard, actions.ts (moves) and icons.ts (emoji set).
-  features/larder/           The kitchen: screens, seed, timers, actions.ts.
-  domain/kitchen/            Pure kitchen logic, unit-tested.
-  styles/tokens.css          The palette and type for the whole app.
-  Shell.tsx App.tsx main.tsx styles.css   Sidebar/tab bar, routes, board styles.
-supabase/schema.sql          Target Postgres schema. Not applied.
+    local/                   localStorage backend, IndexedDB photos, device
+                             preferences. The only localStorage user.
+    supabase/                Supabase client, backend, and its test suites.
+  domain/
+    types.ts                 Entities and Base/NewRow. Mirrors the SQL schema.
+    position.ts              Sparse ordering for board rows.
+    kitchen/                 Pure kitchen logic, unit-tested: catalog, parser,
+                             pantry fit and rows, store sections, diet,
+                             scaling, durations, calories, shopping list, search.
+  components/
+    ui/                      The generic kit, one file per family (Button, Chip,
+                             controls, Sheet, …) behind an index barrel.
+    theme/                   ThemeProvider and ThemeToggle.
+    Brand, PageHeader, ErrorBoundary
+  hooks/                     useMediaQuery, useIsNarrow, useWakeLock.
+  features/
+    board/                   The kanban board, its actions, default columns,
+                             and board.css (global class names).
+    family/                  The Family page: join code and members.
+    lists/                   The shopping list: page, rows, item and section forms.
+    larder/
+      KitchenContext.tsx     The kitchen's rows, read once for every screen.
+      actions.ts             Writes that span collections (list and pantry).
+      setup.ts               ensureKitchen(): a new family's profile and staples.
+      recipe/                Recipe presentation the screens share: card, photo,
+                             badges, stars, match bar, status marker, step
+                             text, servings, the view model.
+      library/ search/ detail/ add/ import/ pantry/ profile/ cook/
+                             One folder per screen.
+      timers/                Cook-mode timer engine and host.
+      seed/                  Demo data only: recipes, pantry, list, web index.
+  styles/
+    tokens.css               The palette and type for the whole app.
+    global.css               Un-scoped rules shared across features.
+server/import/               Recipe import: guard (SSRF), fetchPage, parse,
+                             handler; index.ts is the public surface.
+functions/api/import.ts      The same handler as a Cloudflare Pages Function.
+supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 ```
+
+Dependencies point one way: `features` use `components`, `hooks`, `data` and
+`domain`; `domain` imports nothing but its own types. A screen does not reach
+into another screen's file: what two screens share lives in a shared folder
+(`larder/recipe/`) or in `domain/`. The shopping list borrows `larder/recipe/`
+and `KitchenContext` because recipes write to the list.
+
+**Styles.** Components use CSS modules. The board and the sign-in screens still
+use global class names; their sheets live with them but are imported in
+`main.tsx` after everything else, so the cascade is what it was when they were
+one file.
 
 ## The board
 
@@ -150,7 +197,7 @@ localStorage user. A running timer stores when it ends, never time left, so it
 stays right in a background tab and after a reload. `TimerHost` in the shell
 ticks them and raises the alert on whatever screen is open.
 
-**Recipe import** is `server/import.ts`, a `(Request) => Promise<Response>`
+**Recipe import** is `server/import/`, a `(Request) => Promise<Response>`
 handler with no dependencies. It runs as a Cloudflare Pages Function
 (`functions/api/import.ts`, deployed by the existing `wrangler pages deploy`)
 and as Vite dev-server middleware. It reads schema.org JSON-LD, falling back to
@@ -199,7 +246,7 @@ signs in as a user who belongs to that family, and `make` may be async for it.
 `runDataStoreContract(name, make, reset?)` in
 [collection.contract.ts](../src/data/collection.contract.ts) is the executable
 form of that list: seven Vitest cases, run today by
-[localStore.test.ts](../src/data/localStore.test.ts).
+[localStore.test.ts](../src/data/local/localStore.test.ts).
 
 ### `useSession()`
 
@@ -221,11 +268,11 @@ throughout.
    `.env.local` (see `.env.example`). Only the anon key may ever be a `VITE_*`
    value — every `VITE_*` is inlined into the public bundle. A service-role key
    must never appear in this repo or in any client config.
-3. **Write the backend.** Add `src/data/supabaseStore.ts` exporting
+3. **Write the backend.** Add `src/data/supabase/supabaseStore.ts` exporting
    `createSupabaseStore(familyId)`. Map camelCase to snake_case at this
    boundary and nowhere else. Back `subscribe` with a realtime channel filtered
    by `family_id`.
-4. **Make it pass the contract.** Add `src/data/supabaseStore.test.ts` calling
+4. **Make it pass the contract.** Add `src/data/supabase/supabaseStore.test.ts` calling
    `runDataStoreContract('supabase', createSupabaseStore, reset)` against a test
    project. The contract does not change — if a case fails, the backend is
    wrong, not the contract.

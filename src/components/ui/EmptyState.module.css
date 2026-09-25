@@ -1,0 +1,49 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.emptyArt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 128px;
+  height: 128px;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  background: var(--sunk);
+  color: var(--ink-3);
+}
+
+.emptyTitle {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.emptyBody {
+  margin-top: 12px;
+  color: var(--ink-2);
+  font-size: 16px;
+}
+
+.emptyBody p {
+  margin: 0;
+}
+
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+  margin-top: 24px;
+}

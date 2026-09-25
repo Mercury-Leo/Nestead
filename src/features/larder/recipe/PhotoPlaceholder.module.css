@@ -1,0 +1,14 @@
+.placeholder {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  filter: var(--photo-filter);
+}
+
+.placeholderSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}

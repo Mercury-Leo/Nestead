@@ -4,7 +4,7 @@ import { keyForText } from '../../domain/kitchen/fit';
 import type { PantryIndex } from '../../domain/kitchen/fit';
 import { planAddOwn, planAddRecipe, planRemoveGroup, planRemoveRecipe } from '../../domain/kitchen/list';
 import type { ListPlan } from '../../domain/kitchen/list';
-import { pantryRow } from './seed/kitchen';
+import { pantryRow } from '../../domain/kitchen/pantry';
 
 /**
  * The kitchen's writes. Screens decide what to do; these do it through the

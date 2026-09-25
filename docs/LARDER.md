@@ -9,7 +9,7 @@ onto the code, and every place the integration departs from the original brief.
 
 | Design artboard                              | Route / state                         | Code                                   |
 | -------------------------------------------- | ------------------------------------- | -------------------------------------- |
-| Library (desktop, mobile)                    | `/library`                            | `features/larder/Library.tsx`          |
+| Library (desktop, mobile)                    | `/library`                            | `features/larder/library/`             |
 | Search, pantry fit (desktop, mobile)         | `/search?q=…&pantry=1`                | `features/larder/search/`              |
 | Filters sheet (mobile)                       | Search → Filters                      | `search/FilterControls.tsx`            |
 | Search, no results (desktop, mobile)         | any search with no hits               | `search/Search.tsx`                    |
@@ -21,9 +21,10 @@ onto the code, and every place the integration departs from the original brief.
 | Shopping list, and its empty state           | `/lists`                              | `features/lists/`                      |
 | Cook mode, and timer done                    | `/recipe/:id/cook?step=6`             | `features/larder/cook/`, `timers/`     |
 
-Shared pieces: `components/ui.tsx` (buttons, chips, segmented, switch,
-checkbox, radios, fields, stepper, stars, badges, match bar, photo placeholder,
-empty state, sheet), `RecipeCard.tsx` (card and row), `RecipePhoto.tsx`.
+Shared pieces: the generic kit in `components/ui/` (buttons, chips,
+segmented, switch, checkbox, radios, fields, stepper, empty state, sheet), and
+the recipe pieces in `features/larder/recipe/` (card and row, photo and its
+placeholder, stars, badges, match bar, status marker, step text).
 
 ## Decisions made for the integration
 

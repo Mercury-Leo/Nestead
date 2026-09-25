@@ -5,7 +5,7 @@ import type { DataStore } from '../data/types';
 import { useCollection } from '../data/useCollection';
 import type { Member } from '../domain/types';
 import { clearKitchen, seedDemoKitchen } from '../features/larder/seed/seedKitchen';
-import { seedDefaultColumns } from './defaultColumns';
+import { seedDefaultColumns } from '../features/board/defaultColumns';
 import { SessionContext } from './session';
 
 /**

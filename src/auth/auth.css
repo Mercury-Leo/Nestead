@@ -1,0 +1,104 @@
+/* Sign-in, joining a family and setting a new password. */
+
+.gate {
+  max-width: 22rem;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.gate h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  letter-spacing: -0.01em;
+}
+
+.gate-sub {
+  margin: 0.25rem 0 1.5rem;
+  color: var(--muted);
+}
+
+.gate form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.gate label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.gate input {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.gate label.remember {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.gate label.remember input {
+  padding: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent);
+}
+
+.gate input:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.code-input {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.gate button[type='submit'] {
+  margin-top: 0.25rem;
+  padding: 0.55rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.gate button[type='submit']:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.error,
+.notice {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.notice {
+  color: var(--muted);
+}
+

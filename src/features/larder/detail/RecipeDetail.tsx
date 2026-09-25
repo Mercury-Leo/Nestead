@@ -8,19 +8,17 @@ import {
   CookingPot,
   ExternalLink,
   Info,
-  Layers,
   Pencil,
   Play,
-  Plus,
   ShoppingBag,
   Soup,
   Timer,
-  Utensils,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { useSession } from '../../../auth/session';
-import { useIsDesktop } from '../../../components/useMediaQuery';
-import { Button, ButtonLink, EmptyState, RatingInput, SourceBadge, Stars, Stepper, WarningBadge, cx } from '../../../components/ui';
+import { useIsDesktop } from '../../../hooks/useMediaQuery';
+import { Button, ButtonLink, EmptyState, Stepper, cx } from '../../../components/ui';
+import { RatingInput, Stars } from '../recipe/Rating';
+import { SourceBadge, WarningBadge } from '../recipe/badges';
 import type { AnyRecipe, IngredientLine } from '../../../domain/types';
 import { checkDiet } from '../../../domain/kitchen/diet';
 import { detectDurations } from '../../../domain/kitchen/durations';
@@ -28,54 +26,34 @@ import { pantryFit } from '../../../domain/kitchen/fit';
 import type { LineStatus } from '../../../domain/kitchen/fit';
 import { formatDuration } from '../../../domain/kitchen/quantity';
 import { totalMinutes } from '../../../domain/kitchen/search';
-import type { ListHandoff } from '../../lists/ShoppingList';
+import type { ListHandoff } from '../../lists/useJustAdded';
 import { addRecipeToList, saveToLibrary } from '../actions';
 import { useKitchen } from '../KitchenContext';
-import { RecipePhoto } from '../RecipePhoto';
-import { recipePath } from '../recipeView';
-import { scaledAmount, useServings } from '../servings';
-import { StepText } from '../StepText';
+import { RecipePhoto } from '../recipe/RecipePhoto';
+import { recipePath } from '../recipe/recipeView';
+import { scaledAmount, useServings } from '../recipe/servings';
+import { equipmentIcon } from '../recipe/equipment';
+import { StatusMarker } from '../recipe/StatusMarker';
+import { StepText } from '../recipe/StepText';
 import s from './RecipeDetail.module.css';
 
-export function StatusMarker({ status }: { status: LineStatus }): JSX.Element {
-  if (status === 'have') {
-    return (
-      <span className={cx(s.marker, s.markerHave)} aria-label="Have">
-        <Check size={14} strokeWidth={3} aria-hidden />
-      </span>
-    );
-  }
-  if (status === 'staple') {
-    return (
-      <span className={cx(s.marker, s.markerStaple)} aria-label="Staple">
-        <span className={s.stapleDot} />
-      </span>
-    );
-  }
-  return (
-    <span className={cx(s.marker, s.markerMissing)} aria-label="To buy">
-      <Plus size={14} strokeWidth={2.6} aria-hidden />
-    </span>
-  );
-}
-
-export function Legend({ have, staple, missing }: { have: number; staple: number; missing: number }): JSX.Element {
+function Legend({ have, staple, missing }: { have: number; staple: number; missing: number }): JSX.Element {
   return (
     <p className={s.legend}>
       <span>
-        <StatusMarker status="have" /> Have · {have}
+        <StatusMarker status="have" className={s.legendMarker} /> Have · {have}
       </span>
       <span>
-        <StatusMarker status="staple" /> Staple · {staple}
+        <StatusMarker status="staple" className={s.legendMarker} /> Staple · {staple}
       </span>
       <span>
-        <StatusMarker status="missing" /> To buy · {missing}
+        <StatusMarker status="missing" className={s.legendMarker} /> To buy · {missing}
       </span>
     </p>
   );
 }
 
-export function IngredientRow({ line, status, amount }: { line: IngredientLine; status: LineStatus; amount: string }): JSX.Element {
+function IngredientRow({ line, status, amount }: { line: IngredientLine; status: LineStatus; amount: string }): JSX.Element {
   return (
     <li className={cx(s.ingredient, status === 'missing' && s.ingredientMissing)}>
       <StatusMarker status={status} />
@@ -88,14 +66,6 @@ export function IngredientRow({ line, status, amount }: { line: IngredientLine; 
       {status === 'missing' && <span className={s.toBuy}>To buy</span>}
     </li>
   );
-}
-
-export function equipmentIcon(name: string): LucideIcon {
-  const lower = name.toLowerCase();
-  if (/foil|lid|paper|wrap/.test(lower)) return Layers;
-  if (/bowl/.test(lower)) return Soup;
-  if (/skillet|pan|pot|oven|wok|dish|tin|tray/.test(lower)) return CookingPot;
-  return Utensils;
 }
 
 function DurationChip({ phrase }: { phrase: string }): JSX.Element {

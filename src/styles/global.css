@@ -1,0 +1,38 @@
+/*
+ * Global, un-scoped rules shared across features. Colours come from
+ * styles/tokens.css. Feature stylesheets that are still global (the board's,
+ * the sign-in screens') sit with their feature and are imported in main.tsx,
+ * after the CSS modules, so the cascade is the same as when this was one file.
+ */
+
+code {
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 0.9em;
+}
+
+.centred {
+  padding: 3rem 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.link {
+  margin-top: 0.9rem;
+  padding: 0.2rem;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link.quiet {
+  color: var(--muted);
+}
+

@@ -1,154 +1,21 @@
-import { useMemo, useRef, useState } from 'react';
-import type { PointerEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { List, Milk, Plus, X } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
-import { useIsDesktop } from '../../../components/useMediaQuery';
-import { Button, Chip, EmptyState, RemovableChip, Segmented, Sheet, TextField, cx } from '../../../components/ui';
-import type { PantryItem, StoreSection } from '../../../domain/types';
-import { keyForText } from '../../../domain/kitchen/fit';
+import { useIsDesktop } from '../../../hooks/useMediaQuery';
+import { Button, Chip, EmptyState, RemovableChip, Segmented, TextField, cx } from '../../../components/ui';
+import type { PantryItem } from '../../../domain/types';
 import { pantryFit } from '../../../domain/kitchen/fit';
-import { canonicalId } from '../../../domain/kitchen/normalize';
 import { addToPantry } from '../actions';
 import { useKitchen } from '../KitchenContext';
-import { pantryRow } from '../seed/kitchen';
-import { StatusMarker } from '../detail/RecipeDetail';
+import { groupBySection } from '../../../domain/kitchen/sections';
+import { StatusMarker } from '../recipe/StatusMarker';
 import { PantryAdd, pantryKeys } from './PantryAdd';
+import { BulkAdd } from './BulkAdd';
 import s from './Pantry.module.css';
-
-const SECTIONS: StoreSection[] = [
-  'Produce',
-  'Meat & fish',
-  'Dairy & eggs',
-  'Bakery',
-  'Grains & pasta',
-  'Cans & jars',
-  'International aisle',
-  'Spices & dried herbs',
-  'Baking',
-  'Frozen',
-  'Drinks',
-  'Other',
-];
+import { SwipeRow } from './SwipeRow';
 
 const QUICK_ADD = ['Eggs', 'Onions', 'Garlic', 'Rice', 'Pasta', 'Lemons', 'Butter', 'Canned tomatoes'];
-
-export function groupBySection<T extends { section: StoreSection }>(items: readonly T[]): [StoreSection, T[]][] {
-  return SECTIONS.map((section) => [section, items.filter((item) => item.section === section)] as [StoreSection, T[]]).filter(
-    ([, rows]) => rows.length > 0,
-  );
-}
-
-/** A row you can swipe left to reveal Remove. The × button does the same. */
-function SwipeRow({ item, onRemove }: { item: PantryItem; onRemove: () => void }): JSX.Element {
-  const [dx, setDx] = useState(0);
-  const start = useRef<{ x: number; y: number; id: number } | null>(null);
-  const REVEAL = 96;
-
-  const down = (event: PointerEvent<HTMLDivElement>): void => {
-    if (event.pointerType === 'mouse') return;
-    start.current = { x: event.clientX - dx, y: event.clientY, id: event.pointerId };
-  };
-  const move = (event: PointerEvent<HTMLDivElement>): void => {
-    const origin = start.current;
-    if (origin === null) return;
-    const x = event.clientX - origin.x;
-    if (Math.abs(event.clientY - origin.y) > Math.abs(x) && dx === 0) return;
-    setDx(Math.max(-REVEAL, Math.min(0, x)));
-  };
-  const up = (): void => {
-    start.current = null;
-    setDx((value) => (value < -REVEAL / 2 ? -REVEAL : 0));
-  };
-
-  return (
-    <li className={cx(s.swipe, dx !== 0 && s.swipeOpen)}>
-      <button type="button" className={s.swipeAction} tabIndex={dx === 0 ? -1 : 0} onClick={onRemove}>
-        Remove
-      </button>
-      <div
-        className={s.swipeFront}
-        style={{ transform: `translateX(${dx}px)` }}
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={up}
-        onPointerCancel={up}
-      >
-        <span className={s.swipeName}>{item.name}</span>
-        <button type="button" className={s.rowRemove} aria-label={`Remove ${item.name}`} onClick={onRemove}>
-          <X size={18} strokeWidth={2} aria-hidden />
-        </button>
-      </div>
-    </li>
-  );
-}
-
-function BulkAdd({ open, onClose, existing }: { open: boolean; onClose: () => void; existing: PantryItem[] }): JSX.Element {
-  const { store } = useSession();
-  const [text, setText] = useState('');
-  const keys = pantryKeys(existing.filter((item) => item.kind === 'have'));
-  const names = [
-    ...new Set(
-      text
-        .split(/[\n,]/)
-        .map((part) => part.replace(/^[-*•\d.)\s]+/, '').trim())
-        .filter((part) => part !== ''),
-    ),
-  ];
-  const parsed = names.map((name) => {
-    const id = canonicalId(name);
-    return { name, id, already: keys.has(keyForText(name, id)) };
-  });
-  const toAdd = parsed.filter((row) => !row.already);
-
-  return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title="Bulk add"
-      footer={
-        <Button
-          variant="primary"
-          size="bar"
-          block
-          disabled={toAdd.length === 0}
-          onClick={() => {
-            void addToPantry(store, toAdd.map((row) => row.name), 'have', existing).then(() => {
-              setText('');
-              onClose();
-            });
-          }}
-        >
-          Add {toAdd.length} item{toAdd.length === 1 ? '' : 's'}
-        </Button>
-      }
-    >
-      <label className={s.bulkLabel} htmlFor="bulk-text">
-        Paste or type what you have, one per line or separated by commas.
-      </label>
-      <textarea
-        id="bulk-text"
-        className={s.bulkText}
-        rows={6}
-        value={text}
-        placeholder={'eggs\nfeta\nbasil, lemons'}
-        onChange={(event) => setText(event.target.value)}
-      />
-      {parsed.length > 0 && (
-        <ul className={s.bulkPreview} aria-label="Preview">
-          {parsed.map((row) => (
-            <li key={row.name}>
-              <span>{row.name}</span>
-              <span className={s.bulkStatus}>
-                {row.already ? 'Already in your pantry' : row.id !== undefined ? pantryRow(row.name, 'have').section : 'New item · Other'}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Sheet>
-  );
-}
 
 export function Pantry(): JSX.Element {
   const { store } = useSession();

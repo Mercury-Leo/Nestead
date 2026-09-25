@@ -98,21 +98,25 @@ Nothing else: timers, drag handles, sheets and the import parser are hand-writte
 
 ```
 src/
+  app/                       Shell, navigation (sidebar and tab bar), routes.
+  auth/                      SessionProvider / useSession; screens/ for sign-in.
+  data/                      Collection/DataStore, the swap point, useCollection,
+                             the contract; local/ and supabase/ backends.
   domain/                    Entities, Base, NewRow, board ordering.
   domain/kitchen/            Pure kitchen logic: ingredient catalog and parser,
                              pantry fit, diet rules, scaling, timers in text,
                              calorie estimates, shopping list, search.
-  data/                      Collection/DataStore, local and Supabase backends,
-                             photo stores, the swap point, useCollection, the
-                             contract.
-  auth/                      SessionProvider / useSession, sign-in screens.
+  components/ui/             The generic UI kit, one file per component family.
+  components/theme/          Light/dark theme provider and toggle.
+  hooks/                     useMediaQuery, useIsNarrow, useWakeLock.
   features/board/            The kanban board.
+  features/family/           The Family page and join code.
   features/lists/            The shopping list: Supermarket, General, your own sections.
-  features/larder/           The kitchen screens, seed data and timer engine.
-  components/                Shared UI kit, page header, error boundary.
-  styles/tokens.css          Design tokens: the one palette for the whole app.
-  Shell.tsx  App.tsx  main.tsx  styles.css   Sidebar/tab bar and routes.
-server/import.ts             Recipe import: fetch a page, read schema.org data.
+  features/larder/           The kitchen: a folder per screen, recipe/ for what
+                             they share, timers/, and seed/ (demo data only).
+  styles/                    tokens.css (the one palette) and global.css.
+  main.tsx                   Entry point.
+server/import/               Recipe import: fetch a page, read schema.org data.
 functions/api/import.ts      The same, as a Cloudflare Pages Function.
 supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 docs/ARCHITECTURE.md         The long version, including the Supabase path.

@@ -16,7 +16,9 @@ import {
 } from '../../../domain/kitchen/list';
 import { formatAmount, scaleQty } from '../../../domain/kitchen/quantity';
 import { defaultFilters, search, suggestions } from '../../../domain/kitchen/search';
-import { DEFAULT_STAPLES, SEED_CUSTOM_RULES, SEED_HAVE, SEED_LIST, SEED_PRESETS, listRow, pantryRow } from './kitchen';
+import { pantryRow } from '../../../domain/kitchen/pantry';
+import { DEFAULT_STAPLES } from '../setup';
+import { SEED_CUSTOM_RULES, SEED_HAVE, SEED_LIST, SEED_PRESETS, listRow } from './kitchen';
 import { SEED_LIBRARY } from './recipes';
 import { WEB_INDEX } from './webIndex';
 

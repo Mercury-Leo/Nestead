@@ -1,5 +1,5 @@
-import { createLocalStore } from './localStore';
-import { createSupabaseStore } from './supabaseStore';
+import { createLocalStore } from './local/localStore';
+import { createSupabaseStore } from './supabase/supabaseStore';
 import type { DataStore } from './types';
 
 /**

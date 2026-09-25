@@ -1,0 +1,78 @@
+import { useState } from 'react';
+import { useSession } from '../../../auth/session';
+import { Button, Sheet } from '../../../components/ui';
+import type { PantryItem } from '../../../domain/types';
+import { keyForText } from '../../../domain/kitchen/fit';
+import { canonicalId } from '../../../domain/kitchen/normalize';
+import { addToPantry } from '../actions';
+import { pantryRow } from '../../../domain/kitchen/pantry';
+import { pantryKeys } from './PantryAdd';
+import s from './Pantry.module.css';
+
+/** A sheet for pasting a whole list into the pantry at once. */
+export function BulkAdd({ open, onClose, existing }: { open: boolean; onClose: () => void; existing: PantryItem[] }): JSX.Element {
+  const { store } = useSession();
+  const [text, setText] = useState('');
+  const keys = pantryKeys(existing.filter((item) => item.kind === 'have'));
+  const names = [
+    ...new Set(
+      text
+        .split(/[\n,]/)
+        .map((part) => part.replace(/^[-*•\d.)\s]+/, '').trim())
+        .filter((part) => part !== ''),
+    ),
+  ];
+  const parsed = names.map((name) => {
+    const id = canonicalId(name);
+    return { name, id, already: keys.has(keyForText(name, id)) };
+  });
+  const toAdd = parsed.filter((row) => !row.already);
+
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Bulk add"
+      footer={
+        <Button
+          variant="primary"
+          size="bar"
+          block
+          disabled={toAdd.length === 0}
+          onClick={() => {
+            void addToPantry(store, toAdd.map((row) => row.name), 'have', existing).then(() => {
+              setText('');
+              onClose();
+            });
+          }}
+        >
+          Add {toAdd.length} item{toAdd.length === 1 ? '' : 's'}
+        </Button>
+      }
+    >
+      <label className={s.bulkLabel} htmlFor="bulk-text">
+        Paste or type what you have, one per line or separated by commas.
+      </label>
+      <textarea
+        id="bulk-text"
+        className={s.bulkText}
+        rows={6}
+        value={text}
+        placeholder={'eggs\nfeta\nbasil, lemons'}
+        onChange={(event) => setText(event.target.value)}
+      />
+      {parsed.length > 0 && (
+        <ul className={s.bulkPreview} aria-label="Preview">
+          {parsed.map((row) => (
+            <li key={row.name}>
+              <span>{row.name}</span>
+              <span className={s.bulkStatus}>
+                {row.already ? 'Already in your pantry' : row.id !== undefined ? pantryRow(row.name, 'have').section : 'New item · Other'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Sheet>
+  );
+}

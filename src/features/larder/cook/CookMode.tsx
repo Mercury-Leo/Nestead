@@ -1,170 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import type { TouchEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Bell, Check, Hand, List, Pause, Play, Timer as TimerIcon, X } from 'lucide-react';
-import { useIsDesktop } from '../../../components/useMediaQuery';
+import { ArrowLeft, ArrowRight, Check, Hand, List, X } from 'lucide-react';
+import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { cx } from '../../../components/ui';
-import type { AnyRecipe, IngredientLine, Step } from '../../../domain/types';
-import { catalogFor } from '../../../domain/kitchen/calories';
+import type { AnyRecipe } from '../../../domain/types';
 import type { DetectedDuration } from '../../../domain/kitchen/durations';
-import { detectDurations } from '../../../domain/kitchen/durations';
-import { containsPhrase } from '../../../domain/kitchen/normalize';
-import { formatClock } from '../../../domain/kitchen/quantity';
 import { useKitchen } from '../KitchenContext';
-import { recipePath } from '../recipeView';
-import { scaledAmount, servingsFor } from '../servings';
-import { chipKey, StepText } from '../StepText';
-import { addMinute, cancel, clearFinished, dismiss, findTimer, pause, remaining, resume, start, useNow, useTimers } from '../timers/store';
-import type { Timer } from '../timers/store';
+import { recipePath } from '../recipe/recipeView';
+import { scaledAmount, servingsFor } from '../recipe/servings';
+import { chipKey, StepText } from '../recipe/StepText';
+import { clearFinished, findTimer, pause, resume, start, useNow, useTimers } from '../timers/store';
+import { useWakeLock } from '../../../hooks/useWakeLock';
 import s from './CookMode.module.css';
-
-/** A step's short name: its own, or the verb of its first timer. */
-function stepTitle(step: Step | undefined, index: number): string | undefined {
-  if (step === undefined) return undefined;
-  if (step.title !== undefined) return step.title;
-  const first = detectDurations(step.text, index + 1)[0];
-  if (first === undefined) return undefined;
-  const verb = /^[A-Za-z]+/.exec(first.phrase)?.[0];
-  return verb !== undefined && !/^\d/.test(verb) && verb.length > 2 ? verb.charAt(0).toUpperCase() + verb.slice(1).toLowerCase() : undefined;
-}
-
-/** A step's ingredients: listed on the step, or named in its text. */
-function stepIngredients(recipe: AnyRecipe, step: Step | undefined): IngredientLine[] {
-  if (step === undefined) return [];
-  if (step.ingredientIds !== undefined) {
-    return step.ingredientIds.map((id) => recipe.ingredients.find((line) => line.id === id)).filter((line) => line !== undefined);
-  }
-  return recipe.ingredients.filter((line) => {
-    const item = catalogFor(line);
-    const names = [line.item, ...(item === undefined ? [] : [item.name, ...item.aliases, ...item.groups])];
-    return names.some((name) => containsPhrase(step.text, name));
-  });
-}
-
-/** Holds the screen awake while cooking, and takes it back on the way out. */
-function useWakeLock(): void {
-  useEffect(() => {
-    let lock: { release: () => Promise<void> } | null = null;
-    let active = true;
-    const request = async (): Promise<void> => {
-      try {
-        const nav = navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> } };
-        if (nav.wakeLock === undefined || document.visibilityState !== 'visible') return;
-        const next = await nav.wakeLock.request('screen');
-        if (active) lock = next;
-        else void next.release();
-      } catch {
-        // Not supported or not allowed; cooking goes on regardless.
-      }
-    };
-    void request();
-    // The browser drops the lock when the tab is hidden; take it again on return.
-    const onVisible = (): void => {
-      if (document.visibilityState === 'visible') void request();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      active = false;
-      document.removeEventListener('visibilitychange', onVisible);
-      void lock?.release().catch(() => undefined);
-    };
-  }, []);
-}
-
-function TimerChip({
-  duration,
-  timer,
-  now,
-  onPress,
-}: {
-  duration: DetectedDuration;
-  timer: Timer | undefined;
-  now: number;
-  onPress: () => void;
-}): JSX.Element {
-  const left = timer === undefined ? duration.seconds : remaining(timer, now);
-  const state = timer?.state ?? 'idle';
-  const label =
-    state === 'idle'
-      ? `Start timer: ${duration.phrase}`
-      : state === 'running'
-        ? `Pause timer: ${duration.phrase}, ${formatClock(left)} left`
-        : state === 'paused'
-          ? `Resume timer: ${duration.phrase}, ${formatClock(left)} left`
-          : `${duration.phrase} is done. Start again`;
-  return (
-    <button type="button" className={cx(s.chip, s[`chip_${state}`])} aria-label={label} onClick={onPress}>
-      <span className={s.chipIcon} aria-hidden>
-        {state === 'idle' ? (
-          <Play size={16} strokeWidth={0} fill="currentColor" />
-        ) : state === 'done' ? (
-          <Check size={18} strokeWidth={2.6} />
-        ) : (
-          <TimerIcon size={18} strokeWidth={2.2} />
-        )}
-      </span>
-      <span className={s.chipPhrase}>{duration.phrase}</span>
-      {state === 'running' && <span className={cx(s.chipTime, 'tabular')}>· {formatClock(left)}</span>}
-      {state === 'paused' && <span className={cx(s.chipTime, 'tabular')}>· paused {formatClock(left)}</span>}
-      {state === 'done' && <span className={s.chipTime}>· done</span>}
-    </button>
-  );
-}
-
-function TrayCard({ timer, now, desktop }: { timer: Timer; now: number; desktop: boolean }): JSX.Element {
-  const left = remaining(timer, now);
-  if (timer.state === 'done') {
-    return (
-      <div className={cx(s.card, s.cardDone)}>
-        <span className={s.cardBell} aria-hidden>
-          <Bell size={22} strokeWidth={2} />
-        </span>
-        <div className={s.cardText}>
-          <span className={s.cardTitle}>{timer.label} — done</span>
-          <span className={s.cardSub}>{formatClock(timer.durationSec)} finished</span>
-        </div>
-        {desktop && (
-          <button type="button" className={s.cardGhost} onClick={() => addMinute(timer.id)}>
-            +1 min
-          </button>
-        )}
-        <button type="button" className={s.cardDark} onClick={() => dismiss(timer.id)}>
-          Dismiss
-        </button>
-      </div>
-    );
-  }
-  const progress = timer.durationSec === 0 ? 1 : 1 - left / timer.durationSec;
-  return (
-    <div className={cx(s.card, timer.state === 'paused' && s.cardPaused)}>
-      <div className={s.cardText}>
-        <span className={s.cardTitle}>
-          {timer.label}
-          {desktop ? <span className={s.cardPhrase}> · {timer.phrase}</span> : null}
-        </span>
-        {!desktop && <span className={s.cardPhrase}>{timer.phrase}</span>}
-        <span className={s.bar} aria-hidden>
-          <span style={{ width: `${Math.min(100, Math.max(2, progress * 100))}%` }} />
-        </span>
-      </div>
-      <span className={cx(s.clock, 'tabular')} aria-label={`${formatClock(left)} left`}>
-        {formatClock(left)}
-      </span>
-      {timer.state === 'running' ? (
-        <button type="button" className={s.round} aria-label={`Pause ${timer.label}`} onClick={() => pause(timer.id)}>
-          <Pause size={22} strokeWidth={0} fill="currentColor" />
-        </button>
-      ) : (
-        <button type="button" className={s.round} aria-label={`Resume ${timer.label}`} onClick={() => resume(timer.id)}>
-          <Play size={22} strokeWidth={0} fill="currentColor" />
-        </button>
-      )}
-      <button type="button" className={s.round} aria-label={`Cancel ${timer.label}`} onClick={() => cancel(timer.id)}>
-        <X size={22} strokeWidth={2.2} />
-      </button>
-    </div>
-  );
-}
+import { stepIngredients, stepTitle } from './steps';
+import { TimerChip, TrayCard } from './TimerChips';
 
 export default function CookMode(): JSX.Element {
   const { id = '' } = useParams();

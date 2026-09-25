@@ -1,0 +1,106 @@
+.button {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms, border-color 120ms, filter 120ms;
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.md {
+  min-height: 44px;
+}
+
+.lg {
+  min-height: 52px;
+  padding: 0 22px;
+}
+
+.xl {
+  min-height: 58px;
+  padding: 0 24px;
+  font-size: 16px;
+}
+
+.bar {
+  min-height: 56px;
+  padding: 0 20px;
+  font-size: 16px;
+}
+
+.block {
+  width: 100%;
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.primary:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.secondary {
+  border-color: var(--line-2);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--sunk);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--sunk);
+  color: var(--ink);
+}
+
+.sage {
+  background: var(--sage);
+  color: var(--on-accent);
+}
+
+.sage:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.dark {
+  background: var(--ink);
+  color: var(--on-accent);
+}
+
+.iconButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.iconButton.secondary {
+  border-color: var(--line-2);
+}

@@ -1,0 +1,30 @@
+.marker {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.markerHave {
+  background: var(--sage);
+  color: var(--on-accent);
+}
+
+.markerStaple {
+  border: 1.5px dashed var(--staple);
+}
+
+.stapleDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--staple);
+}
+
+.markerMissing {
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+}

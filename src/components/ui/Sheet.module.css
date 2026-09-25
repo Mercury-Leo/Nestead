@@ -1,0 +1,81 @@
+.sheet {
+  width: min(560px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(88vh, 900px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-drop);
+}
+
+.sheet::backdrop {
+  background: var(--scrim);
+}
+
+.sheetInner {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.sheetHandle {
+  display: none;
+}
+
+.sheetHead {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 8px 24px;
+}
+
+.sheetTitle {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sheetBody {
+  overflow-y: auto;
+  padding: 8px 24px 24px;
+}
+
+.sheetFoot {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--card);
+}
+
+@media (max-width: 1023px) {
+  .sheet {
+    width: 100%;
+    max-height: 92vh;
+    margin: auto 0 0;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    box-shadow: var(--shadow-sheet);
+  }
+
+  .sheetHandle {
+    display: block;
+    width: 44px;
+    height: 5px;
+    margin: 10px auto 0;
+    border-radius: 3px;
+    background: var(--line-2);
+  }
+
+  .sheetHead {
+    padding: 8px 16px 4px 20px;
+  }
+
+  .sheetBody {
+    padding: 8px 20px 20px;
+  }
+}

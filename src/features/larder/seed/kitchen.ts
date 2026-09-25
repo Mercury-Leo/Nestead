@@ -1,4 +1,4 @@
-import type { CustomDietRule, ListItem, NewRow, PantryItem, PresetId } from '../../../domain/types';
+import type { CustomDietRule, ListItem, NewRow, PresetId } from '../../../domain/types';
 import { catalogFor } from '../../../domain/kitchen/calories';
 import { GENERAL, SUPERMARKET } from '../../../domain/kitchen/list';
 import { canonicalId } from '../../../domain/kitchen/normalize';
@@ -20,19 +20,6 @@ export const SEED_HAVE: readonly string[] = [
   // Spices & dried herbs
   'Smoked paprika', 'Ground cumin', 'Dried oregano', 'Bay leaves', 'Cinnamon',
 ];
-
-/** What every new family starts with, demo or not. */
-export const DEFAULT_STAPLES: readonly string[] = [
-  'Water', 'Salt', 'Black pepper', 'Olive oil', 'Vegetable oil', 'Sugar', 'All-purpose flour', 'Baking soda',
-];
-
-export function pantryRow(name: string, kind: PantryItem['kind']): NewRow<PantryItem> {
-  const id = canonicalId(name);
-  const line = { id: '', qty: null, unit: null, item: name, canonicalId: id };
-  const row: NewRow<PantryItem> = { name, section: catalogFor(line)?.section ?? 'Other', kind };
-  if (id !== undefined) row.canonicalId = id;
-  return row;
-}
 
 export const SEED_PRESETS: Partial<Record<PresetId, boolean>> = { nutAllergy: true };
 

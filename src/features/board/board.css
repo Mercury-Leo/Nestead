@@ -1,0 +1,500 @@
+/*
+ * The board. Global class names, colours from styles/tokens.css, which maps
+ * the names used here (--bg, --surface, --text, --muted, --border, --accent)
+ * onto the kitchen palette.
+ */
+
+/* The shell pads the page; the board only needs room to be wide. */
+.app {
+  min-width: 0;
+}
+
+.me {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.me select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+/* ---------------------------------------------------------------- board -- */
+
+.board {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-top: 1.25rem;
+  padding-bottom: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.column {
+  display: flex;
+  flex: 0 0 15rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: calc(100vh - 9rem);
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  scroll-snap-align: start;
+}
+
+.column-head {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.column-name {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.column-name:hover {
+  border-color: var(--border);
+}
+
+.column-count {
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.column-rename {
+  flex: 1;
+  min-width: 0;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.4rem;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+}
+
+.column-tools {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.column-tools button {
+  padding: 0.15rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  background: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.column-tools button:hover:not(:disabled) {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.column-tools button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--bg);
+}
+
+.card-done .card-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.card-head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.card-icon {
+  flex: 0 0 auto;
+  font-size: 1rem;
+}
+
+.card-title {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.card-who {
+  flex: 0 0 auto;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.7rem;
+  line-height: 1.3rem;
+  text-align: center;
+}
+
+.card-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 0.5rem 0.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+
+.card-options label {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.card-description {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.card-options select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.2rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.icon-picker {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.15rem;
+}
+
+.icon-picker button {
+  padding: 0.15rem;
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  background: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.icon-picker button:hover,
+.icon-picker .icon-on {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.card-actions button {
+  flex: 1;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.card-actions button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+button.danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.card-confirm {
+  align-items: center;
+}
+
+.card-confirm span {
+  flex: 1.4;
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.card-actions button.danger-solid,
+.card-actions button.danger-solid:hover {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
+.composer {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.composer input,
+.column-new input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.composer button,
+.column-new button {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.composer button:disabled,
+.column-new button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.column-new {
+  gap: 0.4rem;
+  border-style: dashed;
+  background: none;
+}
+
+/* ------------------------------------------------- phone: stacked -------- */
+
+/*
+ * Columns stack into collapsible sections below 768px. Side-by-side columns on
+ * a phone mean swiping to find anything and never seeing the whole board; the
+ * stacked headers keep every column and its count on screen.
+ */
+.board-stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  overflow-x: visible;
+  scroll-snap-type: none;
+}
+
+.board-stacked .column {
+  flex: 0 0 auto;
+  width: 100%;
+  max-height: none;
+}
+
+.board-stacked .cards {
+  overflow-y: visible;
+}
+
+.board-stacked .column-folded {
+  padding-bottom: 0.6rem;
+}
+
+.column-chevron {
+  display: inline-block;
+  width: 0.8rem;
+  color: var(--accent);
+  font-size: 0.6rem;
+}
+
+@media (max-width: 767px) {
+  /* The whole header is the expand target, so give it real height. */
+  .column-name {
+    flex: 1;
+    justify-content: flex-start;
+    padding: 0.45rem 0.3rem;
+  }
+
+  /* Bigger touch targets: these are 12px glyphs otherwise. */
+  .column-tools button {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .card-head {
+    padding: 0.65rem 0.5rem;
+  }
+}
+
+.who {
+  display: inline-flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.me-name {
+  padding: 0.2rem 0.6rem;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.invite {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.6rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.code {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-size: 0.95em;
+  letter-spacing: 0.12em;
+}
+
+/* ------------------------------------------------------- recurrence ----- */
+
+.card-repeat {
+  margin-left: 0.4rem;
+  color: var(--accent);
+  font-size: 0.8em;
+}
+
+.card-overdue {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--on-danger);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  vertical-align: 0.05em;
+}
+
+.card-due {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.card-due.is-overdue {
+  color: var(--danger);
+}
+
+/* --------------------------------------------------------- board filter -- */
+
+.board-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 1.25rem;
+}
+
+.board-filter input,
+.board-filter select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.board-filter input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.board-filter + .board {
+  margin-top: 0.75rem;
+}
+
+.filter-mine {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.filter-mine[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* .link carries a top margin for forms; here it has to sit on the row. */
+.board-filter .link {
+  margin-top: 0;
+}

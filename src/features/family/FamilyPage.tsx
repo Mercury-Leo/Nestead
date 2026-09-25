@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, Copy, RefreshCw } from 'lucide-react';
 import { useSession } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
-import { ThemeToggle } from '../../components/ThemeToggle';
+import { ThemeToggle } from '../../components/theme/ThemeToggle';
 import { Button, Sheet } from '../../components/ui';
 import s from './FamilyPage.module.css';
 

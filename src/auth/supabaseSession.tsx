@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getSupabaseClient, takeRecoveryLink } from '../data/supabaseClient';
-import { createSupabaseStore } from '../data/supabaseStore';
+import { getSupabaseClient, takeRecoveryLink } from '../data/supabase/supabaseClient';
+import { createSupabaseStore } from '../data/supabase/supabaseStore';
 import type { DataStore } from '../data/types';
 import { useCollection } from '../data/useCollection';
-import { ensureKitchen } from '../features/larder/seed/seedKitchen';
-import { seedDefaultColumns } from './defaultColumns';
-import { JoinOrCreate } from './JoinOrCreate';
+import { ensureKitchen } from '../features/larder/setup';
+import { seedDefaultColumns } from '../features/board/defaultColumns';
+import { JoinOrCreate } from './screens/JoinOrCreate';
 import type { Family } from './session';
 import { SessionContext } from './session';
-import { SetNewPassword } from './SetNewPassword';
-import { SignIn } from './SignIn';
+import { SetNewPassword } from './screens/SetNewPassword';
+import { SignIn } from './screens/SignIn';
 
 /**
  * The real session.

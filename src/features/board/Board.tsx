@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from '../../auth/session';
-import { useIsNarrow } from '../../components/useIsNarrow';
-import { readPreference, writePreference } from '../../data/localStore';
+import { useIsNarrow } from '../../hooks/useIsNarrow';
+import { readPreference, writePreference } from '../../data/local/localStore';
 import { useCollection } from '../../data/useCollection';
 import { comparePosition } from '../../domain/position';
 import type { Task } from '../../domain/types';
