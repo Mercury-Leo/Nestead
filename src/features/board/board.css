@@ -153,7 +153,7 @@
   background: none;
   color: var(--text);
   font: inherit;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -385,6 +385,7 @@ button.danger:hover:not(:disabled) {
 
 .who {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
 }
@@ -420,13 +421,13 @@ button.danger:hover:not(:disabled) {
 /* ------------------------------------------------------- recurrence ----- */
 
 .card-repeat {
-  margin-left: 0.4rem;
+  margin-inline-start: 0.4rem;
   color: var(--accent);
   font-size: 0.8em;
 }
 
 .card-overdue {
-  margin-left: 0.4rem;
+  margin-inline-start: 0.4rem;
   padding: 0.05rem 0.35rem;
   border-radius: 999px;
   background: var(--danger);

@@ -29,11 +29,14 @@
   font-size: 15px;
 }
 
+/* Never wider than the header: a longer language wraps the actions onto a second line. */
 .actions {
   display: flex;
+  flex-wrap: wrap;
   flex-shrink: 0;
   gap: 12px;
   align-items: center;
+  max-width: 100%;
 }
 
 @media (min-width: 1024px) {

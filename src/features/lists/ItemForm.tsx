@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
 import { Button, RadioList, TextField } from '../../components/ui';
 import type { ListItem, NewRow } from '../../domain/types';
@@ -17,6 +18,7 @@ import type { Group } from './ListRows';
 
 /** Rename, add a note, move to another section, or take off the list. */
 export function ItemForm({ item, groups, onDone }: { item: ListItem; groups: Group[]; onDone: () => void }): JSX.Element {
+  const { t } = useTranslation();
   const { store } = useSession();
   const [name, setName] = useState(item.name);
   const [note, setNote] = useState(item.note ?? '');
@@ -57,31 +59,30 @@ export function ItemForm({ item, groups, onDone }: { item: ListItem; groups: Gro
 
   return (
     <form className={s.sheetForm} onSubmit={(event) => void save(event)}>
-      <TextField label="Name" showLabel value={name} onChange={(event) => setName(event.target.value)} required />
+      <TextField label={t('lists.form.name')} showLabel dir="auto" value={name} onChange={(event) => setName(event.target.value)} required />
       <TextField
-        label="Amount or note"
+        label={t('lists.form.note')}
         showLabel
-        placeholder="e.g. 2 packs, the big one"
+        placeholder={t('lists.form.notePlaceholder')}
+        dir="auto"
         value={note}
         onChange={(event) => setNote(event.target.value)}
       />
       {recipes !== null && (
-        <p className={s.muted}>
-          {formatListQty(item.parts)} {recipes}.
-        </p>
+        <p className={s.muted}>{t('lists.form.recipes', { qty: formatListQty(item.parts), recipes })}</p>
       )}
       <div>
         <p className={s.legend} aria-hidden>
-          Section
+          {t('lists.form.section')}
         </p>
-        <RadioList label="Section" value={groupId} onChange={setGroupId} options={groups.map((group) => ({ value: group.id, label: group.name }))} />
+        <RadioList label={t('lists.form.section')} value={groupId} onChange={setGroupId} options={groups.map((group) => ({ value: group.id, label: <span dir="auto">{group.name}</span> }))} />
       </div>
       <div className={s.sheetActions}>
         <Button variant="ghost" icon={Trash2} disabled={busy} onClick={() => void remove()}>
-          Remove
+          {t('common.remove')}
         </Button>
         <Button type="submit" variant="primary" size="lg" disabled={busy || name.trim() === ''}>
-          Save
+          {t('common.save')}
         </Button>
       </div>
     </form>

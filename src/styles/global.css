@@ -5,6 +5,25 @@
  * after the CSS modules, so the cascade is the same as when this was one file.
  */
 
+/*
+ * Reading direction, for the few things logical properties can't express.
+ * --dir is 1 in LTR and -1 in RTL. Multiply a sideways
+ * translate by it. <html dir> is set by index.html and the locale provider.
+ */
+:root,
+[dir='ltr'] {
+  --dir: 1;
+}
+
+[dir='rtl'] {
+  --dir: -1;
+}
+
+/* An arrow or chevron that means back or forward points the other way in RTL. */
+[dir='rtl'] .flipRtl {
+  transform: scaleX(-1);
+}
+
 code {
   padding: 0.1rem 0.35rem;
   border: 1px solid var(--border);

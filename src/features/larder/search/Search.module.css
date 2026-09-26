@@ -46,7 +46,8 @@
   gap: 4px;
   align-items: center;
   min-height: 44px;
-  padding: 0 4px 0 16px;
+  padding-block: 0;
+  padding-inline: 16px 4px;
   border-radius: var(--radius-pill);
   background: var(--sunk);
   font-size: 16px;
@@ -105,7 +106,8 @@
   gap: 12px;
   align-items: center;
   min-height: 64px;
-  padding: 8px 8px 8px 16px;
+  padding-block: 8px;
+  padding-inline: 16px 8px;
   border-radius: 16px;
   background: var(--sage-tint);
 }
@@ -136,14 +138,24 @@
   display: inline-flex;
   gap: 6px;
   align-items: center;
-  margin: 0 0 0 auto;
+  margin-block: 0;
+  margin-inline: auto 0;
   color: var(--ink-2);
   font-size: 14px;
 }
 
+/*
+ * Full-width option rows stay on one row, as they always have; in a longer
+ * language each option's label wraps by word inside its own segment instead.
+ */
 .full {
   display: flex;
+  flex-wrap: nowrap;
   width: 100%;
+}
+
+.full > label {
+  white-space: normal;
 }
 
 .linkButton {
@@ -216,7 +228,7 @@
   width: 100%;
   align-items: baseline;
   justify-content: space-between;
-  float: left;
+  float: inline-start;
   margin-bottom: 12px;
   padding: 0;
 }
@@ -282,8 +294,8 @@
   content: '';
   position: absolute;
   top: 12px;
-  right: 11px;
-  left: 11px;
+  inset-inline-end: 11px;
+  inset-inline-start: 11px;
   height: 4px;
   border-radius: 2px;
   background: var(--sunk-2);
@@ -384,7 +396,8 @@
   gap: 14px;
   align-items: center;
   margin-bottom: 20px;
-  padding: 12px 12px 12px 18px;
+  padding-block: 12px;
+  padding-inline: 18px 12px;
   border: 1px solid var(--warn-line);
   border-radius: 16px;
   background: var(--warn-bg);
@@ -406,7 +419,8 @@
   gap: 10px;
   align-items: center;
   margin-bottom: 16px;
-  padding: 6px 12px 6px 16px;
+  padding-block: 6px;
+  padding-inline: 16px 12px;
   border: 1px solid var(--warn-line);
   border-radius: 16px;
   background: var(--warn-bg);
@@ -424,6 +438,7 @@
 
 .mobileBar {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   margin-bottom: 16px;
@@ -434,7 +449,7 @@
 }
 
 .count {
-  margin-left: auto;
+  margin-inline-start: auto;
   color: var(--ink-2);
   font-size: 15px;
   white-space: nowrap;
@@ -453,7 +468,7 @@
 }
 
 .activeLabel {
-  margin-right: 4px;
+  margin-inline-end: 4px;
   color: var(--ink-2);
   font-size: 14.5px;
 }
@@ -530,7 +545,7 @@
   background: var(--card);
   font-size: 15.5px;
   font-weight: 600;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -573,6 +588,7 @@
 
   .pantryCard {
     min-height: 56px;
-    padding: 6px 6px 6px 16px;
+    padding-block: 6px;
+    padding-inline: 16px 6px;
   }
 }

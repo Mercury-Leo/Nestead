@@ -4,6 +4,7 @@ import type { DietCheck } from '../../../domain/kitchen/diet';
 import { pantryFit } from '../../../domain/kitchen/fit';
 import type { PantryFit, PantryIndex } from '../../../domain/kitchen/fit';
 import { formatDuration } from '../../../domain/kitchen/quantity';
+import { i18n } from '../../../i18n';
 import { displayRating, totalMinutes } from '../../../domain/kitchen/search';
 
 /** Everything a card or row shows about a recipe, worked out once. */
@@ -30,11 +31,14 @@ export function recipeView(
     fit,
     diet: known?.diet ?? checkDiet(recipe, profile),
     rating: displayRating(recipe),
+    // i18n: formatDuration (domain/kitchen/quantity.ts) writes English units, "1 h 20 min".
     total: formatDuration(totalMinutes(recipe)),
     kcal:
       recipe.kcalPerServing === undefined
         ? null
-        : `${recipe.kcalPerServing} kcal${recipe.servingUnit !== undefined ? `/${recipe.servingUnit}` : ''}`,
+        : recipe.servingUnit !== undefined
+          ? i18n.t('recipe.kcalPer', { kcal: recipe.kcalPerServing, unit: recipe.servingUnit })
+          : i18n.t('recipe.kcal', { kcal: recipe.kcalPerServing }),
     need: fit.missingLines.map((line) => line.item),
   };
 }

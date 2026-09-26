@@ -127,7 +127,7 @@
 .photoBadge {
   position: absolute;
   top: 12px;
-  left: 12px;
+  inset-inline-start: 12px;
 }
 
 .site {
@@ -262,7 +262,7 @@
 .legend > span {
   width: 18px;
   height: 18px;
-  margin-left: 6px;
+  margin-inline-start: 6px;
 }
 
 .legend svg {
@@ -450,9 +450,9 @@
 
 .stickyBar {
   position: fixed;
-  right: 0;
+  inset-inline-end: 0;
   bottom: var(--tabbar);
-  left: 0;
+  inset-inline-start: 0;
   z-index: 15;
   display: grid;
   grid-template-columns: auto 1fr;

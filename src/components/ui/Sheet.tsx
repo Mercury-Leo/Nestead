@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { IconButton } from './Button';
 import { cx } from './cx';
 import s from './Sheet.module.css';
@@ -19,11 +20,12 @@ export function Sheet({
 }: {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
   className?: string;
 }): JSX.Element {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -56,7 +58,7 @@ export function Sheet({
             <h2 id={titleId} className={s.sheetTitle}>
               {title}
             </h2>
-            <IconButton label="Close" icon={X} variant="secondary" size={52} onClick={onClose} />
+            <IconButton label={t('common.close')} icon={X} variant="secondary" size={52} onClick={onClose} />
           </header>
           <div className={s.sheetBody}>{children}</div>
           {footer !== undefined && <footer className={s.sheetFoot}>{footer}</footer>}

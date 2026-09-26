@@ -110,7 +110,7 @@
 }
 
 .eyebrow {
-  margin-right: 4px;
+  margin-inline-end: 4px;
   color: var(--ink-2);
   font-size: 12px;
   font-weight: 700;
@@ -151,7 +151,7 @@
 }
 
 .stat + .stat {
-  border-left: 1px solid var(--line);
+  border-inline-start: 1px solid var(--line);
 }
 
 .statLabel {
@@ -494,8 +494,17 @@
     gap: 44px;
   }
 
+  /*
+   * Side by side and equal when both labels fit; stacked when they do not
+   * (a narrow column, a longer language) rather than running off the page.
+   */
   .actions {
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .actions > * {
+    flex: 1 1 0;
   }
 
   .below {
@@ -520,7 +529,7 @@
 .heroBack {
   position: absolute;
   top: calc(16px + env(safe-area-inset-top));
-  left: 16px;
+  inset-inline-start: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -537,7 +546,7 @@
 .heroAction {
   position: absolute;
   top: calc(16px + env(safe-area-inset-top));
-  right: 16px;
+  inset-inline-end: 16px;
 }
 
 .heroAction > * {
@@ -578,7 +587,7 @@
 }
 
 .sheet .stat + .stat {
-  border-left: 1px solid var(--line);
+  border-inline-start: 1px solid var(--line);
 }
 
 .sheet .statValue {
@@ -618,9 +627,9 @@
 
 .stickyBar {
   position: fixed;
-  right: 0;
+  inset-inline-end: 0;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   z-index: 20;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
@@ -629,11 +638,14 @@
 }
 
 .stickyBar .actions {
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
+/* In a longer language the label wraps inside the button rather than pushing it off the screen. */
 .stickyBar .cookButton {
   order: 2;
+  text-align: center;
+  white-space: normal;
 }
 
 .stickyBar .listButton {

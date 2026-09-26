@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { Check, ChevronDown, Ellipsis, Milk, Plus, ShoppingBag, X } from 'lucide-react';
 import { useSession } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
@@ -19,10 +20,11 @@ import { pantryFit } from '../../domain/kitchen/fit';
 import { addOwnToList, moveToPantry, removeRecipeFromList } from '../larder/actions';
 import { useKitchen } from '../larder/KitchenContext';
 import { groupBySection } from '../../domain/kitchen/sections';
+import { formatList, formatNumber } from '../../i18n';
+import { groupName, sectionLabel } from '../larder/labels';
 import { RecipeCard, RecipeGrid, RecipeList, RecipeRow } from '../larder/recipe/RecipeCard';
 import { RecipePhoto } from '../larder/recipe/RecipePhoto';
 import { recipePath, recipeView } from '../larder/recipe/recipeView';
-import { listJoin, plural } from './format';
 import { GroupForm } from './GroupForm';
 import { ItemForm } from './ItemForm';
 import { AddItem, ItemRow } from './ListRows';
@@ -37,6 +39,7 @@ import { useJustAdded } from './useJustAdded';
  */
 
 export function ShoppingList(): JSX.Element {
+  const { t } = useTranslation();
   const { store } = useSession();
   const kitchen = useKitchen();
   const desktop = useIsDesktop();
@@ -48,7 +51,10 @@ export function ShoppingList(): JSX.Element {
   const [groupSheet, setGroupSheet] = useState<string | null>(null);
 
   const items = kitchen.listItems;
-  const groups: Group[] = [...BUILT_IN_GROUPS, ...kitchen.listGroups.map((row) => ({ id: row.id, name: row.name, row }))];
+  const groups: Group[] = [
+    ...BUILT_IN_GROUPS.map((group) => ({ id: group.id, name: groupName(t, group) })),
+    ...kitchen.listGroups.map((row) => ({ id: row.id, name: row.name, row })),
+  ];
   // A section deleted on another device before its items moved: show them in General.
   const known = new Set(groups.map((group) => group.id));
   const placeOf = (item: ListItem): string => (known.has(groupOf(item)) ? groupOf(item) : GENERAL);
@@ -80,29 +86,31 @@ export function ShoppingList(): JSX.Element {
     }
   };
 
+  // i18n: staple names are catalog names (English), lower-cased to sit mid-sentence.
   const staplesLike = leftOff.staples.slice(0, 2).map((name) => name.toLowerCase());
   const leftOffText = (
-    <>
-      {plural(leftOffCount, 'ingredient')} you already have — <strong>{leftOff.pantry.length} from your pantry</strong> and{' '}
-      <strong>{plural(leftOff.staples.length, 'staple')}</strong>
-      {staplesLike.length > 0 && ` like ${listJoin(staplesLike)}`}.
-    </>
+    <Trans
+      i18nKey={staplesLike.length > 0 ? 'lists.leftOffLike' : 'lists.leftOff'}
+      values={{
+        ingredients: t('common.ingredients', { count: leftOffCount }),
+        pantry: leftOff.pantry.length,
+        staples: t('common.staples', { count: leftOff.staples.length }),
+        examples: formatList(staplesLike),
+      }}
+    />
   );
 
   const progress = items.length > 0 && (
     <div className={s.progressWrap}>
       <div className={s.progressHead}>
         <span>
-          <strong>
-            {checked.length} of {items.length}
-          </strong>{' '}
-          checked off
+          <Trans i18nKey="lists.progress" values={{ checked: checked.length, total: items.length }} />
         </span>
       </div>
       <div
         className={s.progress}
         role="progressbar"
-        aria-label="Checked off"
+        aria-label={t('lists.progressLabel')}
         aria-valuemin={0}
         aria-valuemax={items.length}
         aria-valuenow={checked.length}
@@ -117,15 +125,15 @@ export function ShoppingList(): JSX.Element {
       <span className={s.actionText}>
         <Check size={20} strokeWidth={2.2} aria-hidden />
         <span>
-          <strong>{checked.length} checked</strong> — {listJoin(checked.map((item) => item.name))}
+          <Trans i18nKey="lists.checked" values={{ count: checked.length, names: formatList(checked.map((item) => item.name)) }} />
         </span>
       </span>
       <Button variant="ghost" onClick={clearChecked}>
-        Clear checked
+        {t('lists.clearChecked')}
       </Button>
       {checkedGroceries.length > 0 && (
         <Button variant="sage" size="lg" icon={Milk} disabled={busy} onClick={() => void move()}>
-          Move {checkedGroceries.length} to pantry
+          {t('lists.moveToPantry', { count: checkedGroceries.length })}
         </Button>
       )}
     </div>
@@ -151,22 +159,22 @@ export function ShoppingList(): JSX.Element {
       <section key={group.id} className={s.card} aria-labelledby={titleId}>
         <header className={s.groupHead}>
           <h2 id={titleId} className={s.cardTitle}>
-            {group.name} {rows.length > 0 && <span className={s.groupCount}>{rows.length}</span>}
+            <bdi>{group.name}</bdi> {rows.length > 0 && <span className={s.groupCount}>{formatNumber(rows.length)}</span>}
           </h2>
           {group.row !== undefined && (
-            <IconButton label={`Rename or delete ${group.name}`} icon={Ellipsis} onClick={() => setGroupSheet(group.id)} />
+            <IconButton label={t('lists.renameGroup', { name: group.name })} icon={Ellipsis} onClick={() => setGroupSheet(group.id)} />
           )}
         </header>
         {rows.length === 0 && group.id === SUPERMARKET && (
           <p className={s.muted}>
-            Open a recipe and tap <strong>Make shopping list</strong> — only what’s missing from your pantry comes across, sorted by aisle.
+            <Trans i18nKey="lists.supermarketEmpty" />
           </p>
         )}
         {group.id === SUPERMARKET
           ? groupBySection(rows).map(([aisle, aisleRows]) => (
               <div key={aisle} className={s.group}>
                 <h3 className={s.groupTitle}>
-                  {aisle} <span className={s.groupCount}>{aisleRows.length}</span>
+                  {sectionLabel(t, aisle)} <span className={s.groupCount}>{formatNumber(aisleRows.length)}</span>
                 </h3>
                 {itemRows(aisleRows)}
               </div>
@@ -179,7 +187,7 @@ export function ShoppingList(): JSX.Element {
 
   const newSection = (
     <button type="button" className={s.addAnother} onClick={() => setGroupSheet('new')}>
-      <Plus size={18} strokeWidth={2} aria-hidden /> New section
+      <Plus size={18} strokeWidth={2} aria-hidden /> {t('lists.newSection')}
     </button>
   );
 
@@ -195,10 +203,10 @@ export function ShoppingList(): JSX.Element {
   const onList = (
     <section className={s.card} aria-labelledby="on-list-title">
       <h2 id="on-list-title" className={s.cardTitle}>
-        Recipes on this list
+        {t('lists.onList')}
       </h2>
       {recipes.length === 0 ? (
-        <p className={s.muted}>No recipes yet. Add one and only its missing ingredients come across.</p>
+        <p className={s.muted}>{t('lists.noRecipes')}</p>
       ) : (
         <ul className={s.recipes}>
           {recipes.map((entry) => {
@@ -210,18 +218,20 @@ export function ShoppingList(): JSX.Element {
                 </span>
                 <span className={s.recipeText}>
                   {recipe !== undefined ? (
-                    <Link to={recipePath(recipe)} className={s.recipeTitle}>
+                    <Link to={recipePath(recipe)} className={s.recipeTitle} dir="auto">
                       {entry.title}
                     </Link>
                   ) : (
-                    <span className={s.recipeTitle}>{entry.title}</span>
+                    <span className={s.recipeTitle} dir="auto">
+                      {entry.title}
+                    </span>
                   )}
-                  <span className={s.muted}>{plural(entry.count, 'item')} added</span>
+                  <span className={s.muted}>{t('lists.itemsAdded', { count: entry.count })}</span>
                 </span>
                 <button
                   type="button"
                   className={s.iconX}
-                  aria-label={`Take ${entry.title} off the list`}
+                  aria-label={t('lists.takeOff', { title: entry.title })}
                   onClick={() => void removeRecipeFromList(store, items, entry.recipeId)}
                 >
                   <X size={20} strokeWidth={2} aria-hidden />
@@ -232,7 +242,7 @@ export function ShoppingList(): JSX.Element {
         </ul>
       )}
       <Link to="/library" className={s.addAnother}>
-        <Plus size={18} strokeWidth={2} aria-hidden /> {recipes.length === 0 ? 'Add a recipe' : 'Add another recipe'}
+        <Plus size={18} strokeWidth={2} aria-hidden /> {recipes.length === 0 ? t('lists.addRecipe') : t('lists.addAnother')}
       </Link>
     </section>
   );
@@ -240,20 +250,20 @@ export function ShoppingList(): JSX.Element {
   const leftOffCard = leftOffCount > 0 && (
     <section className={s.card} aria-labelledby="left-off-title">
       <h2 id="left-off-title" className={s.cardTitle}>
-        Left off this list
+        {t('lists.leftOffTitle')}
       </h2>
       <p className={s.leftOff}>{leftOffText}</p>
       <button type="button" className={s.showThem} aria-expanded={showLeftOff} onClick={() => setShowLeftOff(!showLeftOff)}>
-        {showLeftOff ? 'Hide them' : 'Show them'}{' '}
+        {showLeftOff ? t('lists.hideThem') : t('lists.showThem')}{' '}
         <ChevronDown size={16} strokeWidth={2.2} aria-hidden className={cx(showLeftOff && s.flip)} />
       </button>
       {showLeftOff && (
         <div className={s.leftOffLists}>
           <p>
-            <strong>Pantry:</strong> {leftOff.pantry.join(', ')}
+            <Trans i18nKey="lists.pantryNames" values={{ names: formatList(leftOff.pantry, 'unit') }} />
           </p>
           <p>
-            <strong>Staples:</strong> {leftOff.staples.join(', ')}
+            <Trans i18nKey="lists.stapleNames" values={{ names: formatList(leftOff.staples, 'unit') }} />
           </p>
         </div>
       )}
@@ -269,15 +279,15 @@ export function ShoppingList(): JSX.Element {
       : [];
   const empty = items.length === 0 && (
     <section className={cx(s.card, s.emptyCard)}>
-      <EmptyState icon={ShoppingBag} title="Nothing to buy">
-        <p>Add anything you need below, or add a recipe and only what’s missing from your pantry comes across.</p>
+      <EmptyState icon={ShoppingBag} title={t('lists.nothingToBuy')}>
+        <p>{t('lists.emptyBody')}</p>
       </EmptyState>
     </section>
   );
   const readySection = ready.length > 0 && (
     <section className={s.ready} aria-labelledby="ready-title">
       <h2 id="ready-title" className={s.sectionTitle}>
-        Ready without shopping
+        {t('lists.ready')}
       </h2>
       {desktop ? (
         <RecipeGrid dense>
@@ -296,19 +306,22 @@ export function ShoppingList(): JSX.Element {
   );
 
   const forRecipes = items.filter((item) => item.parts.length > 0).length;
+  const itemCount = t('common.items', { count: items.length });
   const subtitle =
     items.length === 0
-      ? 'Groceries from your recipes, and anything else you need.'
+      ? t('lists.subtitleEmpty')
       : recipes.length === 0
-        ? plural(items.length, 'item')
-        : `${plural(items.length, 'item')}, ${forRecipes === items.length ? 'all' : `${forRecipes} of them`} for ${plural(recipes.length, 'recipe')} — only what you don’t already have.`;
+        ? itemCount
+        : forRecipes === items.length
+          ? t('lists.subtitleAll', { items: itemCount, recipes: t('common.recipes', { count: recipes.length }) })
+          : t('lists.subtitleSome', { items: itemCount, count: forRecipes, recipes: t('common.recipes', { count: recipes.length }) });
 
   const sheets = (
     <>
-      <Sheet open={editing !== undefined} onClose={() => setEditingId(null)} title={editing?.name ?? 'Item'}>
+      <Sheet open={editing !== undefined} onClose={() => setEditingId(null)} title={editing !== undefined ? <span dir="auto">{editing.name}</span> : t('lists.item')}>
         {editing !== undefined && <ItemForm key={editing.id} item={editing} groups={groups} onDone={() => setEditingId(null)} />}
       </Sheet>
-      <Sheet open={groupSheet !== null} onClose={() => setGroupSheet(null)} title={editingGroup === null ? 'New section' : 'Edit section'}>
+      <Sheet open={groupSheet !== null} onClose={() => setGroupSheet(null)} title={editingGroup === null ? t('lists.newSection') : t('lists.editSection')}>
         {groupSheet !== null && <GroupForm key={groupSheet} group={editingGroup} items={items} onDone={() => setGroupSheet(null)} />}
       </Sheet>
     </>
@@ -317,12 +330,12 @@ export function ShoppingList(): JSX.Element {
   return (
     <div>
       <PageHeader
-        title="Shopping list"
+        title={t('lists.title')}
         subtitle={subtitle}
         actions={
           desktop ? (
             <ButtonLink to="/library" variant="secondary" size="lg" icon={Plus}>
-              Add from a recipe
+              {t('lists.addFromRecipe')}
             </ButtonLink>
           ) : undefined
         }
@@ -343,7 +356,7 @@ export function ShoppingList(): JSX.Element {
       ) : (
         <>
           {recipes.length > 0 && (
-            <ul className={s.recipeChips} aria-label="Recipes on this list">
+            <ul className={s.recipeChips} aria-label={t('lists.onList')}>
               {recipes.map((entry) => {
                 const recipe = recipeFor(entry.recipeId);
                 return (
@@ -351,12 +364,14 @@ export function ShoppingList(): JSX.Element {
                     <span className={s.chipThumb}>
                       <RecipePhoto recipe={recipe ?? { title: entry.title }} />
                     </span>
-                    <span className={s.chipTitle}>{entry.title}</span>
-                    <span className={s.chipCount}>{entry.count}</span>
+                    <span className={s.chipTitle} dir="auto">
+                      {entry.title}
+                    </span>
+                    <span className={s.chipCount}>{formatNumber(entry.count)}</span>
                     <button
                       type="button"
                       className={s.iconX}
-                      aria-label={`Take ${entry.title} off the list`}
+                      aria-label={t('lists.takeOff', { title: entry.title })}
                       onClick={() => void removeRecipeFromList(store, items, entry.recipeId)}
                     >
                       <X size={16} strokeWidth={2} aria-hidden />
@@ -374,11 +389,11 @@ export function ShoppingList(): JSX.Element {
           {checked.length > 0 && (
             <div className={s.stickyMove}>
               <Button variant="ghost" size="bar" block={checkedGroceries.length === 0} onClick={clearChecked}>
-                {checkedGroceries.length > 0 ? 'Clear' : `Clear ${checked.length} checked`}
+                {checkedGroceries.length > 0 ? t('lists.clear') : t('lists.clearCount', { count: checked.length })}
               </Button>
               {checkedGroceries.length > 0 && (
                 <Button variant="sage" size="bar" icon={Milk} disabled={busy} className={s.moveMobile} onClick={() => void move()}>
-                  Move {checkedGroceries.length} to pantry
+                  {t('lists.moveToPantry', { count: checkedGroceries.length })}
                 </Button>
               )}
             </div>

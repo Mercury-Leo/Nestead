@@ -14,6 +14,8 @@ import { containsPhrase, normalizeText } from './normalize';
 export type SortKey = 'fit' | 'fewest' | 'rating' | 'kcal' | 'time';
 export type TimeBucket = 'under30' | '30to60' | 'over60';
 
+// i18n: SORT_LABELS, SORT_SHORT and TIME_LABELS are for the domain's own labels and tests; screens
+// translate by key (features/larder/labels.ts).
 export const SORT_LABELS: Record<SortKey, string> = {
   fit: 'Best pantry fit',
   fewest: 'Fewest items to buy',
@@ -206,6 +208,7 @@ export function search(query: SearchQuery, filters: SearchFilters, ctx: SearchCo
 
 export interface ActiveFilter {
   key: string;
+  /** i18n: English; the search screen rebuilds its own from key (search/filterLabels.ts). */
   label: string;
   /** The filters with this one removed. */
   without: (filters: SearchFilters) => SearchFilters;
@@ -246,6 +249,7 @@ export function activeFilters(filters: SearchFilters): ActiveFilter[] {
 }
 
 export interface Suggestion {
+  /** i18n: English; the search screen rebuilds its own from what the suggestion changes (search/filterLabels.ts). */
   label: string;
   count: number;
   query: SearchQuery;

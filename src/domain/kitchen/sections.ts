@@ -1,6 +1,9 @@
 import type { StoreSection } from '../types';
 
-/** Store sections in the order you walk a supermarket. */
+/**
+ * Store sections in the order you walk a supermarket.
+ * i18n: the names are stored on rows; screens show them from the translation file (labels.ts sectionLabel).
+ */
 export const SECTION_ORDER: readonly StoreSection[] = [
   'Produce',
   'Meat & fish',

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { Trans } from 'react-i18next';
 import { getSupabaseClient, takeRecoveryLink } from '../data/supabase/supabaseClient';
 import { createSupabaseStore } from '../data/supabase/supabaseStore';
 import type { DataStore } from '../data/types';
@@ -114,7 +115,11 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
 
   switch (phase.kind) {
     case 'loading':
-      return <p className="centred">Loading…</p>;
+      return (
+        <p className="centred">
+          <Trans i18nKey="common.loading" />
+        </p>
+      );
     case 'signedOut':
       return <SignIn />;
     case 'recovering':
@@ -174,7 +179,13 @@ function Ready({
     setFamily(await readFamily(client, initialFamily.id));
   }, [client, initialFamily.id]);
 
-  if (me === null) return <p className="centred">Loading…</p>;
+  if (me === null) {
+    return (
+      <p className="centred">
+        <Trans i18nKey="common.loading" />
+      </p>
+    );
+  }
 
   return (
     <SessionContext.Provider value={{ store, me, members, family, rotateJoinCode, refreshFamily, signOut }}>

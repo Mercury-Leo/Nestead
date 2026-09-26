@@ -4,6 +4,7 @@ import { dietTags } from '../../../domain/kitchen/diet';
 import { parseIngredientLine, parseNumber } from '../../../domain/kitchen/parse';
 import { formatDuration } from '../../../domain/kitchen/quantity';
 import { totalMinutes } from '../../../domain/kitchen/search';
+import { i18n } from '../../../i18n';
 import type { ImportedRecipe } from '../../../../server/import';
 
 /**
@@ -73,38 +74,44 @@ export interface ReadLine {
 
 /** "What we read": the checklist under the preview. */
 export function whatWeRead(recipe: AnyRecipe, stated: { photo: boolean; servings: boolean; times: boolean }): ReadLine[] {
-  const firstPart = ['Title', ...(stated.photo ? ['photo'] : [])];
-  const servings = stated.servings ? `${recipe.servings} servings` : null;
-  const titleLine = servings === null ? firstPart.join(' and ') : `${firstPart.join(', ')} and ${servings}`;
-  const plural = (n: number, word: string, many = `${word}s`): string => `${n} ${n === 1 ? word : many}`;
+  const t = i18n.t;
+  const titleLine = stated.servings
+    ? t(stated.photo ? 'import.read.titlePhotoServings' : 'import.read.titleServings', { count: recipe.servings })
+    : t(stated.photo ? 'import.read.titlePhoto' : 'import.read.title');
   const lines: ReadLine[] = [
     { ok: true, text: titleLine },
     stated.times
-      ? { ok: true, text: `Prep ${formatDuration(recipe.prepMin)} · cook ${formatDuration(recipe.cookMin)}` }
-      : { ok: false, text: 'Times not listed — add them before saving' },
+      ? // i18n: formatDuration (domain/kitchen/quantity.ts) writes English units.
+        { ok: true, text: t('import.read.times', { prep: formatDuration(recipe.prepMin), cook: formatDuration(recipe.cookMin) }) }
+      : { ok: false, text: t('import.read.noTimes') },
     {
       ok: true,
-      text: `${plural(recipe.ingredients.length, 'ingredient')}, ${plural(recipe.equipment.length, 'piece of equipment', 'pieces of equipment')}, ${plural(recipe.steps.length, 'step')}`,
+      text: t('import.read.summary', {
+        ingredients: t('import.read.ingredients', { count: recipe.ingredients.length }),
+        equipment: t('import.read.equipment', { count: recipe.equipment.length }),
+        steps: t('import.read.steps', { count: recipe.steps.length }),
+      }),
     },
   ];
-  if (!stated.photo) lines.push({ ok: false, text: 'No photo — a placeholder will stand in' });
+  if (!stated.photo) lines.push({ ok: false, text: t('import.read.noPhoto') });
   if (recipe.kcalEstimated) {
     lines.push({
       ok: false,
-      text:
-        recipe.kcalPerServing !== undefined
-          ? `Calories not listed — we’ll show an estimate (~${recipe.kcalPerServing} kcal)`
-          : 'Calories not listed — not enough to estimate them',
+      text: recipe.kcalPerServing !== undefined ? t('import.read.kcalEstimate', { kcal: recipe.kcalPerServing }) : t('import.read.kcalNone'),
     });
   }
   const fix = recipe.ingredients.filter((line) => line.needsFix === true).length;
-  if (fix > 0) lines.push({ ok: false, text: `${plural(fix, 'ingredient')} ${fix === 1 ? 'needs' : 'need'} a quantity` });
+  if (fix > 0) lines.push({ ok: false, text: t('import.read.needsQty', { count: fix }) });
   return lines;
 }
 
 const PANS = /\b(pan|skillet|pot|dish|tray|wok|tin|dutch oven|casserole)\b/i;
 
-/** Diet tags the engine vouches for, plus Weeknight and One-pan where they fit. */
+/**
+ * Diet tags the engine vouches for, plus Weeknight and One-pan where they fit.
+ * i18n: these become the recipe's stored tags, so they stay in English like
+ * the diet engine's own (dietTags in domain/kitchen/diet.ts).
+ */
 export function suggestedTags(recipe: AnyRecipe): { tag: string; preselected: boolean }[] {
   const tags = dietTags(recipe).map((tag) => ({ tag, preselected: true }));
   if (totalMinutes(recipe) > 0 && totalMinutes(recipe) <= 40) tags.push({ tag: 'Weeknight', preselected: false });

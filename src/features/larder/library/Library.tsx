@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowUpDown, BookOpen, ChevronRight, Link2, Milk, Plus, Search as SearchIcon } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { ArrowUpDown, BookOpen, Link2, Milk, Plus, Search as SearchIcon } from 'lucide-react';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { PageHeader } from '../../../components/PageHeader';
-import { ButtonLink, Chip, EmptyState, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
+import { ButtonLink, Chip, EmptyState, ForwardArrow, ForwardChevron, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
 import { totalMinutes } from '../../../domain/kitchen/search';
+import { formatList } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
 import { RecipeCard, RecipeGrid, RecipeList, RecipeRow } from '../recipe/RecipeCard';
 import { recipeView } from '../recipe/recipeView';
@@ -14,21 +16,7 @@ import s from './Library.module.css';
 type Source = 'all' | 'mine' | 'web';
 type LibrarySort = 'recent' | 'rating' | 'time' | 'kcal' | 'fewest';
 
-const SORTS: { value: LibrarySort; label: string }[] = [
-  { value: 'recent', label: 'Recently added' },
-  { value: 'rating', label: 'Rating' },
-  { value: 'time', label: 'Total time' },
-  { value: 'kcal', label: 'Calories' },
-  { value: 'fewest', label: 'Fewest to buy' },
-];
-
-const SORT_SHORT: Record<LibrarySort, string> = {
-  recent: 'Recent',
-  rating: 'Rating',
-  time: 'Time',
-  kcal: 'Calories',
-  fewest: 'To buy',
-};
+const SORTS: LibrarySort[] = ['recent', 'rating', 'time', 'kcal', 'fewest'];
 
 function sortViews(views: RecipeView[], sort: LibrarySort): RecipeView[] {
   const byRating = (a: RecipeView, b: RecipeView): number => (b.rating ?? 0) - (a.rating ?? 0);
@@ -47,12 +35,8 @@ function sortViews(views: RecipeView[], sort: LibrarySort): RecipeView[] {
   }
 }
 
-function listNames(names: string[]): string {
-  if (names.length <= 1) return names.join('');
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-}
-
 export function Library(): JSX.Element {
+  const { t } = useTranslation();
   const kitchen = useKitchen();
   const desktop = useIsDesktop();
   const navigate = useNavigate();
@@ -83,46 +67,44 @@ export function Library(): JSX.Element {
     sort,
   );
 
-  const plural = (n: number): string => `${n} recipe${n === 1 ? '' : 's'}`;
-  const subtitle = desktop
-    ? `${plural(views.length)} — ${mine} of your own, ${web} saved from the web.`
-    : `${plural(views.length)} · ${mine} yours, ${web} from the web`;
+  const subtitle = t(desktop ? 'library.subtitle' : 'library.subtitleCompact', { count: views.length, mine, web });
+  const sortOptions = SORTS.map((value) => ({ value, label: t(`library.sort.${value}`) }));
 
   const actions = desktop ? (
     <>
       <ButtonLink to="/import" variant="secondary" size="lg" icon={Link2}>
-        Import from web
+        {t('library.importFromWeb')}
       </ButtonLink>
       <ButtonLink to="/add" variant="primary" size="lg" icon={Plus}>
-        Add recipe
+        {t('library.addRecipe')}
       </ButtonLink>
     </>
   ) : (
     <>
-      <IconButton label="Import from web" icon={Link2} variant="secondary" size={52} onClick={() => navigate('/import')} />
-      <IconButton label="Add recipe" icon={Plus} variant="primary" size={52} onClick={() => navigate('/add')} />
+      <IconButton label={t('library.importFromWeb')} icon={Link2} variant="secondary" size={52} onClick={() => navigate('/import')} />
+      <IconButton label={t('library.addRecipe')} icon={Plus} variant="primary" size={52} onClick={() => navigate('/add')} />
     </>
   );
 
   if (kitchen.loaded && views.length === 0) {
     return (
       <div>
-        <PageHeader title="Library" subtitle="Your family’s recipes, all in one place." actions={actions} />
+        <PageHeader title={t('library.title')} subtitle={t('library.subtitleEmpty')} actions={actions} />
         <EmptyState
           icon={BookOpen}
-          title="No recipes yet"
+          title={t('library.empty.title')}
           actions={
             <>
               <ButtonLink to="/add" variant="primary" size="lg" icon={Plus}>
-                Add recipe
+                {t('library.addRecipe')}
               </ButtonLink>
               <ButtonLink to="/import" variant="secondary" size="lg" icon={Link2}>
-                Import from web
+                {t('library.importFromWeb')}
               </ButtonLink>
             </>
           }
         >
-          <p>Write down a family favourite or bring one in from a recipe site. Everyone in the family sees the same library.</p>
+          <p>{t('library.empty.body')}</p>
         </EmptyState>
       </div>
     );
@@ -130,47 +112,48 @@ export function Library(): JSX.Element {
 
   return (
     <div>
-      <PageHeader title="Library" subtitle={kitchen.loaded ? subtitle : ' '} actions={actions} />
+      <PageHeader title={t('library.title')} subtitle={kitchen.loaded ? subtitle : ' '} actions={actions} />
 
       <div className={s.toolbar} role="search">
         <TextField
-          label="Search the library"
+          label={t('library.searchLabel')}
           icon={SearchIcon}
           type="search"
+          dir="auto"
           value={query}
-          placeholder={desktop ? 'Search by recipe name or ingredients — e.g. chicken, lemon, rice' : 'Recipe or ingredients…'}
+          placeholder={desktop ? t('library.searchPlaceholder') : t('library.searchPlaceholderCompact')}
           onChange={(event) => setQuery(event.target.value)}
           wrapClassName={s.search}
         />
         {desktop ? (
           <>
             <Segmented
-              label="Source"
+              label={t('library.source')}
               value={source}
               onChange={setSource}
               options={[
-                { value: 'all', label: `All ${views.length}` },
-                { value: 'mine', label: `Mine ${mine}` },
-                { value: 'web', label: `Web ${web}` },
+                { value: 'all', label: t('library.all', { count: views.length }) },
+                { value: 'mine', label: t('library.mine', { count: mine }) },
+                { value: 'web', label: t('library.web', { count: web }) },
               ]}
             />
-            <SelectButton label="Sort by" icon={ArrowUpDown} value={sort} onChange={setSort} options={SORTS} />
+            <SelectButton label={t('library.sortBy')} icon={ArrowUpDown} value={sort} onChange={setSort} options={sortOptions} />
           </>
         ) : (
           <div className={s.chips}>
             {(['all', 'mine', 'web'] as const).map((value) => (
               <Chip key={value} selected={source === value} onClick={() => setSource(value)}>
-                {value === 'all' ? `All ${views.length}` : value === 'mine' ? `Mine ${mine}` : `Web ${web}`}
+                {t(`library.${value}`, { count: value === 'all' ? views.length : value === 'mine' ? mine : web })}
               </Chip>
             ))}
             <SelectButton
-              label="Sort by"
+              label={t('library.sortBy')}
               icon={ArrowUpDown}
               shape="chip"
               value={sort}
               onChange={setSort}
-              options={SORTS}
-              display={SORT_SHORT[sort]}
+              options={sortOptions}
+              display={t(`library.sortShort.${sort}`)}
             />
           </div>
         )}
@@ -178,20 +161,18 @@ export function Library(): JSX.Element {
 
       {ready.length > 0 &&
         (desktop ? (
-          <section className={s.banner} aria-label="Ready without shopping">
+          <section className={s.banner} aria-label={t('library.ready.label')}>
             <span className={s.bannerIcon} aria-hidden>
               <Milk size={24} strokeWidth={2} />
             </span>
             <div className={s.bannerText}>
-              <h2 className={s.bannerTitle}>
-                You can cook {plural(ready.length)} tonight without shopping
-              </h2>
+              <h2 className={s.bannerTitle}>{t('library.ready.title', { count: ready.length })}</h2>
               <p className={s.bannerBody}>
-                {listNames(ready.map((view) => view.recipe.title))} use only what’s in your pantry and staples.
+                <Trans i18nKey="library.ready.body" values={{ names: formatList(ready.map((view) => view.recipe.title)) }} />
               </p>
             </div>
-            <ButtonLink to="/search?pantry=1" variant="sage" size="lg" iconAfter={ArrowRight}>
-              Cook from my pantry
+            <ButtonLink to="/search?pantry=1" variant="sage" size="lg" iconAfter={ForwardArrow}>
+              {t('library.ready.cook')}
             </ButtonLink>
           </section>
         ) : (
@@ -200,17 +181,17 @@ export function Library(): JSX.Element {
               <Milk size={22} strokeWidth={2} />
             </span>
             <span className={s.bannerText}>
-              <span className={s.bannerTitle}>
-                {plural(ready.length)} need{ready.length === 1 ? 's' : ''} nothing from the shop
-              </span>
-              <span className={s.bannerBody}>Cook from my pantry</span>
+              <span className={s.bannerTitle}>{t('library.ready.compact', { count: ready.length })}</span>
+              <span className={s.bannerBody}>{t('library.ready.cook')}</span>
             </span>
-            <ChevronRight size={22} strokeWidth={2} aria-hidden className={s.bannerChevron} />
+            <ForwardChevron size={22} strokeWidth={2} aria-hidden className={s.bannerChevron} />
           </Link>
         ))}
 
       {shown.length === 0 && kitchen.loaded ? (
-        <p className={s.none}>No recipes match “{query}”.</p>
+        <p className={s.none}>
+          <Trans i18nKey="library.noMatch" values={{ query }} />
+        </p>
       ) : desktop ? (
         <RecipeGrid>
           {shown.map((view) => (

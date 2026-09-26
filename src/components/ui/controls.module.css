@@ -1,6 +1,7 @@
 .segmented {
   display: inline-flex;
   gap: 2px;
+  max-width: 100%;
   padding: 4px;
   border-radius: 14px;
   background: var(--sunk);
@@ -19,6 +20,15 @@
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
+}
+
+/*
+ * Opt-in, for a control in its own block: in a longer language the options
+ * wrap onto a second row rather than widen the page. Not the default, as a
+ * wrappable control can also be squeezed by a flex row it sits in.
+ */
+.segmentedWrap {
+  flex-wrap: wrap;
 }
 
 .segmentedSm .segment {
@@ -69,7 +79,7 @@
 .switchThumb {
   position: absolute;
   top: 3px;
-  left: 3px;
+  inset-inline-start: 3px;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -83,7 +93,7 @@
 }
 
 .switchOn .switchThumb {
-  transform: translateX(20px);
+  transform: translateX(calc(20px * var(--dir)));
 }
 
 .check {

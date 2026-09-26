@@ -1,10 +1,12 @@
 import { useId, useMemo, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cx } from '../../../components/ui';
 import { CATALOG } from '../../../domain/kitchen/catalog';
 import type { CatalogItem } from '../../../domain/kitchen/catalog';
 import { keyForText } from '../../../domain/kitchen/fit';
+import { sectionLabel } from '../labels';
 import s from './Pantry.module.css';
 
 /**
@@ -50,7 +52,7 @@ export function PantryAdd({
   onAdd,
   existingKeys,
   neededFor,
-  placeholder = 'Add items — e.g. eggs, feta, basil',
+  placeholder,
   autoFocus = false,
   inline = false,
 }: {
@@ -64,6 +66,7 @@ export function PantryAdd({
   /** Phone layout: suggestions sit in the page instead of floating. */
   inline?: boolean;
 }): JSX.Element {
+  const { t } = useTranslation();
   const [text, setText] = useState('');
   const [active, setActive] = useState(0);
   const listId = useId();
@@ -114,9 +117,10 @@ export function PantryAdd({
           aria-controls={listId}
           aria-autocomplete="list"
           aria-activedescendant={open ? `${listId}-${active}` : undefined}
-          aria-label="Add to pantry"
+          aria-label={t('pantry.add.label')}
+          dir="auto"
           value={text}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t('pantry.add.placeholder')}
           autoFocus={autoFocus}
           onChange={(event) => {
             setText(event.target.value);
@@ -127,7 +131,7 @@ export function PantryAdd({
       </div>
       {open && (
         <div className={s.dropdown}>
-          <ul id={listId} role="listbox" aria-label="Suggestions" className={s.options}>
+          <ul id={listId} role="listbox" aria-label={t('pantry.add.suggestions')} className={s.options}>
             {options.map((option, index) => {
               const needed = neededFor.get(option.item.id);
               return (
@@ -146,12 +150,13 @@ export function PantryAdd({
                   }}
                 >
                   <span className={s.optionText}>
+                    {/* i18n: catalog names (domain/kitchen/catalog.ts) are English; typing matches them. */}
                     <span className={s.optionName}>
                       <Highlight text={option.item.name} at={option.at} length={current.trim().length} />
                     </span>
-                    {needed !== undefined && <span className={s.optionNeeded}>Needed for {needed}</span>}
+                    {needed !== undefined && <span className={s.optionNeeded}>{t('pantry.add.neededFor', { recipe: needed })}</span>}
                   </span>
-                  <span className={s.optionSection}>{option.item.section}</span>
+                  <span className={s.optionSection}>{sectionLabel(t, option.item.section)}</span>
                   <span className={s.optionPlus} aria-hidden>
                     <Plus size={16} strokeWidth={2.2} />
                   </span>
@@ -159,7 +164,7 @@ export function PantryAdd({
               );
             })}
           </ul>
-          <p className={s.dropdownHint}>Enter adds the first match · separate with commas to add several</p>
+          <p className={s.dropdownHint}>{t('pantry.add.hint')}</p>
         </div>
       )}
     </div>

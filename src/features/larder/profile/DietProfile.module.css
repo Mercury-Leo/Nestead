@@ -54,11 +54,12 @@
   align-items: center;
   justify-content: space-between;
   min-height: 72px;
-  padding: 14px 14px 14px 18px;
+  padding-block: 14px;
+  padding-inline: 18px 14px;
   border: 1px solid var(--line-2);
   border-radius: 16px;
   background: var(--card);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -102,7 +103,7 @@
 .thumb {
   position: absolute;
   top: 3px;
-  left: 3px;
+  inset-inline-start: 3px;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -116,7 +117,7 @@
 }
 
 .trackOn .thumb {
-  transform: translateX(20px);
+  transform: translateX(calc(20px * var(--dir)));
 }
 
 .ruleForm {
@@ -141,7 +142,8 @@
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 12px 10px 12px 18px;
+  padding-block: 12px;
+  padding-inline: 18px 10px;
   border-radius: 14px;
   background: var(--ink);
   color: var(--on-accent);

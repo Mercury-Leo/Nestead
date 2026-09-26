@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 /** The mark: a lid in the ink colour, a terracotta body and a light band. */
 export function BrandMark({ size = 28 }: { size?: number }): JSX.Element {
@@ -12,10 +13,11 @@ export function BrandMark({ size = 28 }: { size?: number }): JSX.Element {
 }
 
 export function Brand(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Link
       to="/"
-      aria-label="Nestead home"
+      aria-label={t('nav.home')}
       style={{
         display: 'inline-flex',
         gap: 10,
@@ -30,6 +32,7 @@ export function Brand(): JSX.Element {
       }}
     >
       <BrandMark />
+      {/* The product's name: not translated. */}
       Nestead
     </Link>
   );

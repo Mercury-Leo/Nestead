@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSupabaseClient } from '../../data/supabase/supabaseClient';
 
 /**
@@ -16,6 +17,7 @@ export function JoinOrCreate({
   onJoined: () => void;
   onSignOut: () => Promise<void>;
 }): JSX.Element {
+  const { t } = useTranslation();
   const client = getSupabaseClient();
 
   const [joining, setJoining] = useState(false);
@@ -54,7 +56,7 @@ export function JoinOrCreate({
   return (
     <div className="gate">
       <h1>Nestead</h1>
-      <p className="gate-sub">{joining ? 'Join a family' : 'Set up your family'}</p>
+      <p className="gate-sub">{joining ? t('auth.join.subtitleJoin') : t('auth.join.subtitleCreate')}</p>
 
       <form
         onSubmit={(event) => {
@@ -63,10 +65,11 @@ export function JoinOrCreate({
         }}
       >
         <label>
-          Your name
+          {t('auth.join.yourName')}
           <input
+            dir="auto"
             value={displayName}
-            placeholder="Alex"
+            placeholder={t('auth.join.namePlaceholder')}
             required
             onChange={(event) => setDisplayName(event.target.value)}
           />
@@ -74,9 +77,11 @@ export function JoinOrCreate({
 
         {joining ? (
           <label>
-            Join code
+            {t('auth.join.joinCode')}
             <input
+              dir="ltr"
               value={code}
+              // i18n: the shape of a join code, not words.
               placeholder="ABCD2345"
               className="code-input"
               required
@@ -85,10 +90,11 @@ export function JoinOrCreate({
           </label>
         ) : (
           <label>
-            Family name
+            {t('auth.join.familyName')}
             <input
+              dir="auto"
               value={familyName}
-              placeholder="Our place"
+              placeholder={t('auth.join.familyPlaceholder')}
               required
               onChange={(event) => setFamilyName(event.target.value)}
             />
@@ -98,7 +104,7 @@ export function JoinOrCreate({
         {error !== null && <p className="error">{error}</p>}
 
         <button type="submit" disabled={busy || !ready}>
-          {busy ? 'Working…' : joining ? 'Join' : 'Create'}
+          {busy ? t('common.working') : joining ? t('auth.join.join') : t('auth.join.create')}
         </button>
       </form>
 
@@ -110,11 +116,11 @@ export function JoinOrCreate({
           setError(null);
         }}
       >
-        {joining ? 'Start a new family instead' : 'I have a join code'}
+        {joining ? t('auth.join.switchToCreate') : t('auth.join.switchToJoin')}
       </button>
 
       <button type="button" className="link quiet" onClick={() => void onSignOut()}>
-        Sign out
+        {t('common.signOut')}
       </button>
     </div>
   );

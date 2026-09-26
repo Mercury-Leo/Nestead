@@ -8,14 +8,21 @@
   gap: 8px;
 }
 
+/*
+ * The pill drops to its own line only when it cannot fit beside even the
+ * narrowest wrap of the text (a narrow card, a longer language): the text's
+ * zero basis makes its min-content, not its full width, decide the wrap.
+ */
 .matchTop {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   justify-content: space-between;
 }
 
 .matchText {
+  flex: 1 1 0;
   color: var(--ink-2);
   font-size: 14px;
 }

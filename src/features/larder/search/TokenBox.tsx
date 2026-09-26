@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Search as SearchIcon, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cx } from '../../../components/ui';
 import s from './Search.module.css';
 
@@ -10,14 +11,15 @@ import s from './Search.module.css';
 export function TokenBox({
   tokens,
   onChange,
-  placeholder = 'Add ingredient…',
-  label = 'Ingredients to search for',
+  placeholder,
+  label,
 }: {
   tokens: string[];
   onChange: (tokens: string[]) => void;
   placeholder?: string;
   label?: string;
 }): JSX.Element {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState('');
   const input = useRef<HTMLInputElement>(null);
 
@@ -33,14 +35,14 @@ export function TokenBox({
   return (
     <div className={s.box} onClick={() => input.current?.focus()}>
       <SearchIcon size={22} strokeWidth={2} aria-hidden className={s.boxIcon} />
-      <ul className={s.tokens} aria-label="Ingredients">
+      <ul className={s.tokens} aria-label={t('search.tokens.list')}>
         {tokens.map((token) => (
           <li key={token} className={s.token}>
-            <span>{token}</span>
+            <span dir="auto">{token}</span>
             <button
               type="button"
               className={s.tokenX}
-              aria-label={`Remove ${token}`}
+              aria-label={t('search.tokens.remove', { token })}
               onClick={(event) => {
                 event.stopPropagation();
                 onChange(tokens.filter((t) => t !== token));
@@ -54,9 +56,10 @@ export function TokenBox({
           <input
             ref={input}
             className={s.tokenInput}
-            aria-label={label}
+            aria-label={label ?? t('search.tokens.label')}
+            dir="auto"
             value={draft}
-            placeholder={placeholder}
+            placeholder={placeholder ?? t('search.tokens.placeholder')}
             enterKeyHint="search"
             onChange={(event) => {
               const value = event.target.value;
@@ -81,15 +84,17 @@ export function TokenBox({
 
 /** The same box in "By recipe name" mode: one plain text field. */
 export function NameBox({ value, onChange }: { value: string; onChange: (value: string) => void }): JSX.Element {
+  const { t } = useTranslation();
   return (
     <div className={cx(s.box)}>
       <SearchIcon size={22} strokeWidth={2} aria-hidden className={s.boxIcon} />
       <input
         className={s.tokenInput}
         type="search"
-        aria-label="Recipe name"
+        aria-label={t('search.tokens.name')}
+        dir="auto"
         value={value}
-        placeholder="Recipe name…"
+        placeholder={t('search.tokens.namePlaceholder')}
         onChange={(event) => onChange(event.target.value)}
       />
     </div>

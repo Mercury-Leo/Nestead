@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Check, Copy, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
 import { ThemeToggle } from '../../components/theme/ThemeToggle';
-import { Button, Sheet } from '../../components/ui';
+import { Button, SelectButton, Sheet } from '../../components/ui';
+import { LOCALES, formatNumber, useLocale } from '../../i18n';
 import s from './FamilyPage.module.css';
 
 /**
@@ -11,6 +13,8 @@ import s from './FamilyPage.module.css';
  * always here, unlike the board's banner, which only shows while you are alone.
  */
 export function FamilyPage(): JSX.Element {
+  const { t } = useTranslation();
+  const { locale, setLocale } = useLocale();
   const { me, members, family, rotateJoinCode, refreshFamily } = useSession();
 
   const [copied, setCopied] = useState(false);
@@ -49,7 +53,7 @@ export function FamilyPage(): JSX.Element {
       setConfirming(false);
       setCopied(false);
     } catch (failed) {
-      setError(failed instanceof Error ? failed.message : 'Could not change the code');
+      setError(failed instanceof Error ? failed.message : t('family.confirm.failed'));
     } finally {
       setRotating(false);
     }
@@ -57,35 +61,32 @@ export function FamilyPage(): JSX.Element {
 
   return (
     <div>
-      <PageHeader title="Family" subtitle={family !== undefined ? family.name : 'Who shares this board and kitchen.'} />
+      <PageHeader title={t('family.title')} subtitle={family !== undefined ? <bdi>{family.name}</bdi> : t('family.subtitle')} />
 
       <div className={s.layout}>
         <section className={s.card} aria-labelledby="invite-title">
           <h2 id="invite-title" className={s.cardTitle}>
-            Invite someone
+            {t('family.invite.title')}
           </h2>
 
           {family === undefined ? (
-            <p className={s.muted}>Join codes come with real accounts. In demo mode everyone is already here.</p>
+            <p className={s.muted}>{t('family.invite.demo')}</p>
           ) : (
             <>
-              <p className={s.muted}>
-                They sign up with their own account, choose “I have a join code” and enter this. It lets them in; it is
-                not a password.
-              </p>
+              <p className={s.muted}>{t('family.invite.howTo')}</p>
 
               <div className={s.codeRow}>
-                <code className={s.code} aria-label={`Join code ${family.joinCode.split('').join(' ')}`}>
+                <code className={s.code} aria-label={t('family.invite.codeLabel', { spelled: family.joinCode.split('').join(' ') })}>
                   {family.joinCode}
                 </code>
                 <Button icon={copied ? Check : Copy} onClick={() => void copy(family.joinCode)}>
-                  {copied ? 'Copied' : 'Copy'}
+                  {copied ? t('family.invite.copied') : t('family.invite.copy')}
                 </Button>
               </div>
 
               {rotateJoinCode !== undefined && (
                 <div className={s.rotate}>
-                  <p className={s.muted}>Shared it somewhere you shouldn’t have? Swap it for a new one.</p>
+                  <p className={s.muted}>{t('family.invite.rotateHint')}</p>
                   <Button
                     variant="ghost"
                     icon={RefreshCw}
@@ -94,7 +95,7 @@ export function FamilyPage(): JSX.Element {
                       setConfirming(true);
                     }}
                   >
-                    New code
+                    {t('family.invite.newCode')}
                   </Button>
                 </div>
               )}
@@ -104,14 +105,16 @@ export function FamilyPage(): JSX.Element {
 
         <section className={s.card} aria-labelledby="members-title">
           <h2 id="members-title" className={s.cardTitle}>
-            Members <span className={s.count}>{members.length}</span>
+            {t('family.members')} <span className={s.count}>{formatNumber(members.length)}</span>
           </h2>
           <ul className={s.members}>
             {members.map((member) => (
               <li key={member.id} className={s.member}>
                 <span className={s.dot} style={{ background: member.color }} aria-hidden />
-                <span className={s.memberName}>{member.name}</span>
-                {member.id === me.id && <span className={s.you}>You</span>}
+                <span className={s.memberName} dir="auto">
+                  {member.name}
+                </span>
+                {member.id === me.id && <span className={s.you}>{t('family.you')}</span>}
               </li>
             ))}
           </ul>
@@ -119,11 +122,29 @@ export function FamilyPage(): JSX.Element {
 
         <section className={s.card} aria-labelledby="theme-title">
           <h2 id="theme-title" className={s.cardTitle}>
-            Theme
+            {t('theme.label')}
           </h2>
-          <p className={s.muted}>Just for this device. System follows its light or dark setting.</p>
+          <p className={s.muted}>{t('family.themeNote')}</p>
           <ThemeToggle className={s.theme} />
         </section>
+
+        {/* Only English ships, so production builds have nothing to choose; dev adds the en-XA pseudo-locale. */}
+        {LOCALES.length > 1 && (
+          <section className={s.card} aria-labelledby="locale-title">
+            <h2 id="locale-title" className={s.cardTitle}>
+              {t('locale.title')}
+            </h2>
+            <p className={s.muted}>{t('locale.note')}</p>
+            <SelectButton
+              label={t('locale.label')}
+              shape="field"
+              className={s.theme}
+              value={locale}
+              onChange={setLocale}
+              options={LOCALES.map((option) => ({ value: option.code, label: option.name }))}
+            />
+          </section>
+        )}
       </div>
 
       <Sheet
@@ -131,22 +152,19 @@ export function FamilyPage(): JSX.Element {
         onClose={() => {
           if (!rotating) setConfirming(false);
         }}
-        title="Get a new join code?"
+        title={t('family.confirm.title')}
         footer={
           <>
             <Button size="lg" disabled={rotating} onClick={() => setConfirming(false)}>
-              Keep this one
+              {t('family.confirm.keep')}
             </Button>
             <Button variant="primary" size="lg" icon={RefreshCw} disabled={rotating} onClick={() => void rotate()}>
-              {rotating ? 'Changing…' : 'New code'}
+              {rotating ? t('family.confirm.changing') : t('family.invite.newCode')}
             </Button>
           </>
         }
       >
-        <p className={s.sheetText}>
-          The current code stops working straight away. Everyone already in the family stays in; only people who have
-          not joined yet will need the new code.
-        </p>
+        <p className={s.sheetText}>{t('family.confirm.body')}</p>
         {error !== null && (
           <p className={s.error} role="alert">
             {error}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSupabaseClient } from '../../data/supabase/supabaseClient';
 
 /**
@@ -12,6 +13,7 @@ export function SetNewPassword({
   onDone: () => void;
   onSignOut: () => Promise<void>;
 }): JSX.Element {
+  const { t } = useTranslation();
   const client = getSupabaseClient();
 
   const [password, setPassword] = useState('');
@@ -21,7 +23,7 @@ export function SetNewPassword({
 
   const submit = async (): Promise<void> => {
     if (password !== confirm) {
-      setError('Those passwords do not match.');
+      setError(t('auth.newPassword.mismatch'));
       return;
     }
 
@@ -42,7 +44,7 @@ export function SetNewPassword({
   return (
     <div className="gate">
       <h1>Nestead</h1>
-      <p className="gate-sub">Choose a new password</p>
+      <p className="gate-sub">{t('auth.newPassword.subtitle')}</p>
 
       <form
         onSubmit={(event) => {
@@ -51,9 +53,10 @@ export function SetNewPassword({
         }}
       >
         <label>
-          New password
+          {t('auth.newPassword.new')}
           <input
             type="password"
+            dir="ltr"
             value={password}
             autoComplete="new-password"
             required
@@ -63,9 +66,10 @@ export function SetNewPassword({
         </label>
 
         <label>
-          Confirm new password
+          {t('auth.newPassword.confirm')}
           <input
             type="password"
+            dir="ltr"
             value={confirm}
             autoComplete="new-password"
             required
@@ -77,12 +81,12 @@ export function SetNewPassword({
         {error !== null && <p className="error">{error}</p>}
 
         <button type="submit" disabled={busy || password === '' || confirm === ''}>
-          {busy ? 'Working…' : 'Save password'}
+          {busy ? t('common.working') : t('auth.newPassword.save')}
         </button>
       </form>
 
       <button type="button" className="link quiet" onClick={() => void onSignOut()}>
-        Cancel and sign out
+        {t('auth.newPassword.cancel')}
       </button>
     </div>
   );

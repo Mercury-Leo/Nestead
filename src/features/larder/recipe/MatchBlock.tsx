@@ -1,4 +1,6 @@
+import { Trans, useTranslation } from 'react-i18next';
 import { cx } from '../../../components/ui/cx';
+import { formatList } from '../../../i18n';
 import { BuyPill } from './badges';
 import s from './MatchBlock.module.css';
 
@@ -27,28 +29,30 @@ export function MatchBlock({
   need?: string[];
   compact?: boolean;
 }): JSX.Element {
+  const { t } = useTranslation();
+  // A comma list, not "a and b": it is cut short, and may go on with "+ 2 more".
   const needText =
     need === undefined || need.length === 0
       ? null
       : need.length > 2
-        ? `${need.slice(0, 2).join(', ')} + ${need.length - 2} more`
-        : need.join(', ');
+        ? t('recipe.match.needMore', { names: formatList(need.slice(0, 2), 'unit'), count: need.length - 2 })
+        : formatList(need, 'unit');
   return (
     <div className={cx(s.match, compact && s.matchCompact)}>
       <div className={s.matchTop}>
         <span className={s.matchText}>
-          You have{' '}
-          <strong className="tabular">
-            {have}/{total}
-          </strong>
-          {!compact && ' ingredients'}
+          <Trans
+            i18nKey={compact ? 'recipe.match.haveCompact' : 'recipe.match.have'}
+            values={{ have, total }}
+            components={{ strong: <strong className="tabular" /> }}
+          />
         </span>
         <BuyPill missing={missing} compact={compact} />
       </div>
       <MatchBar have={have} total={total} />
       {needText !== null && (
         <p className={s.need}>
-          Need: <strong>{needText}</strong>
+          <Trans i18nKey="recipe.match.need" values={{ names: needText }} components={{ strong: <strong dir="auto" /> }} />
         </p>
       )}
     </div>

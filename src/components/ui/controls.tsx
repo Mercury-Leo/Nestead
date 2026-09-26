@@ -20,6 +20,7 @@ export function Segmented<T extends string>({
   label,
   className,
   size = 'md',
+  wrap = false,
 }: {
   options: readonly SegmentOption<T>[];
   value: T;
@@ -27,10 +28,12 @@ export function Segmented<T extends string>({
   label: string;
   className?: string;
   size?: 'sm' | 'md';
+  /** Options may wrap onto a second row when they do not fit (see .segmentedWrap). */
+  wrap?: boolean;
 }): JSX.Element {
   const name = useId();
   return (
-    <div role="radiogroup" aria-label={label} className={cx(s.segmented, size === 'sm' && s.segmentedSm, className)}>
+    <div role="radiogroup" aria-label={label} className={cx(s.segmented, size === 'sm' && s.segmentedSm, wrap && s.segmentedWrap, className)}>
       {options.map((option) => (
         <label key={option.value} className={cx(s.segment, option.value === value && s.segmentOn)}>
           <input
@@ -160,6 +163,8 @@ export function Stepper({
   max,
   onChange,
   label,
+  fewerLabel,
+  moreLabel,
   caption,
   className,
 }: {
@@ -168,19 +173,22 @@ export function Stepper({
   max: number;
   onChange: (value: number) => void;
   label: string;
+  /** "Fewer servings": a whole phrase, so it can be translated as one. */
+  fewerLabel: string;
+  moreLabel: string;
   caption?: string;
   className?: string;
 }): JSX.Element {
   return (
     <div className={cx(s.stepper, className)} role="group" aria-label={label}>
-      <button type="button" aria-label={`Fewer ${label.toLowerCase()}`} disabled={value <= min} onClick={() => onChange(Math.max(min, value - 1))}>
+      <button type="button" aria-label={fewerLabel} disabled={value <= min} onClick={() => onChange(Math.max(min, value - 1))}>
         <Minus size={18} strokeWidth={2} aria-hidden />
       </button>
       <span className={s.stepperValue} aria-live="polite">
         <span className="tabular">{value}</span>
         {caption !== undefined && <span className={s.stepperCaption}>{caption}</span>}
       </span>
-      <button type="button" aria-label={`More ${label.toLowerCase()}`} disabled={value >= max} onClick={() => onChange(Math.min(max, value + 1))}>
+      <button type="button" aria-label={moreLabel} disabled={value >= max} onClick={() => onChange(Math.min(max, value + 1))}>
         <Plus size={18} strokeWidth={2} aria-hidden />
       </button>
     </div>

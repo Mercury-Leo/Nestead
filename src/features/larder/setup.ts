@@ -12,6 +12,7 @@ import { pantryRow } from '../../domain/kitchen/pantry';
 
 /** What every new family starts with, demo or not. */
 export const DEFAULT_STAPLES: readonly string[] = [
+  // i18n: stored as pantry rows and matched against the English catalog, like the seed data.
   'Water', 'Salt', 'Black pepper', 'Olive oil', 'Vegetable oil', 'Sugar', 'All-purpose flour', 'Baking soda',
 ];
 

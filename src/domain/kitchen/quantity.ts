@@ -47,6 +47,7 @@ export function formatQty(qty: number, unit: Unit): string {
   return formatNumber(qty);
 }
 
+// i18n: unit names and their plurals are the parser's English words, shown in amounts as they are.
 const PLURAL: Partial<Record<Exclude<Unit, null>, string>> = {
   cup: 'cups',
   pinch: 'pinches',
@@ -75,7 +76,10 @@ export function formatAmount(qty: number | null, unit: Unit, qtyMax?: number): s
   return label === '' ? number : `${number} ${label}`;
 }
 
-/** "35 min", "1 h", "1 h 20 min". */
+/**
+ * "35 min", "1 h", "1 h 20 min".
+ * i18n: English units, shown as they are on cards, recipe pages and the import preview.
+ */
 export function formatDuration(minutes: number): string {
   const total = Math.max(0, Math.round(minutes));
   const hours = Math.floor(total / 60);
@@ -84,7 +88,10 @@ export function formatDuration(minutes: number): string {
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 }
 
-/** 2852 -> "47:32"; 3600 and over -> "1:00:00". */
+/**
+ * 2852 -> "47:32"; 3600 and over -> "1:00:00".
+ * i18n: always Latin digits, whatever the locale.
+ */
 export function formatClock(seconds: number): string {
   const total = Math.max(0, Math.ceil(seconds));
   const h = Math.floor(total / 3600);

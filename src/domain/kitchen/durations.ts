@@ -11,7 +11,10 @@ export interface DetectedDuration {
   phrase: string;
   /** Timer length. A range uses its lower bound. */
   seconds: number;
-  /** "Oven", "Sear", or "Step 3". */
+  /**
+   * "Oven", "Sear", or "Step 3".
+   * i18n: English words shown as they are (timer tray, done banner). The verb comes from the step's own text.
+   */
   label: string;
 }
 

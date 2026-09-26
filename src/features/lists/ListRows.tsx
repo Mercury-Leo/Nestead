@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Ellipsis, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Checkbox, IconButton, TextField, cx } from '../../components/ui';
 import type { ListGroup, ListItem } from '../../domain/types';
 import {
@@ -28,23 +29,32 @@ export function ItemRow({
   onToggle: (value: boolean) => void;
   onEdit: () => void;
 }): JSX.Element {
+  const { t } = useTranslation();
   const detail = [forLine(item), item.note].filter((part) => part !== null && part !== undefined && part !== '').join(' · ');
   return (
     <li className={cx(s.row, item.checked && s.rowChecked, justAdded && s.rowJustAdded)} data-just-added={justAdded || undefined}>
       <Checkbox size={26} checked={item.checked} onChange={onToggle} className={s.rowCheck}>
         <span className={s.rowText}>
-          <span className={s.rowName}>{item.name}</span>
-          {detail !== '' && <span className={s.rowFor}>{detail}</span>}
+          <span className={s.rowName} dir="auto">
+            {item.name}
+          </span>
+          {detail !== '' && (
+            <span className={s.rowFor} dir="auto">
+              {detail}
+            </span>
+          )}
         </span>
       </Checkbox>
-      <span className={cx(s.rowQty, 'tabular')}>{formatListQty(item.parts)}</span>
-      <IconButton label={`Edit ${item.name}`} icon={Ellipsis} className={s.rowEdit} onClick={onEdit} />
+      {/* i18n: formatListQty (domain/kitchen/list.ts) writes amounts with the parser's English units. */}
+      <span className={cx(s.rowQty, 'tabular')} dir="auto">{formatListQty(item.parts)}</span>
+      <IconButton label={t('lists.editItem', { name: item.name })} icon={Ellipsis} className={s.rowEdit} onClick={onEdit} />
     </li>
   );
 }
 
 /** Type and press Enter; commas add several at once. */
 export function AddItem({ group, onAdd }: { group: Group; onAdd: (names: string[]) => void }): JSX.Element {
+  const { t } = useTranslation();
   const [text, setText] = useState('');
   const submit = (event: FormEvent): void => {
     event.preventDefault();
@@ -55,9 +65,10 @@ export function AddItem({ group, onAdd }: { group: Group; onAdd: (names: string[
   return (
     <form className={s.addItem} onSubmit={submit}>
       <TextField
-        label={`Add to ${group.name}`}
+        label={t('lists.addTo', { name: group.name })}
         icon={Plus}
-        placeholder={group.id === SUPERMARKET ? 'Add groceries — e.g. milk, bread' : `Add to ${group.name}`}
+        placeholder={group.id === SUPERMARKET ? t('lists.groceriesPlaceholder') : t('lists.addTo', { name: group.name })}
+        dir="auto"
         value={text}
         onChange={(event) => setText(event.target.value)}
         wrapClassName={s.addField}
@@ -65,7 +76,7 @@ export function AddItem({ group, onAdd }: { group: Group; onAdd: (names: string[
       />
       {text.trim() !== '' && (
         <Button type="submit" variant="secondary" size="lg">
-          Add
+          {t('common.add')}
         </Button>
       )}
     </form>

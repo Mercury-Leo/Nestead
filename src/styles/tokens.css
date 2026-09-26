@@ -62,8 +62,11 @@
   /* Recipe placeholders are pale linens; dark mode tones them down. */
   --photo-filter: none;
 
-  --serif: 'Newsreader Variable', 'Newsreader', Georgia, 'Times New Roman', serif;
-  --sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* The Noto faces only cover Arabic and Hebrew (styles/fonts.css), for user text in those scripts. */
+  --serif: 'Newsreader Variable', 'Newsreader', 'Noto Naskh Arabic Variable', 'Noto Serif Hebrew Variable', Georgia,
+    'Times New Roman', serif;
+  --sans: 'Hanken Grotesk', 'Noto Sans Arabic Variable', 'Noto Sans Hebrew Variable', system-ui, -apple-system,
+    'Segoe UI', sans-serif;
 
   --radius-card: 20px;
   --radius-card-sm: 18px;

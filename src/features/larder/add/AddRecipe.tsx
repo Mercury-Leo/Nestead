@@ -1,15 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, ImagePlus, List, Plus, Timer, Trash2, User, X } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { Check, ImagePlus, List, Plus, Timer, Trash2, User, X } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
-import { Button, IconButton, RemovableChip, Segmented, SelectButton, Stepper, TextField, cx } from '../../../components/ui';
+import { BackArrow, Button, IconButton, RemovableChip, Segmented, SelectButton, Stepper, TextField, cx } from '../../../components/ui';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import type { AnyRecipe, NewRow, Recipe, Unit } from '../../../domain/types';
 import { CATALOG } from '../../../domain/kitchen/catalog';
 import { detectDurations } from '../../../domain/kitchen/durations';
 import { parseIngredientBlock } from '../../../domain/kitchen/parse';
 import { formatDuration } from '../../../domain/kitchen/quantity';
+import { formatList } from '../../../i18n';
 import { removeRecipeFromList } from '../actions';
 import { useKitchen } from '../KitchenContext';
 import { equipmentIcon } from '../recipe/equipment';
@@ -37,7 +39,7 @@ export default function AddRecipe(): JSX.Element {
   if (editId !== null && editing === undefined) {
     return (
       <p className="centred">
-        That recipe isn’t in the library any more. <Link to="/library">Back to the library</Link>
+        <Trans i18nKey="add.missing" components={{ link: <Link to="/library" /> }} />
       </p>
     );
   }
@@ -45,6 +47,7 @@ export default function AddRecipe(): JSX.Element {
 }
 
 function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: AnyRecipe | undefined }): JSX.Element {
+  const { t } = useTranslation();
   const { store, me } = useSession();
   const kitchen = useKitchen();
   const desktop = useIsDesktop();
@@ -98,7 +101,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
       const blob = await resizePhoto(file);
       setPhoto({ blob, url: URL.createObjectURL(blob) });
     } catch (error) {
-      setPhotoError(error instanceof Error ? error.message : 'That image could not be used.');
+      setPhotoError(error instanceof Error ? error.message : t('add.photo.unusable'));
     }
   };
 
@@ -187,7 +190,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
   };
 
   const isWeb = draft.source.kind === 'web';
-  const heading = editing !== undefined ? 'Edit recipe' : 'Add a recipe';
+  const heading = editing !== undefined ? t('add.headingEdit') : t('add.headingAdd');
 
   /* ---------------------------------------------------------- sections -- */
 
@@ -210,7 +213,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
         type="file"
         accept={PHOTO_TYPES.join(',')}
         className="visually-hidden"
-        aria-label="Choose a photo"
+        aria-label={t('add.photo.choose')}
         onChange={(event) => {
           void takePhoto(event.target.files?.[0]);
           event.target.value = '';
@@ -218,13 +221,13 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
       />
       {preview !== null ? (
         <>
-          <img src={preview} alt="Recipe photo" className={s.preview} />
+          <img src={preview} alt={t('add.photo.alt')} className={s.preview} />
           <div className={s.photoActions}>
             <Button variant="secondary" onClick={() => fileInput.current?.click()}>
-              Replace
+              {t('add.photo.replace')}
             </Button>
             <Button variant="secondary" icon={Trash2} onClick={removePhoto}>
-              Remove
+              {t('common.remove')}
             </Button>
           </div>
         </>
@@ -233,12 +236,12 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
           <span className={s.dropIcon} aria-hidden>
             <ImagePlus size={24} strokeWidth={2} />
           </span>
-          <span className={s.dropTitle}>Add a photo</span>
+          <span className={s.dropTitle}>{t('add.photo.add')}</span>
           <span className={s.dropHint}>
-            Drag an image here, or{' '}
-            <button type="button" className={s.browse} onClick={() => fileInput.current?.click()}>
-              browse
-            </button>
+            <Trans
+              i18nKey="add.photo.drag"
+              components={{ browse: <button type="button" className={s.browse} onClick={() => fileInput.current?.click()} /> }}
+            />
           </span>
         </div>
       )}
@@ -247,38 +250,46 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
   );
 
   const basics = (
-    <Card title="Basics">
+    <Card title={t('add.basics')}>
       <TextField
-        label="Title"
+        label={t('add.title')}
         showLabel
+        dir="auto"
         value={draft.title}
-        placeholder="e.g. Weeknight Chickpea Curry"
+        placeholder={t('add.titlePlaceholder')}
         aria-invalid={errors.title !== undefined}
         onChange={(event) => set({ title: event.target.value })}
       />
       {errors.title !== undefined && <ErrorText>{errors.title}</ErrorText>}
       <div className={s.numbers}>
         <div>
-          <span className={s.label}>
-            Servings
-          </span>
-          <Stepper label="Servings" value={draft.servings} min={1} max={24} onChange={(servings) => set({ servings })} />
+          <span className={s.label}>{t('add.servings')}</span>
+          <Stepper
+            label={t('add.servings')}
+            fewerLabel={t('add.fewerServings')}
+            moreLabel={t('add.moreServings')}
+            value={draft.servings}
+            min={1}
+            max={24}
+            onChange={(servings) => set({ servings })}
+          />
         </div>
-        <TextField label="Prep time" showLabel suffix="min" inputMode="numeric" value={draft.prepMin} onChange={(event) => set({ prepMin: event.target.value.replace(/\D/g, '') })} />
-        <TextField label="Cook time" showLabel suffix="min" inputMode="numeric" value={draft.cookMin} onChange={(event) => set({ cookMin: event.target.value.replace(/\D/g, '') })} />
+        <TextField label={t('add.prepTime')} showLabel suffix={t('add.min')} inputMode="numeric" value={draft.prepMin} onChange={(event) => set({ prepMin: event.target.value.replace(/\D/g, '') })} />
+        <TextField label={t('add.cookTime')} showLabel suffix={t('add.min')} inputMode="numeric" value={draft.cookMin} onChange={(event) => set({ cookMin: event.target.value.replace(/\D/g, '') })} />
       </div>
       <div>
-        <span className={s.label}>Tags</span>
+        <span className={s.label}>{t('add.tags')}</span>
         <div className={s.tagBox}>
-          {draft.tags.map((t) => (
-            <RemovableChip key={t} removeLabel={`Remove tag ${t}`} onRemove={() => set({ tags: draft.tags.filter((x) => x !== t) })}>
-              {t}
+          {draft.tags.map((name) => (
+            <RemovableChip key={name} removeLabel={t('add.removeTag', { tag: name })} onRemove={() => set({ tags: draft.tags.filter((x) => x !== name) })}>
+              <span dir="auto">{name}</span>
             </RemovableChip>
           ))}
           <input
             className={s.inlineInput}
-            aria-label="Add tag"
-            placeholder="Add tag"
+            aria-label={t('add.addTag')}
+            placeholder={t('add.addTag')}
+            dir="auto"
             value={tag}
             onChange={(event) => setTag(event.target.value)}
             onKeyDown={(event) => {
@@ -296,17 +307,16 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
       </div>
       <p className={s.mine}>
         {isWeb ? (
-          <>
-            <span className={s.webBadge}>Web</span> Saved as Web · {draft.source.kind === 'web' ? draft.source.site : ''} — the original link stays
-            attached.
-          </>
+          <Trans
+            i18nKey="add.savedWeb"
+            values={{ site: draft.source.kind === 'web' ? draft.source.site : '' }}
+            components={{ badge: <span className={s.webBadge} /> }}
+          />
         ) : (
-          <>
-            <span className={s.mineBadge}>
-              <User size={12} strokeWidth={2.4} aria-hidden /> Mine
-            </span>{' '}
-            Saved to your library as your own recipe.
-          </>
+          <Trans
+            i18nKey="add.savedMine"
+            components={{ badge: <span className={s.mineBadge} />, icon: <User size={12} strokeWidth={2.4} aria-hidden /> }}
+          />
         )}
       </p>
     </Card>
@@ -316,36 +326,36 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
     <Card
       title={
         <>
-          Ingredients <span className={s.count}>· {filled}</span>
+          {t('add.ingredients')} <span className={s.count}>· {filled}</span>
         </>
       }
       aside={
         <Button variant="ghost" icon={List} onClick={() => setPasting(!pasting)} aria-expanded={pasting}>
-          Paste a list
+          {t('add.pasteList')}
         </Button>
       }
     >
       {pasting && (
         <div className={s.paste}>
           <label htmlFor="paste-list" className={s.label}>
-            One ingredient per line, e.g. “2 cans chickpeas, drained”
+            {t('add.pasteHelp')}
           </label>
-          <textarea id="paste-list" className={s.textarea} rows={5} value={pasted} onChange={(event) => setPasted(event.target.value)} />
+          <textarea id="paste-list" className={s.textarea} rows={5} dir="auto" value={pasted} onChange={(event) => setPasted(event.target.value)} />
           <div className={s.pasteActions}>
             <Button variant="ghost" onClick={() => setPasting(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="primary" disabled={pasted.trim() === ''} onClick={addPasted}>
-              Add {parseIngredientBlock(pasted).length} ingredients
+              {t('add.addParsed', { count: parseIngredientBlock(pasted).length })}
             </Button>
           </div>
         </div>
       )}
       <div className={s.ingredientHead} aria-hidden>
         <span />
-        <span>Qty</span>
-        <span>Unit</span>
-        <span>Item</span>
+        <span>{t('add.qty')}</span>
+        <span>{t('add.unit')}</span>
+        <span>{t('add.item')}</span>
         <span />
       </div>
       <datalist id={listId}>
@@ -362,36 +372,38 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
                 trailing ? (
                   <span className={s.handleSpace} />
                 ) : (
-                  <Handle label={`Move ${row.item || 'ingredient'}`} onMove={(delta) => setRows(move(draft.ingredients, index, index + delta))} />
+                  <Handle label={t('add.move', { name: row.item || t('add.ingredientFallback') })} onMove={(delta) => setRows(move(draft.ingredients, index, index + delta))} />
                 )
               ) : null}
               <input
                 className={s.qty}
-                aria-label="Quantity"
-                placeholder="Qty"
+                aria-label={t('add.quantity')}
+                placeholder={t('add.qty')}
                 inputMode="decimal"
                 value={row.qty}
                 onChange={(event) => setRow(index, { qty: event.target.value })}
               />
               <SelectButton<string>
-                label="Unit"
+                label={t('add.unit')}
                 shape="field"
                 className={s.unit}
                 value={row.unit ?? ''}
-                display={row.unit ?? (trailing ? 'Unit' : '—')}
+                // i18n: unit names (g, tbsp, bunch) are the parser's own words, from draft.ts UNITS.
+                display={row.unit ?? (trailing ? t('add.unit') : '—')}
                 onChange={(value) => setRow(index, { unit: value === '' ? null : (value as Unit) })}
                 options={[{ value: '', label: '—' }, ...UNITS.map((unit) => ({ value: unit, label: unit }))]}
               />
               <input
                 className={s.itemInput}
-                aria-label="Ingredient"
-                placeholder="Add an ingredient…"
+                aria-label={t('add.ingredient')}
+                placeholder={t('add.ingredientPlaceholder')}
                 list={listId}
+                dir="auto"
                 value={row.item}
                 onChange={(event) => setRow(index, { item: event.target.value })}
               />
               <IconButton
-                label={`Remove ${row.item || 'ingredient'}`}
+                label={t('add.removeNamed', { name: row.item || t('add.ingredientFallback') })}
                 icon={X}
                 disabled={trailing}
                 onClick={() => setRows(draft.ingredients.filter((_, i) => i !== index))}
@@ -402,7 +414,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
       </ol>
       {errors.ingredients !== undefined && <ErrorText>{errors.ingredients}</ErrorText>}
       <Button variant="secondary" icon={Plus} className={s.addButton} onClick={() => set({ ingredients: [...draft.ingredients, emptyIngredient()] })}>
-        Add ingredient
+        {t('add.addIngredient')}
       </Button>
     </Card>
   );
@@ -414,17 +426,18 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
   };
 
   const equipment = (
-    <Card title="Equipment">
+    <Card title={t('add.equipment')}>
       <div className={s.tools}>
         {draft.equipment.map((name) => (
-          <RemovableChip key={name} icon={equipmentIcon(name)} removeLabel={`Remove ${name}`} onRemove={() => set({ equipment: draft.equipment.filter((e) => e !== name) })}>
-            {name}
+          <RemovableChip key={name} icon={equipmentIcon(name)} removeLabel={t('add.removeNamed', { name })} onRemove={() => set({ equipment: draft.equipment.filter((e) => e !== name) })}>
+            <span dir="auto">{name}</span>
           </RemovableChip>
         ))}
         <input
           className={s.toolInput}
-          aria-label="Add equipment"
-          placeholder="Add equipment…"
+          aria-label={t('add.addEquipment')}
+          placeholder={t('add.addEquipmentPlaceholder')}
+          dir="auto"
           value={tool}
           onChange={(event) => setTool(event.target.value)}
           onKeyDown={(event) => {
@@ -440,7 +453,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
   );
 
   const steps = (
-    <Card title="Steps" aside={<span className={s.aside}>Times you write become timers in Cook mode</span>}>
+    <Card title={t('add.steps')} aside={<span className={s.aside}>{t('add.stepsAside')}</span>}>
       <ol className={s.steps}>
         {draft.steps.map((row, index) => {
           const trailing = index === draft.steps.length - 1 && row.text === '';
@@ -450,7 +463,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
               {trailing ? (
                 <span className={s.handleSpace} />
               ) : (
-                <Handle label={`Move step ${index + 1}`} onMove={(delta) => setSteps(move(draft.steps, index, index + delta))} />
+                <Handle label={t('add.moveStep', { step: index + 1 })} onMove={(delta) => setSteps(move(draft.steps, index, index + delta))} />
               )}
               <span className={cx(s.stepNumber, trailing && s.stepNumberNext)} aria-hidden>
                 {index + 1}
@@ -458,20 +471,22 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
               <div className={s.stepBody}>
                 <textarea
                   className={s.textarea}
-                  aria-label={`Step ${index + 1}`}
+                  aria-label={t('add.step', { step: index + 1 })}
                   rows={2}
-                  placeholder="Describe this step…"
+                  placeholder={t('add.stepPlaceholder')}
+                  dir="auto"
                   value={row.text}
                   onChange={(event) => setSteps(draft.steps.map((r, i) => (i === index ? { ...r, text: event.target.value } : r)))}
                 />
                 {timers.length > 0 && (
                   <p className={s.detected}>
-                    <Timer size={15} strokeWidth={2.2} aria-hidden /> Timer detected · {timers.map((t) => formatDuration(t.seconds / 60)).join(', ')}
+                    <Timer size={15} strokeWidth={2.2} aria-hidden />{' '}
+                    <Trans i18nKey="add.timerDetected" values={{ times: formatList(timers.map((timer) => formatDuration(timer.seconds / 60)), 'unit') }} />
                   </p>
                 )}
               </div>
               {!trailing && (
-                <IconButton label={`Remove step ${index + 1}`} icon={X} onClick={() => setSteps(draft.steps.filter((_, i) => i !== index))} />
+                <IconButton label={t('add.removeStep', { step: index + 1 })} icon={X} onClick={() => setSteps(draft.steps.filter((_, i) => i !== index))} />
               )}
             </li>
           );
@@ -479,7 +494,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
       </ol>
       {errors.steps !== undefined && <ErrorText>{errors.steps}</ErrorText>}
       <Button variant="secondary" icon={Plus} className={s.addButton} onClick={() => set({ steps: [...draft.steps, emptyStep()] })}>
-        Add step
+        {t('add.addStep')}
       </Button>
     </Card>
   );
@@ -489,17 +504,19 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
       <div className={s.danger}>
         {confirmDelete ? (
           <>
-            <span>Delete “{editing.title}” for everyone in the family?</span>
+            <span>
+              <Trans i18nKey="add.deleteQuestion" values={{ title: editing.title }} />
+            </span>
             <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
-              Keep it
+              {t('common.keepIt')}
             </Button>
             <Button variant="primary" icon={Trash2} disabled={saving} onClick={() => void remove()}>
-              Delete recipe
+              {t('add.deleteRecipe')}
             </Button>
           </>
         ) : (
           <Button variant="ghost" icon={Trash2} onClick={() => setConfirmDelete(true)}>
-            Delete recipe
+            {t('add.deleteRecipe')}
           </Button>
         )}
       </div>
@@ -507,15 +524,16 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
 
   const tabs = (
     <Segmented
-      label="How to add"
+      wrap
+      label={t('add.howToAdd')}
       className={s.tabs}
       value="write"
       onChange={(value) => {
         if (value === 'import') navigate('/import');
       }}
       options={[
-        { value: 'write', label: 'Write my own' },
-        { value: 'import', label: 'Import from web' },
+        { value: 'write', label: t('add.writeOwn') },
+        { value: 'import', label: t('add.importWeb') },
       ]}
     />
   );
@@ -533,17 +551,17 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
       {desktop ? (
         <>
           <Link to={editing !== undefined ? recipePath(editing) : '/library'} className={s.back}>
-            <ArrowLeft size={18} strokeWidth={2} aria-hidden /> {editing !== undefined ? editing.title : 'Library'}
+            <BackArrow size={18} strokeWidth={2} aria-hidden /> {editing !== undefined ? <bdi>{editing.title}</bdi> : t('common.library')}
           </Link>
           <PageHeader
             title={heading}
             actions={
               <>
                 <Button variant="ghost" size="lg" onClick={cancel}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" variant="primary" size="lg" icon={Check} disabled={saving}>
-                  Save recipe
+                  {t('add.saveRecipe')}
                 </Button>
               </>
             }
@@ -554,11 +572,11 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
         <>
           <div className={s.topBar}>
             <Button variant="ghost" onClick={cancel}>
-              Cancel
+              {t('common.cancel')}
             </Button>
-            <h1 className={s.topTitle}>{editing !== undefined ? 'Edit recipe' : 'New recipe'}</h1>
+            <h1 className={s.topTitle}>{editing !== undefined ? t('add.headingEdit') : t('add.headingNew')}</h1>
             <Button type="submit" variant="ghost" className={s.topSave} disabled={saving}>
-              Save
+              {t('common.save')}
             </Button>
           </div>
           {editing === undefined && tabs}
@@ -567,7 +585,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
 
       {hasErrors && (
         <p className={s.summaryError} role="alert">
-          Check the highlighted parts before saving.
+          {t('add.checkErrors')}
         </p>
       )}
 
@@ -586,7 +604,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
 
       {!desktop && (
         <Button type="submit" variant="primary" size="bar" block icon={Check} disabled={saving} className={s.bottomSave}>
-          Save recipe
+          {t('add.saveRecipe')}
         </Button>
       )}
     </form>

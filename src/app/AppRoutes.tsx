@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import type { ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BoardPage } from '../features/board/BoardPage';
 import { useKitchen } from '../features/larder/KitchenContext';
 
@@ -17,7 +18,8 @@ const ImportRecipe = lazy(() => import('../features/larder/import/ImportRecipe')
 const FamilyPage = lazy(() => import('../features/family/FamilyPage').then((m) => ({ default: m.FamilyPage })));
 
 function Loading(): JSX.Element {
-  return <p className="centred">Loading…</p>;
+  const { t } = useTranslation();
+  return <p className="centred">{t('common.loading')}</p>;
 }
 
 /** Every screen, by path. */

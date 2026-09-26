@@ -3,8 +3,8 @@
 .bannerLayer {
   position: fixed;
   top: calc(12px + env(safe-area-inset-top));
-  right: 12px;
-  left: 12px;
+  inset-inline-end: 12px;
+  inset-inline-start: 12px;
   z-index: 100;
   display: flex;
   justify-content: center;

@@ -16,6 +16,7 @@ export interface Preset {
   noun?: string;
 }
 
+// i18n: name and rule are shown from the translation file by id (kitchen.preset.<id>); noun feeds fitsProfileLine.
 export const PRESETS: readonly Preset[] = [
   { id: 'vegetarian', name: 'Vegetarian', rule: 'No meat or fish', group: 'style', excludes: ['meat', 'poultry', 'pork', 'fish', 'shellfish'], noun: 'meat' },
   { id: 'vegan', name: 'Vegan', rule: 'No animal products at all', group: 'style', excludes: ['animal'], noun: 'animal products' },
@@ -30,6 +31,7 @@ export const PRESETS: readonly Preset[] = [
   { id: 'kosher', name: 'Kosher', rule: 'No pork or shellfish; meat and dairy kept apart', group: 'religious', excludes: ['pork', 'shellfish'], noun: 'pork' },
 ];
 
+// i18n: English words, shown inside checkDiet's labels and search's "contains …".
 const FLAG_WORD: Record<DietFlag, string> = {
   meat: 'meat',
   poultry: 'poultry',
@@ -125,6 +127,7 @@ export function parseCustomRule(text: string): CustomDietRule | null {
     if (hints.length < 2) hints.push(name.toLowerCase());
   }
 
+  // i18n: stored with the rule and shown as written, in English.
   const hint =
     hints.length === 0 ? `Matches “${subject}”` : `Also matches ${hints.slice(0, 2).join(' and ')}`;
 
@@ -155,6 +158,7 @@ function ruleMatchesLine(rule: CustomDietRule, line: IngredientLine): boolean {
 
 /* --------------------------------------------------------------- checks -- */
 
+/** i18n: reasons, things and label are English sentences and words, shown as they are on warning badges. */
 export interface DietCheck {
   ok: boolean;
   /** Human reasons: "Contains peanuts, sesame", "Mixes meat and dairy". */
@@ -225,7 +229,10 @@ export function checkDiet(recipe: Pick<AnyRecipe, 'ingredients' | 'servings'>, p
   return { ok: false, reasons, things, label: reasons.join(' · ') };
 }
 
-/** "No nuts, sesame or cilantro found". */
+/**
+ * "No nuts, sesame or cilantro found".
+ * i18n: an English sentence, shown as it is in the import preview.
+ */
 export function fitsProfileLine(profile: Pick<DietProfile, 'presets' | 'custom'> | null | undefined): string {
   const nouns: string[] = [];
   for (const preset of activePresets(profile)) {
@@ -240,7 +247,10 @@ export function fitsProfileLine(profile: Pick<DietProfile, 'presets' | 'custom'>
   return `No ${list} found`;
 }
 
-/** Diet tags a recipe qualifies for, for "Suggested tags" on import. */
+/**
+ * Diet tags a recipe qualifies for, for "Suggested tags" on import.
+ * i18n: English; a chosen tag is stored on the recipe as it is.
+ */
 export function dietTags(recipe: Pick<AnyRecipe, 'ingredients' | 'servings'>): string[] {
   const flags = new Set(recipe.ingredients.flatMap(lineFlags));
   const tags: string[] = [];

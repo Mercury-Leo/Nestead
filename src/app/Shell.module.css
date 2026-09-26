@@ -37,7 +37,8 @@
 }
 
 .navGroup {
-  margin: 0 0 6px 14px;
+  margin-block: 0 6px;
+  margin-inline: 14px 0;
   color: var(--ink-3);
   font-size: 12px;
   font-weight: 700;
@@ -138,9 +139,9 @@
 
 .tabbar {
   position: fixed;
-  right: 0;
+  inset-inline-end: 0;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   z-index: 20;
   display: flex;
   height: var(--tabbar);
@@ -222,7 +223,7 @@
     height: 100dvh;
     padding: 28px 16px 20px;
     overflow-y: auto;
-    border-right: 1px solid var(--line);
+    border-inline-end: 1px solid var(--line);
     background: var(--side);
   }
 

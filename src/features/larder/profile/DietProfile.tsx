@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Info, Plus, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
 import { Button, RadioList, TextField, cx } from '../../../components/ui';
@@ -8,7 +9,9 @@ import { WarningBadge } from '../recipe/badges';
 import type { DietProfile, PresetId } from '../../../domain/types';
 import { checkDiet, parseCustomRule, PRESETS } from '../../../domain/kitchen/diet';
 import type { Preset } from '../../../domain/kitchen/diet';
+import { formatNumber } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
+import { presetName, presetRule } from '../labels';
 import { RecipePhoto } from '../recipe/RecipePhoto';
 import { recipePath } from '../recipe/recipeView';
 import s from './DietProfile.module.css';
@@ -17,11 +20,12 @@ type Patch = Partial<Pick<DietProfile, 'presets' | 'custom' | 'conflictMode'>>;
 
 /** A whole tile that is one switch: name, one-line rule, and the track. */
 function Tile({ preset, on, onToggle }: { preset: Preset; on: boolean; onToggle: () => void }): JSX.Element {
+  const { t } = useTranslation();
   return (
     <button type="button" role="switch" aria-checked={on} className={cx(s.tile, on && s.tileOn)} onClick={onToggle}>
       <span className={s.tileText}>
-        <span className={s.tileName}>{preset.name}</span>
-        <span className={s.tileRule}>{preset.rule}</span>
+        <span className={s.tileName}>{presetName(t, preset.id)}</span>
+        <span className={s.tileRule}>{presetRule(t, preset.id)}</span>
       </span>
       <span className={cx(s.track, on && s.trackOn)} aria-hidden>
         <span className={s.thumb} />
@@ -31,6 +35,7 @@ function Tile({ preset, on, onToggle }: { preset: Preset; on: boolean; onToggle:
 }
 
 export function DietProfilePage(): JSX.Element {
+  const { t } = useTranslation();
   const { store } = useSession();
   const kitchen = useKitchen();
   const profile = kitchen.profile;
@@ -75,25 +80,25 @@ export function DietProfilePage(): JSX.Element {
 
   return (
     <div>
-      <PageHeader title="Diet profile" subtitle="Larder checks every recipe against these rules before showing it to you." />
+      <PageHeader title={t('diet.title')} subtitle={t('diet.subtitle')} />
 
       <div className={s.layout}>
-        <section className={s.card} aria-label="Rules">
+        <section className={s.card} aria-label={t('diet.rules')}>
           <h2 className={s.sectionTitle}>
-            Eating style <span className={s.sectionAside}>Pick any that apply</span>
+            {t('diet.style')} <span className={s.sectionAside}>{t('diet.pickAny')}</span>
           </h2>
           {tiles('style')}
 
           <h2 className={s.sectionTitle}>
-            Allergies &amp; intolerances <span className={s.sectionAside}>{allergiesOn} on</span>
+            {t('diet.allergies')} <span className={s.sectionAside}>{t('diet.allergiesOn', { count: allergiesOn })}</span>
           </h2>
           {tiles('allergy')}
 
-          <h2 className={s.sectionTitle}>Religious &amp; cultural</h2>
+          <h2 className={s.sectionTitle}>{t('diet.religious')}</h2>
           {tiles('religious')}
 
           <h2 className={s.sectionTitle}>
-            Your own rules <span className={s.sectionAside}>Anything else to avoid</span>
+            {t('diet.own')} <span className={s.sectionAside}>{t('diet.ownAside')}</span>
           </h2>
           <form
             className={s.ruleForm}
@@ -103,14 +108,15 @@ export function DietProfilePage(): JSX.Element {
             }}
           >
             <TextField
-              label="Add an ingredient or allergy"
-              placeholder="Add an ingredient or allergy — e.g. “no mushrooms”"
+              label={t('diet.addRule')}
+              placeholder={t('diet.addRulePlaceholder')}
+              dir="auto"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               wrapClassName={s.ruleInput}
             />
             <Button type="submit" variant="dark" size="lg" icon={Plus} disabled={draft.trim() === ''}>
-              Add
+              {t('common.add')}
             </Button>
           </form>
           {custom.length > 0 && (
@@ -118,13 +124,16 @@ export function DietProfilePage(): JSX.Element {
               {custom.map((rule) => (
                 <li key={rule.id} className={s.rule}>
                   <span className={s.ruleText}>
-                    <span className={s.ruleLabel}>{rule.label}</span>
+                    <span className={s.ruleLabel} dir="auto">
+                      {rule.label}
+                    </span>
+                    {/* i18n: the hint was written in English by parseCustomRule (domain/kitchen/diet.ts) and is stored with the rule. */}
                     <span className={s.ruleHint}>{rule.hint}</span>
                   </span>
                   <button
                     type="button"
                     className={s.ruleRemove}
-                    aria-label={`Remove rule ${rule.label}`}
+                    aria-label={t('diet.removeRule', { label: rule.label })}
                     onClick={() => save({ custom: custom.filter((r) => r.id !== rule.id) })}
                   >
                     <X size={18} strokeWidth={2} aria-hidden />
@@ -138,26 +147,26 @@ export function DietProfilePage(): JSX.Element {
         <aside className={s.side}>
           <section className={s.card} aria-labelledby="conflict-title">
             <h2 id="conflict-title" className={s.cardTitle}>
-              When a recipe conflicts
+              {t('diet.conflictTitle')}
             </h2>
             <RadioList
-              label="When a recipe conflicts"
+              label={t('diet.conflictTitle')}
               value={conflictMode}
               onChange={(value) => save({ conflictMode: value })}
               options={[
                 {
                   value: 'hide',
-                  label: 'Hide it',
-                  hint: 'It won’t appear in search or pantry suggestions. You can still reveal hidden results from a search.',
+                  label: t('diet.hide'),
+                  hint: t('diet.hideHint'),
                 },
                 {
                   value: 'warn',
-                  label: 'Show it with a warning',
+                  label: t('diet.warn'),
                   hint: (
                     <>
-                      It appears in results with a badge like this:
+                      {t('diet.warnHint')}
                       <span className={s.sample}>
-                        <WarningBadge>Contains peanuts, sesame</WarningBadge>
+                        <WarningBadge>{t('diet.sampleBadge')}</WarningBadge>
                       </span>
                     </>
                   ),
@@ -168,7 +177,7 @@ export function DietProfilePage(): JSX.Element {
 
           <section className={s.card} aria-labelledby="saved-title">
             <h2 id="saved-title" className={cx(s.cardTitle, s.cardTitleRow)}>
-              Saved recipes that conflict <span className={s.count}>{conflicts.length}</span>
+              {t('diet.saved')} <span className={s.count}>{formatNumber(conflicts.length)}</span>
             </h2>
             {conflicts.length > 0 && (
               <ul className={s.conflicts}>
@@ -179,7 +188,9 @@ export function DietProfilePage(): JSX.Element {
                         <RecipePhoto recipe={recipe} />
                       </span>
                       <span className={s.conflictText}>
-                        <span className={s.conflictTitle}>{recipe.title}</span>
+                        <span className={s.conflictTitle} dir="auto">
+                          {recipe.title}
+                        </span>
                         <WarningBadge>{diet.label}</WarningBadge>
                       </span>
                     </Link>
@@ -187,12 +198,12 @@ export function DietProfilePage(): JSX.Element {
                 ))}
               </ul>
             )}
-            <p className={s.muted}>Recipes you’ve saved stay in your library and carry a warning, so nothing disappears on you.</p>
+            <p className={s.muted}>{t('diet.savedNote')}</p>
           </section>
 
           <p className={s.info}>
             <Info size={18} strokeWidth={2} aria-hidden />
-            Rules apply everywhere: your library, search, pantry matches and recipes you import from the web. Everyone in the family shares them.
+            {t('diet.info')}
           </p>
         </aside>
       </div>

@@ -43,7 +43,9 @@
   font-size: 16px;
 }
 
+/* Fills the row, but shrinks to its label to share it with a neighbour (Reset | Show 12 recipes). */
 .block {
+  flex-shrink: 1;
   width: 100%;
 }
 

@@ -12,20 +12,21 @@ import type { BoardColumn, Task } from '../../domain/types';
  */
 
 export interface RepeatOption {
-  label: string;
+  /** Its words are board.repeat.<key> in the translation file. */
+  key: 'never' | 'day' | 'week' | 'twoWeeks' | 'month' | 'threeMonths';
   /** Absent means it does not repeat. */
   days?: number;
 }
 
 export const REPEAT_OPTIONS: readonly RepeatOption[] = [
-  { label: 'Never' },
-  { label: 'Every day', days: 1 },
-  { label: 'Every week', days: 7 },
-  { label: 'Every 2 weeks', days: 14 },
+  { key: 'never' },
+  { key: 'day', days: 1 },
+  { key: 'week', days: 7 },
+  { key: 'twoWeeks', days: 14 },
   // 30 days rather than a calendar month: a chore does not care about the
   // difference, and it keeps the interval a single number.
-  { label: 'Every month', days: 30 },
-  { label: 'Every 3 months', days: 90 },
+  { key: 'month', days: 30 },
+  { key: 'threeMonths', days: 90 },
 ];
 
 /** Local calendar date, because "today" means the user's today. */

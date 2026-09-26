@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import type { DragEvent, KeyboardEvent } from 'react';
 import { GripVertical } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import s from './AddRecipe.module.css';
 
 /** Reordering rows: by drag with a mouse, or by arrow keys on the handle. */
@@ -19,11 +20,12 @@ export function move<T>(list: T[], from: number, to: number): T[] {
  * keys. Either way the rows move; nothing here depends on dragging.
  */
 export function Handle({ label, onMove }: { label: string; onMove: (delta: number) => void }): JSX.Element {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
       className={s.handle}
-      aria-label={`${label}. Press up or down to move.`}
+      aria-label={t('add.handle', { label })}
       onKeyDown={(event: KeyboardEvent) => {
         if (event.key === 'ArrowUp') {
           event.preventDefault();

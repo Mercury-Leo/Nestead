@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { formatClock } from '../../../domain/kitchen/quantity';
+import { i18n } from '../../../i18n';
 import { addMinute, dismiss, tick, useTimers } from './store';
 import type { Timer } from './store';
 import s from './Timers.module.css';
@@ -47,7 +49,10 @@ function alert(timer: Timer): void {
   }
   try {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
-      new Notification(`${timer.label} is done`, { body: `${timer.phrase} · ${timer.recipeTitle}`, tag: timer.id });
+      new Notification(i18n.t('timers.isDone', { label: timer.label }), {
+        body: i18n.t('timers.notificationBody', { phrase: timer.phrase, recipe: timer.recipeTitle }),
+        tag: timer.id,
+      });
     }
   } catch {
     // Some platforms only allow notifications from a service worker.
@@ -55,6 +60,7 @@ function alert(timer: Timer): void {
 }
 
 export function DoneBanner({ timer }: { timer: Timer }): JSX.Element {
+  const { t } = useTranslation();
   return (
     <div className={s.banner} role="alert" aria-live="assertive">
       <div className={s.bannerTop}>
@@ -62,18 +68,16 @@ export function DoneBanner({ timer }: { timer: Timer }): JSX.Element {
           <Bell size={26} strokeWidth={2} />
         </span>
         <div>
-          <p className={s.bannerTitle}>{timer.label} is done</p>
-          <p className={s.bannerSub}>
-            {formatClock(timer.durationSec)} timer finished
-          </p>
+          <p className={s.bannerTitle}>{t('timers.isDone', { label: timer.label })}</p>
+          <p className={s.bannerSub}>{t('timers.timerFinished', { time: formatClock(timer.durationSec) })}</p>
         </div>
       </div>
       <div className={s.bannerActions}>
         <button type="button" className={s.plusMinute} onClick={() => addMinute(timer.id)}>
-          +1 min
+          {t('timers.plusMinute')}
         </button>
         <button type="button" className={s.dismiss} onClick={() => dismiss(timer.id)}>
-          Dismiss
+          {t('timers.dismiss')}
         </button>
       </div>
     </div>

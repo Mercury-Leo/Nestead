@@ -21,6 +21,7 @@ import { formatAmount } from './quantity';
 export const SUPERMARKET = 'supermarket';
 export const GENERAL = 'general';
 
+// i18n: screens name these by id from the translation file (features/larder/labels.ts groupName).
 export const BUILT_IN_GROUPS: readonly { id: string; name: string }[] = [
   { id: SUPERMARKET, name: 'Supermarket' },
   { id: GENERAL, name: 'General' },
@@ -211,7 +212,10 @@ function familyAmount(family: Family, base: number): string {
   return formatAmount(base, 'tsp');
 }
 
-/** "200 g", "1 kg", or "200 g + 1 cup" when units cannot be added up. */
+/**
+ * "200 g", "1 kg", or "200 g + 1 cup" when units cannot be added up.
+ * i18n: built from formatAmount, so the units are English.
+ */
 export function formatListQty(parts: readonly ListPart[]): string {
   const families = new Map<Family, number>();
   const others = new Map<string, number>();

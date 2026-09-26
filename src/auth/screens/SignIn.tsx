@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getRememberMe, getSupabaseClient, setRememberMe, takeLinkError } from '../../data/supabase/supabaseClient';
 
 /**
@@ -17,19 +18,8 @@ import { getRememberMe, getSupabaseClient, setRememberMe, takeLinkError } from '
 
 type Mode = 'signIn' | 'signUp' | 'forgot';
 
-const SUBTITLES: Record<Mode, string> = {
-  signIn: 'Sign in',
-  signUp: 'Create your account',
-  forgot: 'Reset your password',
-};
-
-const SUBMIT_LABELS: Record<Mode, string> = {
-  signIn: 'Sign in',
-  signUp: 'Create account',
-  forgot: 'Send reset link',
-};
-
 export function SignIn(): JSX.Element {
+  const { t } = useTranslation();
   const client = getSupabaseClient();
 
   const [mode, setMode] = useState<Mode>('signIn');
@@ -62,7 +52,7 @@ export function SignIn(): JSX.Element {
       }
       // Worded the same whether or not the account exists, so this screen
       // cannot be used to find out who has one.
-      setNotice('If that email has an account, a reset link is on its way. It expires in an hour.');
+      setNotice(t('auth.signIn.resetSent'));
       return;
     }
 
@@ -85,7 +75,7 @@ export function SignIn(): JSX.Element {
     // confirmation. Nothing more happens until that link is clicked.
     if (mode === 'signUp' && data.session === null) {
       switchTo('signIn');
-      setNotice('Account created. Check your email to confirm it, then sign in.');
+      setNotice(t('auth.signIn.confirmEmail'));
     }
   };
 
@@ -94,7 +84,7 @@ export function SignIn(): JSX.Element {
   return (
     <div className="gate">
       <h1>Nestead</h1>
-      <p className="gate-sub">{SUBTITLES[mode]}</p>
+      <p className="gate-sub">{t(`auth.signIn.subtitle.${mode}`)}</p>
 
       <form
         onSubmit={(event) => {
@@ -103,9 +93,10 @@ export function SignIn(): JSX.Element {
         }}
       >
         <label>
-          Email
+          {t('auth.signIn.email')}
           <input
             type="email"
+            dir="ltr"
             value={email}
             autoComplete="email"
             required
@@ -115,9 +106,10 @@ export function SignIn(): JSX.Element {
 
         {needsPassword && (
           <label>
-            Password
+            {t('auth.signIn.password')}
             <input
               type="password"
+              dir="ltr"
               value={password}
               autoComplete={mode === 'signUp' ? 'new-password' : 'current-password'}
               required
@@ -130,7 +122,7 @@ export function SignIn(): JSX.Element {
         {needsPassword && (
           <label className="remember">
             <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} />
-            Remember me
+            {t('auth.signIn.remember')}
           </label>
         )}
 
@@ -138,13 +130,13 @@ export function SignIn(): JSX.Element {
         {notice !== null && <p className="notice">{notice}</p>}
 
         <button type="submit" disabled={busy || email.trim() === '' || (needsPassword && password === '')}>
-          {busy ? 'Working…' : SUBMIT_LABELS[mode]}
+          {busy ? t('common.working') : t(`auth.signIn.submit.${mode}`)}
         </button>
       </form>
 
       {mode === 'signIn' && (
         <button type="button" className="link" onClick={() => switchTo('forgot')}>
-          Forgot password?
+          {t('auth.signIn.forgotLink')}
         </button>
       )}
 
@@ -153,7 +145,7 @@ export function SignIn(): JSX.Element {
         className="link"
         onClick={() => switchTo(mode === 'signIn' ? 'signUp' : 'signIn')}
       >
-        {mode === 'signIn' ? 'I need an account' : 'Back to sign in'}
+        {mode === 'signIn' ? t('auth.signIn.needAccount') : t('auth.signIn.backToSignIn')}
       </button>
     </div>
   );

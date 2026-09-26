@@ -2,6 +2,7 @@ import type { AnyRecipe, IngredientLine, RecipeContent, RecipeSource, Step, Unit
 import { estimateKcal } from '../../../domain/kitchen/calories';
 import { localId, parseIngredientLine, parseNumber } from '../../../domain/kitchen/parse';
 import { formatQty } from '../../../domain/kitchen/quantity';
+import { i18n } from '../../../i18n';
 
 /**
  * The recipe form's model. Rows hold what was typed; `toRecipe` turns that into
@@ -43,6 +44,7 @@ export interface Draft {
   statedKcal?: number;
 }
 
+// i18n: unit names are the ingredient parser's own words (domain/kitchen/parse.ts) and are shown as they are.
 export const UNITS: Exclude<Unit, null>[] = ['g', 'kg', 'ml', 'l', 'tsp', 'tbsp', 'cup', 'pinch', 'clove', 'can', 'bunch', 'head', 'slice', 'sheet'];
 
 export function emptyIngredient(): IngredientRow {
@@ -143,9 +145,9 @@ export interface DraftErrors {
 
 export function validate(draft: Draft): DraftErrors {
   const errors: DraftErrors = {};
-  if (draft.title.trim() === '') errors.title = 'Give the recipe a title.';
-  if (!draft.ingredients.some((row) => row.item.trim() !== '')) errors.ingredients = 'Add at least one ingredient.';
-  if (!draft.steps.some((row) => row.text.trim() !== '')) errors.steps = 'Add at least one step.';
+  if (draft.title.trim() === '') errors.title = i18n.t('add.error.title');
+  if (!draft.ingredients.some((row) => row.item.trim() !== '')) errors.ingredients = i18n.t('add.error.ingredients');
+  if (!draft.steps.some((row) => row.text.trim() !== '')) errors.steps = i18n.t('add.error.steps');
   return errors;
 }
 

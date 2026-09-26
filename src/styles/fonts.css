@@ -1,0 +1,47 @@
+/*
+ * Arabic and Hebrew fallbacks for text people type (recipe titles, pantry
+ * items, list entries) when it is in a script Newsreader and Hanken Grotesk
+ * don't cover. tokens.css puts these families right after the brand faces.
+ *
+ * Only the Arabic and Hebrew subsets are declared, not the packages' whole
+ * CSS: their latin, math and symbol subsets would otherwise step in for the
+ * odd glyph the brand faces lack and change how English text renders. Each
+ * face's unicode-range means the browser only downloads it when a character in
+ * that range is on screen.
+ */
+
+@font-face {
+  font-family: 'Noto Sans Arabic Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-sans-arabic/files/noto-sans-arabic-arabic-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Noto Sans Hebrew Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-sans-hebrew/files/noto-sans-hebrew-hebrew-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0590-05FF, U+FB1D-FB4F;
+}
+
+@font-face {
+  font-family: 'Noto Naskh Arabic Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('@fontsource-variable/noto-naskh-arabic/files/noto-naskh-arabic-arabic-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Noto Serif Hebrew Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-serif-hebrew/files/noto-serif-hebrew-hebrew-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0590-05FF, U+FB1D-FB4F;
+}

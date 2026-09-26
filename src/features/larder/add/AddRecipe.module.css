@@ -168,7 +168,7 @@
 
 .photoActions {
   position: absolute;
-  right: 12px;
+  inset-inline-end: 12px;
   bottom: 12px;
   display: flex;
   gap: 8px;

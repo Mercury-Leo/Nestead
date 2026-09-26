@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { LogOut, Users } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { Users } from 'lucide-react';
 import { useSession } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
-import { Button, ButtonLink } from '../../components/ui';
+import { Button, ButtonLink, SignOutIcon } from '../../components/ui';
 import { Board } from './Board';
 
 /**
@@ -11,6 +12,7 @@ import { Board } from './Board';
  * home.
  */
 export function BoardPage(): JSX.Element {
+  const { t } = useTranslation();
   const { me, members, setMe, signOut, family } = useSession();
 
   // Nobody to share with yet, so the code is worth putting in front of you.
@@ -19,17 +21,17 @@ export function BoardPage(): JSX.Element {
   return (
     <div className="app">
       <PageHeader
-        title="Board"
-        subtitle={family !== undefined ? `Everything ${family.name} has on the go.` : 'Everything the family has on the go.'}
+        title={t('board.title')}
+        subtitle={family !== undefined ? <Trans i18nKey="board.subtitleFamily" values={{ family: family.name }} /> : t('board.subtitle')}
         actions={
           <div className="who">
             {setMe === undefined ? (
-              <span className="me-name" style={{ borderColor: me.color }}>
+              <span className="me-name" dir="auto" style={{ borderColor: me.color }}>
                 {me.name}
               </span>
             ) : (
               <label className="me">
-                I am
+                {t('board.iAm')}
                 <select value={me.id} onChange={(event) => setMe(event.target.value)}>
                   {members.map((member) => (
                     <option key={member.id} value={member.id}>
@@ -40,10 +42,10 @@ export function BoardPage(): JSX.Element {
               </label>
             )}
             <ButtonLink variant="ghost" icon={Users} to="/family">
-              Family
+              {t('board.family')}
             </ButtonLink>
-            <Button variant="ghost" icon={LogOut} onClick={() => void signOut()}>
-              Sign out
+            <Button variant="ghost" icon={SignOutIcon} onClick={() => void signOut()}>
+              {t('common.signOut')}
             </Button>
           </div>
         }
@@ -51,8 +53,11 @@ export function BoardPage(): JSX.Element {
 
       {inviteCode !== null && (
         <p className="invite">
-          You are the only one here. Share this code so someone can join:{' '}
-          <code className="code">{inviteCode}</code>. It stays on the <Link to="/family">Family</Link> page.
+          <Trans
+            i18nKey="board.invite"
+            values={{ code: inviteCode }}
+            components={{ code: <code className="code" />, link: <Link to="/family" /> }}
+          />
         </p>
       )}
 

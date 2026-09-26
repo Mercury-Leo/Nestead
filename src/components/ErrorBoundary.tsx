@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { RefreshCw, TriangleAlert } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, EmptyState } from './ui';
 
 /**
@@ -26,18 +27,24 @@ export class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: s
 
   render(): ReactNode {
     if (!this.state.failed) return this.props.children;
-    return (
-      <EmptyState
-        icon={TriangleAlert}
-        title="Something went wrong"
-        actions={
-          <Button variant="primary" size="lg" icon={RefreshCw} onClick={() => window.location.reload()}>
-            Reload
-          </Button>
-        }
-      >
-        <p>This screen couldn’t load. Reloading usually fixes it; nothing you saved is lost.</p>
-      </EmptyState>
-    );
+    return <Failed />;
   }
+}
+
+/** A function component, so it can use the translation hook. */
+function Failed(): JSX.Element {
+  const { t } = useTranslation();
+  return (
+    <EmptyState
+      icon={TriangleAlert}
+      title={t('errorBoundary.title')}
+      actions={
+        <Button variant="primary" size="lg" icon={RefreshCw} onClick={() => window.location.reload()}>
+          {t('errorBoundary.reload')}
+        </Button>
+      }
+    >
+      <p>{t('errorBoundary.body')}</p>
+    </EmptyState>
+  );
 }

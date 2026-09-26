@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { Button, Sheet } from '../../../components/ui';
 import type { PantryItem } from '../../../domain/types';
@@ -7,10 +8,12 @@ import { canonicalId } from '../../../domain/kitchen/normalize';
 import { addToPantry } from '../actions';
 import { pantryRow } from '../../../domain/kitchen/pantry';
 import { pantryKeys } from './PantryAdd';
+import { sectionLabel } from '../labels';
 import s from './Pantry.module.css';
 
 /** A sheet for pasting a whole list into the pantry at once. */
 export function BulkAdd({ open, onClose, existing }: { open: boolean; onClose: () => void; existing: PantryItem[] }): JSX.Element {
+  const { t } = useTranslation();
   const { store } = useSession();
   const [text, setText] = useState('');
   const keys = pantryKeys(existing.filter((item) => item.kind === 'have'));
@@ -32,7 +35,7 @@ export function BulkAdd({ open, onClose, existing }: { open: boolean; onClose: (
     <Sheet
       open={open}
       onClose={onClose}
-      title="Bulk add"
+      title={t('pantry.bulk.title')}
       footer={
         <Button
           variant="primary"
@@ -46,28 +49,33 @@ export function BulkAdd({ open, onClose, existing }: { open: boolean; onClose: (
             });
           }}
         >
-          Add {toAdd.length} item{toAdd.length === 1 ? '' : 's'}
+          {t('pantry.bulk.add', { count: toAdd.length })}
         </Button>
       }
     >
       <label className={s.bulkLabel} htmlFor="bulk-text">
-        Paste or type what you have, one per line or separated by commas.
+        {t('pantry.bulk.label')}
       </label>
       <textarea
         id="bulk-text"
         className={s.bulkText}
         rows={6}
+        dir="auto"
         value={text}
-        placeholder={'eggs\nfeta\nbasil, lemons'}
+        placeholder={t('pantry.bulk.placeholder')}
         onChange={(event) => setText(event.target.value)}
       />
       {parsed.length > 0 && (
-        <ul className={s.bulkPreview} aria-label="Preview">
+        <ul className={s.bulkPreview} aria-label={t('pantry.bulk.preview')}>
           {parsed.map((row) => (
             <li key={row.name}>
-              <span>{row.name}</span>
+              <span dir="auto">{row.name}</span>
               <span className={s.bulkStatus}>
-                {row.already ? 'Already in your pantry' : row.id !== undefined ? pantryRow(row.name, 'have').section : 'New item · Other'}
+                {row.already
+                  ? t('pantry.bulk.already')
+                  : row.id !== undefined
+                    ? sectionLabel(t, pantryRow(row.name, 'have').section)
+                    : t('pantry.bulk.newItem', { section: sectionLabel(t, 'Other') })}
               </span>
             </li>
           ))}

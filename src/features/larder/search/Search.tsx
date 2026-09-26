@@ -1,54 +1,33 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, ArrowUpDown, Eye, EyeOff, Globe, Milk, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { ArrowUpDown, Eye, EyeOff, Globe, Milk, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import { PageHeader } from '../../../components/PageHeader';
-import { Button, RemovableChip, Segmented, SelectButton, Sheet, Switch, cx } from '../../../components/ui';
+import { Button, ForwardArrow, RemovableChip, Segmented, SelectButton, Sheet, Switch, cx } from '../../../components/ui';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
-import { activeFilters, defaultFilters, search, suggestions, SORT_SHORT, TIME_LABELS } from '../../../domain/kitchen/search';
+import { activeFilters, defaultFilters, search, suggestions } from '../../../domain/kitchen/search';
 import type { SearchFilters, SearchHit, SearchQuery, SortKey } from '../../../domain/kitchen/search';
+import { formatList, formatListParts } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
+import { sortShort } from '../labels';
 import { RecipeCard, RecipeGrid, RecipeList, RecipeRow } from '../recipe/RecipeCard';
 import { recipeView } from '../recipe/recipeView';
 import { FilterControls } from './FilterControls';
+import { activeFilterLabel, filterPhrases, loosenLabel } from './filterLabels';
 import { NameBox, TokenBox } from './TokenBox';
 import s from './Search.module.css';
 
-const SORTED_BY: Record<SortKey, string> = {
-  fit: 'best pantry fit',
-  fewest: 'fewest items to buy',
-  rating: 'star rating',
-  kcal: 'calories',
-  time: 'total time',
-};
-
-function listJoin(parts: string[], last = 'and'): string {
-  if (parts.length <= 1) return parts.join('');
-  return `${parts.slice(0, -1).join(', ')} ${last} ${parts[parts.length - 1]}`;
-}
-
-/** "with 0 items to buy and under 30 min", as bold phrases. */
-function filterPhrases(filters: SearchFilters): string[] {
-  const phrases: string[] = [];
-  if (filters.maxBuy !== null) {
-    phrases.push(filters.maxBuy === 0 ? '0 items to buy' : `at most ${filters.maxBuy} to buy`);
-  }
-  for (const bucket of filters.time) phrases.push(TIME_LABELS[bucket].toLowerCase());
-  if (filters.minRating !== null) phrases.push(`a rating of ${filters.minRating}+`);
-  if (filters.kcalMax < 800) phrases.push(`up to ${filters.kcalMax} kcal`);
-  if (filters.kcalMin > 200) phrases.push(`at least ${filters.kcalMin} kcal`);
-  if (!filters.library) phrases.push('web recipes only');
-  if (!filters.web) phrases.push('library recipes only');
-  return phrases;
-}
+const SORT_KEYS: SortKey[] = ['fit', 'fewest', 'rating', 'kcal', 'time'];
 
 export function Search(): JSX.Element {
+  const { t } = useTranslation();
   const kitchen = useKitchen();
   const desktop = useIsDesktop();
   const [params] = useSearchParams();
 
   const [mode, setMode] = useState<SearchQuery['mode']>('ingredients');
   const [tokens, setTokens] = useState<string[]>(() =>
-    (params.get('q') ?? '').split(',').map((t) => t.trim()).filter((t) => t !== ''),
+    (params.get('q') ?? '').split(',').map((token) => token.trim()).filter((token) => token !== ''),
   );
   const [text, setText] = useState('');
   const [pantry, setPantry] = useState(params.get('pantry') === '1' || params.has('q'));
@@ -92,22 +71,33 @@ export function Search(): JSX.Element {
   };
 
   const described =
-    mode === 'ingredients' ? (tokens.length > 0 ? tokens.join(', ') : null) : text.trim() !== '' ? `“${text.trim()}”` : null;
-  const plural = (n: number): string => `${n} recipe${n === 1 ? '' : 's'}`;
+    mode === 'ingredients'
+      ? tokens.length > 0
+        ? formatList(tokens, 'unit')
+        : null
+      : text.trim() !== ''
+        ? t('search.quoted', { text: text.trim() })
+        : null;
+  // i18n: diet.things are the domain's English words ("peanuts", "meat with dairy"), or a family rule's own words.
   const hiddenThings = [...new Set(outcome.hidden.flatMap((hit) => hit.diet.things))];
+  const phrases = filterPhrases(t, filters);
+  // Each phrase bold, the ", " and " and " between them plain. Fragments, not bare strings, so <Trans> keeps them.
+  const phraseNodes = formatListParts(phrases).map((part, i) =>
+    part.type === 'element' ? <strong key={i}>{part.value}</strong> : <Fragment key={i}>{part.value}</Fragment>,
+  );
 
   const pantryCard = (
     <div className={s.pantryCard}>
       <Milk size={22} strokeWidth={2} aria-hidden className={s.pantryIcon} />
       <div className={s.pantryText}>
-        <span className={s.pantryTitle}>Cook from my pantry</span>
+        <span className={s.pantryTitle}>{t('search.pantry.title')}</span>
         <span className={s.pantrySub}>
           {desktop
-            ? `Ranking by fit with your ${kitchen.pantry.haveCount} pantry items + ${kitchen.pantry.stapleCount} staples`
-            : 'Ranked by what you already have'}
+            ? t('search.pantry.sub', { have: kitchen.pantry.haveCount, staples: kitchen.pantry.stapleCount })
+            : t('search.pantry.subCompact')}
         </span>
       </div>
-      <Switch label="Cook from my pantry" checked={pantry} onChange={setPantry} />
+      <Switch label={t('search.pantry.title')} checked={pantry} onChange={setPantry} />
     </div>
   );
 
@@ -118,22 +108,26 @@ export function Search(): JSX.Element {
       <div className={s.hidden} role="status">
         <EyeOff size={22} strokeWidth={2} aria-hidden className={s.hiddenIcon} />
         <p className={s.hiddenText}>
-          <strong>
-            {plural(outcome.hidden.length)} hidden
-          </strong>{' '}
-          by your diet profile —{' '}
-          {listJoin(outcome.hidden.map((hit) => `${hit.recipe.title} (${hit.diet.things.join(', ')})`))}.
+          <Trans
+            i18nKey="search.hidden"
+            count={outcome.hidden.length}
+            values={{
+              list: formatList(
+                outcome.hidden.map((hit) => t('search.hiddenItem', { title: hit.recipe.title, things: formatList(hit.diet.things, 'unit') })),
+              ),
+            }}
+          />
         </p>
         <Button variant="secondary" icon={Eye} onClick={() => setConflict('warn')}>
-          Show anyway
+          {t('search.showAnyway')}
         </Button>
       </div>
     ) : (
       <div className={s.hiddenCompact} role="status">
         <EyeOff size={20} strokeWidth={2} aria-hidden />
-        <span className={s.hiddenCompactText}>{outcome.hidden.length} hidden by your diet profile</span>
+        <span className={s.hiddenCompactText}>{t('search.hiddenCompact', { count: outcome.hidden.length })}</span>
         <button type="button" className={s.linkButton} onClick={() => setConflict('warn')}>
-          Show anyway
+          {t('search.showAnyway')}
         </button>
       </div>
     ));
@@ -143,30 +137,31 @@ export function Search(): JSX.Element {
       <span className={s.noArt} aria-hidden>
         <SearchIcon size={40} strokeWidth={1.8} />
       </span>
-      <h2 className={s.noTitle}>No recipes match yet</h2>
+      <h2 className={s.noTitle}>{t('search.noResults.title')}</h2>
       <p className={s.noBody}>
-        Nothing matches {described !== null ? <strong>{described}</strong> : 'this search'}
-        {filterPhrases(filters).length > 0 && (
-          <>
-            {' '}with{' '}
-            {filterPhrases(filters).map((phrase, i, all) => (
-              <span key={phrase}>
-                {i > 0 && (i === all.length - 1 ? ' and ' : ', ')}
-                <strong>{phrase}</strong>
-              </span>
-            ))}
-          </>
-        )}
-        . {loosen.length > 0 ? 'Loosen a filter to see more:' : 'Try other ingredients, or add a recipe of your own.'}
+        <Trans
+          i18nKey={
+            described !== null
+              ? phrases.length > 0
+                ? 'search.noResults.queryFiltered'
+                : 'search.noResults.query'
+              : phrases.length > 0
+                ? 'search.noResults.anyFiltered'
+                : 'search.noResults.any'
+          }
+          values={{ query: described ?? '' }}
+          components={{ query: <strong />, filters: <>{phraseNodes}</> }}
+        />{' '}
+        {loosen.length > 0 ? t('search.noResults.loosen') : t('search.noResults.tryOther')}
       </p>
       {loosen.length > 0 && (
         <ul className={s.loosen}>
           {loosen.map((option) => (
             <li key={option.label}>
               <button type="button" className={s.loosenButton} onClick={() => apply(option.query, option.filters)}>
-                <span>{option.label}</span>
+                <span>{loosenLabel(t, option, query, filters)}</span>
                 <span className={s.loosenCount}>
-                  {plural(option.count)} <ArrowRight size={16} strokeWidth={2.2} aria-hidden />
+                  {t('common.recipes', { count: option.count })} <ForwardArrow size={16} strokeWidth={2.2} aria-hidden />
                 </span>
               </button>
             </li>
@@ -175,8 +170,12 @@ export function Search(): JSX.Element {
       )}
       {outcome.hidden.length > 0 && (
         <p className={s.noHidden}>
-          {outcome.hidden.length} more {outcome.hidden.length === 1 ? 'recipe is' : 'recipes are'} hidden by your diet profile (contains{' '}
-          {listJoin(hiddenThings)}). <Link to="/profile">Review profile</Link>
+          <Trans
+            i18nKey="search.noResults.moreHidden"
+            count={outcome.hidden.length}
+            values={{ things: formatList(hiddenThings) }}
+            components={{ link: <Link to="/profile" /> }}
+          />
         </p>
       )}
     </div>
@@ -204,7 +203,7 @@ export function Search(): JSX.Element {
 
   return (
     <div>
-      <PageHeader title="Search" />
+      <PageHeader title={t('search.title')} />
 
       <div className={cx(s.boxWrap, mode === 'ingredients' && tokens.length === 0 && s.boxEmpty)}>
         {mode === 'ingredients' ? <TokenBox tokens={tokens} onChange={setTokens} /> : <NameBox value={text} onChange={setText} />}
@@ -213,31 +212,31 @@ export function Search(): JSX.Element {
       <div className={s.controls}>
         {desktop && (
           <Segmented
-            label="Search by"
+            label={t('search.searchBy')}
             value={mode}
             onChange={setMode}
             options={[
-              { value: 'ingredients', label: 'By ingredients' },
-              { value: 'name', label: 'By recipe name' },
+              { value: 'ingredients', label: t('search.byIngredients') },
+              { value: 'name', label: t('search.byName') },
             ]}
           />
         )}
         {pantryCard}
         {desktop && (
           <p className={s.searching}>
-            <Globe size={16} strokeWidth={2} aria-hidden /> Searching your library and the web
+            <Globe size={16} strokeWidth={2} aria-hidden /> {t('search.searching')}
           </p>
         )}
         {!desktop && (
           <Segmented
-            label="Search by"
+            label={t('search.searchBy')}
             className={s.full}
             size="sm"
             value={mode}
             onChange={setMode}
             options={[
-              { value: 'ingredients', label: 'By ingredients' },
-              { value: 'name', label: 'By recipe name' },
+              { value: 'ingredients', label: t('search.byIngredients') },
+              { value: 'name', label: t('search.byName') },
             ]}
           />
         )}
@@ -245,24 +244,32 @@ export function Search(): JSX.Element {
 
       {desktop && empty && active.length > 0 && (
         <div className={s.active}>
-          <span className={s.activeLabel}>Active filters</span>
-          {active.map((filter) => (
-            <RemovableChip key={filter.key} tone="dark" removeLabel={`Remove ${filter.label}`} onRemove={() => setFilters(filter.without(filters))}>
-              {filter.label}
-            </RemovableChip>
-          ))}
+          <span className={s.activeLabel}>{t('search.active.label')}</span>
+          {active.map((filter) => {
+            const label = activeFilterLabel(t, filter, filters);
+            return (
+              <RemovableChip
+                key={filter.key}
+                tone="dark"
+                removeLabel={t('search.active.remove', { label })}
+                onRemove={() => setFilters(filter.without(filters))}
+              >
+                {label}
+              </RemovableChip>
+            );
+          })}
         </div>
       )}
 
       {desktop ? (
         <div className={s.layout}>
-          <aside className={s.panel} aria-label="Filters">
+          <aside className={s.panel} aria-label={t('search.filters')}>
             <div className={s.panelHead}>
               <h2 className={s.panelTitle}>
-                <SlidersHorizontal size={20} strokeWidth={2} aria-hidden /> Filters
+                <SlidersHorizontal size={20} strokeWidth={2} aria-hidden /> {t('search.filters')}
               </h2>
               <button type="button" className={s.linkButton} onClick={() => setFilters(defaultFilters(kitchen.profile?.conflictMode ?? 'hide'))}>
-                Reset
+                {t('search.reset')}
               </button>
             </div>
             <FilterControls layout="panel" filters={filters} onChange={setFilters} profile={kitchen.profile} />
@@ -274,11 +281,14 @@ export function Search(): JSX.Element {
               <>
                 <header className={s.resultsHead}>
                   <h2 className={s.resultsTitle}>
-                    {plural(outcome.results.length)}
-                    {described !== null && ` for ${described}`}
+                    {described !== null ? (
+                      <Trans i18nKey="search.resultsFor" count={outcome.results.length} values={{ query: described }} />
+                    ) : (
+                      t('common.recipes', { count: outcome.results.length })
+                    )}
                   </h2>
                   <p className={s.sortedBy}>
-                    Sorted by <strong>{SORTED_BY[filters.sort]}</strong>
+                    <Trans i18nKey="search.sortedBy" values={{ sort: t(`search.sortedByKey.${filters.sort}`) }} />
                   </p>
                 </header>
                 {hiddenNotice}
@@ -291,17 +301,17 @@ export function Search(): JSX.Element {
         <>
           <div className={s.mobileBar}>
             <Button variant="secondary" icon={SlidersHorizontal} onClick={openSheet}>
-              Filters{active.length > 0 ? ` · ${active.length}` : ''}
+              {active.length > 0 ? t('search.filtersCount', { count: active.length }) : t('search.filters')}
             </Button>
             <SelectButton
-              label="Sort by"
+              label={t('search.sortBy')}
               icon={ArrowUpDown}
               value={filters.sort}
               onChange={(sort) => setFilters({ ...filters, sort })}
-              options={(Object.keys(SORT_SHORT) as SortKey[]).map((key) => ({ value: key, label: SORT_SHORT[key] }))}
+              options={SORT_KEYS.map((key) => ({ value: key, label: sortShort(t, key) }))}
               className={s.sortSelect}
             />
-            {!empty && <span className={s.count}>{outcome.results.length} results</span>}
+            {!empty && <span className={s.count}>{t('search.results', { count: outcome.results.length })}</span>}
           </div>
           <section aria-live="polite" className={s.mobileResults}>
             {hiddenNotice}
@@ -310,11 +320,11 @@ export function Search(): JSX.Element {
           <Sheet
             open={sheetOpen}
             onClose={() => setSheetOpen(false)}
-            title="Filters"
+            title={t('search.filters')}
             footer={
               <>
                 <Button variant="secondary" size="bar" onClick={() => setDraft(defaultFilters(kitchen.profile?.conflictMode ?? 'hide'))}>
-                  Reset
+                  {t('search.reset')}
                 </Button>
                 <Button
                   variant="primary"
@@ -325,7 +335,7 @@ export function Search(): JSX.Element {
                     setSheetOpen(false);
                   }}
                 >
-                  Show {plural(draftCount)}
+                  {t('search.show', { count: draftCount })}
                 </Button>
               </>
             }

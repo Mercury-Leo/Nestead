@@ -85,8 +85,8 @@
 .dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
-  left: 0;
+  inset-inline-end: 0;
+  inset-inline-start: 0;
   z-index: 10;
   padding: 6px;
   border: 1px solid var(--line);
@@ -112,7 +112,8 @@
   gap: 12px;
   align-items: center;
   min-height: 52px;
-  padding: 6px 8px 6px 14px;
+  padding-block: 6px;
+  padding-inline: 14px 8px;
   border-radius: 10px;
   cursor: pointer;
 }
@@ -192,7 +193,7 @@
 }
 
 .groupCount {
-  margin-left: 4px;
+  margin-inline-start: 4px;
   color: var(--ink-3);
   font-weight: 500;
 }
@@ -234,7 +235,7 @@
 .swipeAction {
   position: absolute;
   top: 0;
-  right: 0;
+  inset-inline-end: 0;
   bottom: 0;
   width: 96px;
   border: 0;
@@ -250,7 +251,8 @@
   gap: 8px;
   align-items: center;
   min-height: 52px;
-  padding: 0 4px 0 16px;
+  padding-block: 0;
+  padding-inline: 16px 4px;
   background: var(--card);
   touch-action: pan-y;
   transition: transform 160ms;
@@ -430,7 +432,8 @@
   }
 
   .staples li {
-    padding: 0 4px 0 14px;
+    padding-block: 0;
+    padding-inline: 14px 4px;
   }
 
   .staples li:last-child {

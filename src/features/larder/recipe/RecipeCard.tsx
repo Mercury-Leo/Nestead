@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Flame, Globe, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../../../i18n';
 import { cx } from '../../../components/ui';
 import { EstTag, SourceBadge, WarningBadge } from './badges';
 import { MatchBlock } from './MatchBlock';
@@ -17,19 +19,23 @@ function Meta({ view, wrap }: { view: RecipeView; wrap?: boolean }): JSX.Element
       {rating !== undefined && (
         <span className={s.metaItem}>
           <Stars value={rating} />
-          <span className="tabular">{rating.toFixed(1)}</span>
+          <span className="tabular">{formatNumber(rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
         </span>
       )}
       {kcal !== null && (
         <span className={s.metaItem}>
           <Flame size={15} strokeWidth={2} aria-hidden />
-          <span className="tabular">{kcal}</span>
+          <span className="tabular" dir="auto">
+            {kcal}
+          </span>
           {recipe.kcalEstimated && <EstTag />}
         </span>
       )}
       <span className={s.metaItem}>
         <Clock size={15} strokeWidth={2} aria-hidden />
-        <span className="tabular">{total}</span>
+        <span className="tabular" dir="auto">
+          {total}
+        </span>
       </span>
     </div>
   );
@@ -56,6 +62,7 @@ export function RecipeCard({ view, showNeed = false }: { view: RecipeView; showN
           <div className={s.photo}>
             <RecipePhoto recipe={recipe} />
             <SourceBadge kind={recipe.source.kind} className={s.badge} />
+            {/* i18n: diet.label is a sentence the domain builds in English (diet.ts). */}
             {!diet.ok && <WarningBadge className={s.warn}>{diet.label}</WarningBadge>}
           </div>
         ) : (
@@ -65,9 +72,19 @@ export function RecipeCard({ view, showNeed = false }: { view: RecipeView; showN
           </div>
         )}
         <div className={s.body}>
-          <h3 className={s.title}>{recipe.title}</h3>
-          {recipe.tags.length > 0 && <p className={s.tags}>{recipe.tags.join(' · ')}</p>}
-          {!photo && recipe.description !== undefined && <p className={s.description}>{recipe.description}</p>}
+          <h3 className={s.title} dir="auto">
+            {recipe.title}
+          </h3>
+          {recipe.tags.length > 0 && (
+            <p className={s.tags} dir="auto">
+              {recipe.tags.join(' · ')}
+            </p>
+          )}
+          {!photo && recipe.description !== undefined && (
+            <p className={s.description} dir="auto">
+              {recipe.description}
+            </p>
+          )}
           {!photo && !diet.ok && <WarningBadge className={s.plainWarn}>{diet.label}</WarningBadge>}
           <Meta view={view} wrap />
           <div className={s.divider} />
@@ -85,6 +102,7 @@ export function RecipeCard({ view, showNeed = false }: { view: RecipeView; showN
 
 /** The horizontal row: every list on mobile. */
 export function RecipeRow({ view, showNeed = false, onChoose }: { view: RecipeView; showNeed?: boolean; onChoose?: () => void }): JSX.Element {
+  const { t } = useTranslation();
   const { recipe, fit, diet } = view;
   const site = siteOf(recipe);
   const photo = hasPhoto(recipe);
@@ -98,10 +116,16 @@ export function RecipeRow({ view, showNeed = false, onChoose }: { view: RecipeVi
       <div className={s.rowBody}>
         <p className={s.rowSource}>
           {recipe.source.kind === 'web' ? <Globe size={14} strokeWidth={2} aria-hidden /> : <User size={14} strokeWidth={2} aria-hidden />}
-          {recipe.source.kind === 'web' ? `Web · ${site}` : 'Mine'}
+          {recipe.source.kind === 'web' ? t('recipe.sourceWeb', { site }) : t('recipe.sourceMine')}
         </p>
-        <h3 className={s.rowTitle}>{recipe.title}</h3>
-        {!photo && recipe.description !== undefined && <p className={s.rowDescription}>{recipe.description}</p>}
+        <h3 className={s.rowTitle} dir="auto">
+          {recipe.title}
+        </h3>
+        {!photo && recipe.description !== undefined && (
+          <p className={s.rowDescription} dir="auto">
+            {recipe.description}
+          </p>
+        )}
         {!diet.ok && <WarningBadge className={s.rowWarn}>{diet.label}</WarningBadge>}
         <Meta view={view} wrap />
         <MatchBlock

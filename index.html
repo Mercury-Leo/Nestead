@@ -16,6 +16,20 @@
         var dark = choice === 'dark' || (choice !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
       })();
+      // Language and direction the same way, so a right-to-left page never lays
+      // out left-to-right first. LocaleProvider (src/i18n/LocaleProvider.tsx) takes
+      // over and corrects an unsupported code; i18n.test.ts checks the two agree.
+      (function () {
+        var locale = 'en';
+        try {
+          locale = JSON.parse(localStorage.getItem('nestead:device:pref:locale')) || 'en';
+        } catch (e) {}
+        if (typeof locale !== 'string') locale = 'en';
+        // en-XA is the dev-only pseudo-locale, laid out right-to-left on purpose.
+        var rtl = locale === 'en-XA' || /^(ar|he|fa|ur|ps|yi|dv|ckb)(-|$)/i.test(locale);
+        document.documentElement.lang = locale;
+        document.documentElement.dir = rtl ? 'rtl' : 'ltr';
+      })();
     </script>
   </head>
   <body>

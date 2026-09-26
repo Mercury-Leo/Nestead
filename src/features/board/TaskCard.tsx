@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
 import type { BoardColumn, Task } from '../../domain/types';
+import { formatDate } from '../../i18n';
 import { moveTaskToColumn, reorderTask } from './actions';
 import { TASK_ICONS } from './icons';
 import { REPEAT_OPTIONS, isOverdue } from './recurrence';
@@ -23,6 +25,7 @@ export function TaskCard({
   tasksInColumn,
   justCreated = false,
 }: TaskCardProps): JSX.Element {
+  const { t } = useTranslation();
   const { store, members } = useSession();
   const [open, setOpen] = useState(justCreated);
 
@@ -80,14 +83,14 @@ export function TaskCard({
         <span className="card-icon" aria-hidden="true">
           {task.icon ?? '•'}
         </span>
-        <span className="card-title">
+        <span className="card-title" dir="auto">
           {task.title}
           {task.recurEveryDays !== undefined && (
-            <span className="card-repeat" title={repeat?.label ?? 'Repeats'}>
+            <span className="card-repeat" title={repeat !== undefined ? t(`board.repeat.${repeat.key}`) : t('board.card.repeats')}>
               ⟳
             </span>
           )}
-          {overdue && <span className="card-overdue">Overdue</span>}
+          {overdue && <span className="card-overdue">{t('board.card.overdue')}</span>}
         </span>
         {assignee !== undefined && (
           <span
@@ -105,16 +108,17 @@ export function TaskCard({
           <textarea
             ref={descriptionRef}
             className="card-description"
-            aria-label="Description"
-            placeholder="Add a description…"
+            aria-label={t('board.card.description')}
+            placeholder={t('board.card.descriptionPlaceholder')}
             rows={3}
+            dir="auto"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             onBlur={saveDescription}
           />
 
           <label>
-            Column
+            {t('board.card.column')}
             <select value={task.columnId} onChange={(event) => void moveTo(event.target.value)}>
               {columns.map((column) => (
                 <option key={column.id} value={column.id}>
@@ -125,7 +129,7 @@ export function TaskCard({
           </label>
 
           <label>
-            Assigned
+            {t('board.card.assigned')}
             <select
               value={task.assigneeId ?? ''}
               onChange={(event) =>
@@ -134,7 +138,7 @@ export function TaskCard({
                 })
               }
             >
-              <option value="">Nobody</option>
+              <option value="">{t('board.card.nobody')}</option>
               {members.map((member) => (
                 <option key={member.id} value={member.id}>
                   {member.name}
@@ -144,7 +148,7 @@ export function TaskCard({
           </label>
 
           <label>
-            Repeats
+            {t('board.card.repeats')}
             <select
               value={task.recurEveryDays ?? ''}
               onChange={(event) => {
@@ -153,8 +157,8 @@ export function TaskCard({
               }}
             >
               {REPEAT_OPTIONS.map((option) => (
-                <option key={option.label} value={option.days ?? ''}>
-                  {option.label}
+                <option key={option.key} value={option.days ?? ''}>
+                  {t(`board.repeat.${option.key}`)}
                 </option>
               ))}
             </select>
@@ -162,11 +166,11 @@ export function TaskCard({
 
           {task.dueDate !== undefined && (
             <p className={`card-due ${overdue ? 'is-overdue' : ''}`}>
-              {task.done ? 'Comes back' : 'Due'} {task.dueDate}
+              {t(task.done ? 'board.card.comesBack' : 'board.card.due', { date: formatDate(task.dueDate) })}
             </p>
           )}
 
-          <div className="icon-picker" role="group" aria-label="Icon">
+          <div className="icon-picker" role="group" aria-label={t('board.card.icon')}>
             {TASK_ICONS.map((icon) => (
               <button
                 type="button"
@@ -181,17 +185,17 @@ export function TaskCard({
           </div>
 
           {confirmingDelete ? (
-            <div className="card-actions card-confirm" role="group" aria-label="Confirm delete">
-              <span>Delete this task?</span>
+            <div className="card-actions card-confirm" role="group" aria-label={t('board.card.confirmDelete')}>
+              <span>{t('board.card.deleteQuestion')}</span>
               <button type="button" autoFocus onClick={() => setConfirmingDelete(false)}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
                 className="danger danger-solid"
                 onClick={() => void store.tasks.remove(task.id)}
               >
-                Delete
+                {t('common.delete')}
               </button>
             </div>
           ) : (
@@ -201,17 +205,17 @@ export function TaskCard({
                 disabled={index <= 0}
                 onClick={() => void reorderTask(store, task, siblings, 'up')}
               >
-                ↑ Up
+                {t('board.card.up')}
               </button>
               <button
                 type="button"
                 disabled={index >= siblings.length - 1}
                 onClick={() => void reorderTask(store, task, siblings, 'down')}
               >
-                ↓ Down
+                {t('board.card.down')}
               </button>
               <button type="button" className="danger" onClick={() => setConfirmingDelete(true)}>
-                Delete
+                {t('common.delete')}
               </button>
             </div>
           )}

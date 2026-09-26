@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
 import { useIsNarrow } from '../../hooks/useIsNarrow';
 import { readPreference, writePreference } from '../../data/local/localStore';
@@ -27,6 +28,7 @@ import {
  * always show every column and its count.
  */
 export function Board(): JSX.Element {
+  const { t } = useTranslation();
   const { store, members, me } = useSession();
   const columns = useCollection(store.columns);
   const tasks = useCollection(store.tasks);
@@ -102,9 +104,10 @@ export function Board(): JSX.Element {
       <div className="board-filter" role="search">
         <input
           type="search"
+          dir="auto"
           value={filter.query}
-          placeholder="Search tasks"
-          aria-label="Search tasks"
+          placeholder={t('board.filter.search')}
+          aria-label={t('board.filter.search')}
           onChange={(event) => setFilter({ ...filter, query: event.target.value })}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setFilter({ ...filter, query: '' });
@@ -118,24 +121,24 @@ export function Board(): JSX.Element {
             setFilter({ ...filter, assignee: filter.assignee === me.id ? '' : me.id })
           }
         >
-          Mine
+          {t('board.filter.mine')}
         </button>
         <select
           value={filter.assignee}
-          aria-label="Filter by assignee"
+          aria-label={t('board.filter.assignee')}
           onChange={(event) => setFilter({ ...filter, assignee: event.target.value })}
         >
-          <option value="">Everyone</option>
+          <option value="">{t('board.filter.everyone')}</option>
           {members.map((member) => (
             <option key={member.id} value={member.id}>
               {member.name}
             </option>
           ))}
-          <option value={UNASSIGNED}>Unassigned</option>
+          <option value={UNASSIGNED}>{t('board.filter.unassigned')}</option>
         </select>
         {filtering && (
           <button type="button" className="link quiet" onClick={() => setFilter(NO_FILTER)}>
-            Clear
+            {t('board.filter.clear')}
           </button>
         )}
       </div>
@@ -165,13 +168,14 @@ export function Board(): JSX.Element {
           }}
         >
           <input
+            dir="auto"
             value={newColumn}
-            placeholder="New column"
-            aria-label="New column name"
+            placeholder={t('board.newColumn.placeholder')}
+            aria-label={t('board.newColumn.label')}
             onChange={(event) => setNewColumn(event.target.value)}
           />
           <button type="submit" disabled={newColumn.trim() === ''}>
-            Add column
+            {t('board.newColumn.add')}
           </button>
         </form>
       </div>

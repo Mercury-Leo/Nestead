@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, Check, Link2, RefreshCw, Search as SearchIcon, WifiOff } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { AlertTriangle, Check, Link2, RefreshCw, Search as SearchIcon, WifiOff } from 'lucide-react';
 import { PageHeader } from '../../../components/PageHeader';
-import { Button, Segmented, TextField } from '../../../components/ui';
+import { BackArrow, Button, Segmented, TextField } from '../../../components/ui';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import type { AnyRecipe } from '../../../domain/types';
 import type { ImportedRecipe } from '../../../../server/import';
+import { i18n } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
 import { RecipeList, RecipeRow } from '../recipe/RecipeCard';
 import { recipePath, recipeView } from '../recipe/recipeView';
@@ -18,26 +20,30 @@ type Status =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'ok'; site: string }
-  | { kind: 'error'; message: string; offerWrite?: boolean };
+  | { kind: 'error'; message: string; offline?: boolean; offerWrite?: boolean };
 
-const OFFLINE = 'You’re offline — importing needs a connection';
+function offline(): { message: string; offline: true } {
+  return { message: i18n.t('import.offline'), offline: true };
+}
 
+/** The import endpoint's error codes (server/import) in words. */
 function errorMessage(code: string): { message: string; offerWrite?: boolean } {
   switch (code) {
     case 'invalid-url':
-      return { message: 'That doesn’t look like a web address — check the link and try again.' };
+      return { message: i18n.t('import.error.invalidUrl') };
     case 'blocked':
-      return { message: 'That address can’t be fetched. Use a link to a public recipe page.' };
+      return { message: i18n.t('import.error.blocked') };
     case 'timeout':
-      return { message: 'That page took too long to answer — try again in a moment.' };
+      return { message: i18n.t('import.error.timeout') };
     case 'too-large':
-      return { message: 'That page is too big to read. Try the recipe’s own page.' };
+      return { message: i18n.t('import.error.tooLarge') };
     default:
-      return { message: 'Couldn’t find a recipe on that page — try another link or write it yourself', offerWrite: true };
+      return { message: i18n.t('import.error.notFound'), offerWrite: true };
   }
 }
 
 export default function ImportRecipe(): JSX.Element {
+  const { t } = useTranslation();
   const kitchen = useKitchen();
   const navigate = useNavigate();
   const desktop = useIsDesktop();
@@ -50,7 +56,7 @@ export default function ImportRecipe(): JSX.Element {
 
   const fetchRecipe = async (): Promise<void> => {
     if (!navigator.onLine) {
-      setStatus({ kind: 'error', message: OFFLINE });
+      setStatus({ kind: 'error', ...offline() });
       return;
     }
     setStatus({ kind: 'loading' });
@@ -78,13 +84,13 @@ export default function ImportRecipe(): JSX.Element {
       setStatus({ kind: 'ok', site: body.recipe.site });
     } catch {
       setPreview(null);
-      setStatus({ kind: 'error', message: navigator.onLine ? errorMessage('fetch-failed').message : OFFLINE });
+      setStatus({ kind: 'error', ...(navigator.onLine ? { message: errorMessage('fetch-failed').message } : offline()) });
     }
   };
 
   const runSearch = async (): Promise<void> => {
     if (!navigator.onLine) {
-      setStatus({ kind: 'error', message: OFFLINE });
+      setStatus({ kind: 'error', ...offline() });
       return;
     }
     setStatus({ kind: 'idle' });
@@ -100,38 +106,40 @@ export default function ImportRecipe(): JSX.Element {
     <div>
       {desktop && (
         <Link to="/library" className={s.back}>
-          <ArrowLeft size={18} strokeWidth={2} aria-hidden /> Library
+          <BackArrow size={18} strokeWidth={2} aria-hidden /> {t('common.library')}
         </Link>
       )}
-      <PageHeader title="Add a recipe" />
+      <PageHeader title={t('import.title')} />
       <Segmented
-        label="How to add"
+        wrap
+        label={t('add.howToAdd')}
         className={s.tabs}
         value="import"
         onChange={(value) => {
           if (value === 'write') navigate('/add');
         }}
         options={[
-          { value: 'write', label: 'Write my own' },
-          { value: 'import', label: 'Import from web' },
+          { value: 'write', label: t('add.writeOwn') },
+          { value: 'import', label: t('add.importWeb') },
         ]}
       />
 
       <section className={s.card}>
         <div className={s.cardTop}>
           <Segmented
-            label="Import by"
+            wrap
+            label={t('import.importBy')}
             value={mode}
             onChange={(value) => {
               setMode(value);
               setStatus({ kind: 'idle' });
             }}
             options={[
-              { value: 'link', label: 'Paste a link' },
-              { value: 'search', label: 'Search online' },
+              { value: 'link', label: t('import.pasteLink') },
+              { value: 'search', label: t('import.searchOnline') },
             ]}
           />
-          {desktop && <span className={s.muted}>Works with most recipe sites</span>}
+          {desktop && <span className={s.muted}>{t('import.worksWith')}</span>}
         </div>
 
         {mode === 'link' ? (
@@ -143,17 +151,19 @@ export default function ImportRecipe(): JSX.Element {
             }}
           >
             <TextField
-              label="Recipe link"
+              label={t('import.link')}
               icon={Link2}
               type="url"
               inputMode="url"
+              // i18n: the shape of a web address, not words.
               placeholder="https://…"
+              dir="ltr"
               value={url}
               onChange={(event) => setUrl(event.target.value)}
               wrapClassName={s.urlField}
             />
             <Button type="submit" variant={status.kind === 'ok' ? 'secondary' : 'primary'} size="lg" icon={RefreshCw} disabled={url.trim() === '' || status.kind === 'loading'}>
-              {status.kind === 'loading' ? 'Fetching…' : status.kind === 'ok' ? 'Fetch again' : 'Fetch recipe'}
+              {status.kind === 'loading' ? t('import.fetching') : status.kind === 'ok' ? t('import.fetchAgain') : t('import.fetch')}
             </Button>
           </form>
         ) : (
@@ -165,16 +175,17 @@ export default function ImportRecipe(): JSX.Element {
             }}
           >
             <TextField
-              label="Search recipes online"
+              label={t('import.searchLabel')}
               icon={SearchIcon}
               type="search"
-              placeholder="e.g. gnocchi, chicken soup"
+              placeholder={t('import.searchPlaceholder')}
+              dir="auto"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               wrapClassName={s.urlField}
             />
             <Button type="submit" variant="primary" size="lg" icon={SearchIcon}>
-              Search
+              {t('import.search')}
             </Button>
           </form>
         )}
@@ -182,20 +193,15 @@ export default function ImportRecipe(): JSX.Element {
         <div aria-live="polite">
           {status.kind === 'ok' && (
             <p className={s.ok}>
-              <Check size={18} strokeWidth={2.4} aria-hidden /> Recipe found and read from {status.site}
+              <Check size={18} strokeWidth={2.4} aria-hidden /> {t('import.found', { site: status.site })}
             </p>
           )}
           {status.kind === 'error' && (
             <p className={s.fail}>
-              {status.message === OFFLINE ? <WifiOff size={18} strokeWidth={2.2} aria-hidden /> : <AlertTriangle size={18} strokeWidth={2.2} aria-hidden />}
+              {status.offline === true ? <WifiOff size={18} strokeWidth={2.2} aria-hidden /> : <AlertTriangle size={18} strokeWidth={2.2} aria-hidden />}
               <span>
                 {status.message}
-                {status.offerWrite === true && (
-                  <>
-                    {' '}
-                    — <Link to="/add">write it yourself</Link>
-                  </>
-                )}
+                {status.offerWrite === true && <Trans i18nKey="import.writeYourself" components={{ link: <Link to="/add" /> }} />}
               </span>
             </p>
           )}
@@ -204,7 +210,9 @@ export default function ImportRecipe(): JSX.Element {
         {mode === 'search' && results !== null && (
           <div className={s.results}>
             {results.length === 0 ? (
-              <p className={s.muted}>No recipes found for “{query}”.</p>
+              <p className={s.muted}>
+                <Trans i18nKey="import.noneFound" values={{ query }} />
+              </p>
             ) : (
               <RecipeList>
                 {results.map((recipe) => (

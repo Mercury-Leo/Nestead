@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { AlertTriangle, Check, Clock, Flame, Globe, Leaf, Pencil, Plus, Timer } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { Button, Chip, SelectButton, cx } from '../../../components/ui';
@@ -13,6 +14,7 @@ import { detectDurations } from '../../../domain/kitchen/durations';
 import { pantryFit } from '../../../domain/kitchen/fit';
 import { formatAmount, formatDuration } from '../../../domain/kitchen/quantity';
 import { totalMinutes } from '../../../domain/kitchen/search';
+import { formatNumber } from '../../../i18n';
 import { saveToLibrary } from '../actions';
 import type { ImportHandoff } from '../add/AddRecipe';
 import { UNITS } from '../add/draft';
@@ -33,6 +35,7 @@ export interface Preview {
 }
 
 export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (id: string) => void }): JSX.Element {
+  const { t } = useTranslation();
   const { store, me } = useSession();
   const kitchen = useKitchen();
   const navigate = useNavigate();
@@ -74,10 +77,10 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
   const actions = (
     <>
       <Button variant="secondary" size="lg" icon={Pencil} onClick={edit}>
-        Edit before saving
+        {t('import.preview.edit')}
       </Button>
       <Button variant="primary" size="lg" icon={Check} disabled={saving} onClick={() => void save()}>
-        Save to library
+        {t('import.preview.save')}
       </Button>
     </>
   );
@@ -85,8 +88,8 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
   return (
     <section className={s.preview} aria-labelledby="preview-title">
       <header className={s.previewHead}>
-        <span className={s.eyebrow}>Preview</span>
-        <span className={s.muted}>Check the details, then save</span>
+        <span className={s.eyebrow}>{t('import.preview.eyebrow')}</span>
+        <span className={s.muted}>{t('import.preview.check')}</span>
       </header>
 
       <div className={s.previewGrid}>
@@ -97,13 +100,14 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
           </div>
           <div>
             <p className={s.site}>{site}</p>
-            <h2 id="preview-title" className={s.title}>
+            <h2 id="preview-title" className={s.title} dir="auto">
               {recipe.title}
             </h2>
             <div className={s.meta}>
               {view.rating !== undefined && (
                 <span>
-                  <Stars value={view.rating} /> <span className="tabular">{view.rating.toFixed(1)}</span>
+                  <Stars value={view.rating} />{' '}
+                  <span className="tabular">{formatNumber(view.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
                 </span>
               )}
               {view.kcal !== null && (
@@ -112,7 +116,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
                 </span>
               )}
               <span>
-                <Clock size={15} strokeWidth={2} aria-hidden /> {formatDuration(totalMinutes(recipe))}
+                <Clock size={15} strokeWidth={2} aria-hidden /> <bdi>{formatDuration(totalMinutes(recipe))}</bdi>
               </span>
             </div>
           </div>
@@ -123,7 +127,8 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
             <div className={s.dietOk}>
               <Leaf size={20} strokeWidth={2} aria-hidden />
               <span>
-                <strong>Fits your diet profile</strong>
+                <strong>{t('import.preview.fits')}</strong>
+                {/* i18n: fitsProfileLine (domain/kitchen/diet.ts) builds "No nuts, sesame or cilantro found" in English. */}
                 <span className={s.dietSub}>{fitsProfileLine(kitchen.profile)}</span>
               </span>
             </div>
@@ -131,14 +136,14 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
             <div className={s.dietBad}>
               <AlertTriangle size={20} strokeWidth={2} aria-hidden />
               <span>
-                <strong>Conflicts with your diet profile</strong>
+                <strong>{t('import.preview.conflicts')}</strong>
                 <span className={s.dietSub}>{diet.label}</span>
               </span>
             </div>
           )}
 
           <div className={s.read}>
-            <p className={s.eyebrow}>What we read</p>
+            <p className={s.eyebrow}>{t('import.preview.whatWeRead')}</p>
             <ul>
               {read.map((line) => (
                 <li key={line.text} className={cx(!line.ok && s.readWarn)}>
@@ -152,9 +157,10 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
 
         <div className={s.previewRight}>
           <div className={s.sectionHead}>
-            <h3 className={s.sectionTitle}>Ingredients · {recipe.ingredients.length}</h3>
+            <h3 className={s.sectionTitle}>{t('import.preview.ingredients', { count: recipe.ingredients.length })}</h3>
             <span className={s.legend}>
-              <StatusMarker status="have" /> Have <StatusMarker status="staple" /> Staple <StatusMarker status="missing" /> To buy
+              <StatusMarker status="have" /> {t('recipe.status.have')} <StatusMarker status="staple" /> {t('recipe.status.staple')}{' '}
+              <StatusMarker status="missing" /> {t('recipe.status.toBuy')}
             </span>
           </div>
           <ul className={s.lines}>
@@ -165,13 +171,13 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
                 return (
                   <li key={line.id} className={s.line}>
                     <StatusMarker status={status} />
-                    <span className={cx(s.lineQty, 'tabular')}>{formatAmount(line.qty, line.unit, line.qtyMax)}</span>
-                    <span className={s.lineItem}>
+                    <span className={cx(s.lineQty, 'tabular')} dir="auto">{formatAmount(line.qty, line.unit, line.qtyMax)}</span>
+                    <span className={s.lineItem} dir="auto">
                       {line.item}
                       {line.note !== undefined && `, ${line.note}`}
                     </span>
-                    {status === 'staple' && <span className={s.stapleLabel}>Staple</span>}
-                    {status === 'missing' && <span className={s.toBuy}>To buy</span>}
+                    {status === 'staple' && <span className={s.stapleLabel}>{t('recipe.status.staple')}</span>}
+                    {status === 'missing' && <span className={s.toBuy}>{t('recipe.status.toBuy')}</span>}
                   </li>
                 );
               })}
@@ -181,27 +187,30 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
             return (
               <div key={line.id} className={s.flag}>
                 <p className={s.flagTitle}>
-                  <AlertTriangle size={17} strokeWidth={2.2} aria-hidden /> Couldn’t read a quantity for “{line.raw ?? line.item}”
+                  <AlertTriangle size={17} strokeWidth={2.2} aria-hidden />{' '}
+                  <Trans i18nKey="import.preview.cantRead" values={{ item: line.raw ?? line.item }} />
                 </p>
                 <div className={s.flagFields}>
                   <input
                     className={s.flagQty}
-                    aria-label={`Quantity for ${line.item}`}
-                    placeholder="Qty"
+                    aria-label={t('import.preview.qtyFor', { item: line.item })}
+                    placeholder={t('add.qty')}
                     inputMode="decimal"
                     value={fix.qty}
                     onChange={(event) => setFix(line.id, { qty: event.target.value })}
                   />
                   <SelectButton<string>
-                    label={`Unit for ${line.item}`}
+                    label={t('import.preview.unitFor', { item: line.item })}
                     shape="field"
                     className={s.flagUnit}
                     value={fix.unit ?? ''}
-                    display={fix.unit ?? 'Unit'}
+                    display={fix.unit ?? t('add.unit')}
                     onChange={(value) => setFix(line.id, { unit: value === '' ? null : (value as Unit) })}
                     options={[{ value: '', label: '—' }, ...UNITS.map((unit) => ({ value: unit, label: unit }))]}
                   />
-                  <span className={s.flagItem}>{line.item}</span>
+                  <span className={s.flagItem} dir="auto">
+                    {line.item}
+                  </span>
                 </div>
               </div>
             );
@@ -209,13 +218,13 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
 
           {recipe.equipment.length > 0 && (
             <>
-              <h3 className={s.sectionTitle}>Equipment · {recipe.equipment.length}</h3>
+              <h3 className={s.sectionTitle}>{t('import.preview.equipment', { count: recipe.equipment.length })}</h3>
               <div className={s.tools}>
                 {recipe.equipment.map((name) => {
                   const Icon = equipmentIcon(name);
                   return (
                     <span key={name} className={s.tool}>
-                      <Icon size={16} strokeWidth={2} aria-hidden /> {name}
+                      <Icon size={16} strokeWidth={2} aria-hidden /> <bdi>{name}</bdi>
                     </span>
                   );
                 })}
@@ -224,10 +233,8 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
           )}
 
           <div className={s.sectionHead}>
-            <h3 className={s.sectionTitle}>Steps · {recipe.steps.length}</h3>
-            <span className={s.muted}>
-              {timers} timer{timers === 1 ? '' : 's'} found
-            </span>
+            <h3 className={s.sectionTitle}>{t('import.preview.steps', { count: recipe.steps.length })}</h3>
+            <span className={s.muted}>{t('import.preview.timersFound', { count: timers })}</span>
           </div>
           <ol className={s.steps}>
             {recipe.steps.map((step, index) => {
@@ -235,11 +242,11 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
               return (
                 <li key={step.id}>
                   <span className={s.stepNumber}>{index + 1}</span>
-                  <span>
+                  <span dir="auto">
                     {step.text}{' '}
                     {durations.map((d) => (
                       <span key={d.start} className={s.timerChip}>
-                        <Timer size={13} strokeWidth={2.2} aria-hidden /> {formatDuration(d.seconds / 60)}
+                        <Timer size={13} strokeWidth={2.2} aria-hidden /> <bdi>{formatDuration(d.seconds / 60)}</bdi>
                       </span>
                     ))}
                   </span>
@@ -250,7 +257,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
 
           {suggestions.length > 0 && (
             <>
-              <h3 className={s.sectionTitle}>Suggested tags</h3>
+              <h3 className={s.sectionTitle}>{t('import.preview.suggestedTags')}</h3>
               <div className={s.tags}>
                 {suggestions.map(({ tag }) => {
                   const on = tags.includes(tag);
@@ -268,7 +275,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
 
       <footer className={s.previewFoot}>
         <p className={s.savedAs}>
-          <Globe size={16} strokeWidth={2} aria-hidden /> Saved as <strong>Web · {site}</strong> — the original link stays attached
+          <Globe size={16} strokeWidth={2} aria-hidden /> <Trans i18nKey="import.preview.savedAs" values={{ site }} />
         </p>
         {desktop && <div className={s.footActions}>{actions}</div>}
       </footer>
