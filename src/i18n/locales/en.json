@@ -44,7 +44,7 @@
   "locale": {
     "title": "Language",
     "label": "Language",
-    "note": "Just for this device. Only English ships; the others are here for development."
+    "note": "Just for this device. Everyone in the family picks their own."
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -276,8 +276,10 @@
       "kg": "kg",
       "ml": "ml",
       "l": "l",
-      "tsp": "tsp",
-      "tbsp": "tbsp",
+      "tsp_one": "tsp",
+      "tsp_other": "tsp",
+      "tbsp_one": "tbsp",
+      "tbsp_other": "tbsp",
       "cup_one": "cup",
       "cup_other": "cups",
       "pinch_one": "pinch",
@@ -297,9 +299,12 @@
     },
     "duration": {
       "minutes": "{{minutes, number}} min",
-      "hours": "{{hours, number}} h",
-      "hoursMinutes": "{{hours, number}} h {{minutes, number}} min",
-      "hoursMinutesCompact": "{{hours, number}} h {{minutes, number}}"
+      "hours_one": "{{count, number}} h",
+      "hours_other": "{{count, number}} h",
+      "hoursMinutes_one": "{{count, number}} h {{minutes, number}} min",
+      "hoursMinutes_other": "{{count, number}} h {{minutes, number}} min",
+      "hoursMinutesCompact_one": "{{count, number}} h {{minutes, number}}",
+      "hoursMinutesCompact_other": "{{count, number}} h {{minutes, number}}"
     },
     "timer": {
       "oven": "Oven",

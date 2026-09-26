@@ -24,6 +24,15 @@
   transform: scaleX(-1);
 }
 
+/*
+ * An empty dir="auto" field has no text to take its direction from, so it
+ * lays out left to right and a right-to-left placeholder sits on the wrong
+ * side, clipped at its start. Until something is typed, follow the page.
+ */
+[dir='rtl'] :is(input, textarea)[dir='auto']:placeholder-shown {
+  direction: rtl;
+}
+
 code {
   padding: 0.1rem 0.35rem;
   border: 1px solid var(--border);

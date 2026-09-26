@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import type { AnyRecipe, CustomDietRule, DietProfile, ListPart, PresetId, Unit } from '../../domain/types';
 import { PRESETS, checkDiet, fitsProfileLine, parseCustomRule } from '../../domain/kitchen/diet';
 import { detectDurations } from '../../domain/kitchen/durations';
@@ -130,5 +130,31 @@ describe('English wording matches the domain', () => {
 
   it('rule hints, as written when the rule was made', () => {
     for (const rule of RULES) expect(ruleHintText(t, rule)).toBe(rule.hint);
+  });
+});
+
+describe('in Hebrew', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('says one and two hours in a word', async () => {
+    await i18n.changeLanguage('he');
+    expect([60, 120, 180, 80, 140, 200].map((minutes) => formatMinutes(t, minutes))).toEqual([
+      'שעה',
+      'שעתיים',
+      '3 שעות',
+      'שעה ו-20 דק׳',
+      'שעתיים ו-20 דק׳',
+      '3 שעות ו-20 דק׳',
+    ]);
+    expect(formatMinutes(t, 80, true)).toBe('שעה ו-20');
+  });
+
+  it('keeps a shaped number left to right, so "1½" does not read "½1"', async () => {
+    await i18n.changeLanguage('he');
+    expect(formatAmountT(t, 1.5, 'tsp')).toBe('\u20661½\u2069 כפיות');
+    expect(formatAmountT(t, 1, 'tbsp')).toBe('\u20661\u2069 כף');
+    expect(formatAmountT(t, 2, 'cup')).toBe('\u20662\u2069 כוסות');
   });
 });

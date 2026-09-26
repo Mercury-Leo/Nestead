@@ -455,11 +455,17 @@
   inset-inline-start: 0;
   z-index: 15;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   padding: 10px 16px;
   border-top: 1px solid var(--line);
   background: var(--card-glass);
+}
+
+/* In a longer language the label wraps inside the button rather than pushing it off the screen. */
+.stickyBar > :last-child {
+  text-align: center;
+  white-space: normal;
 }
 
 @media (max-width: 1023px) {

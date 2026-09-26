@@ -8,7 +8,7 @@ import { GENERAL, SUPERMARKET, listQtyParts } from '../../domain/kitchen/list';
 import { amountParts, formatClock } from '../../domain/kitchen/quantity';
 import type { AmountParts } from '../../domain/kitchen/quantity';
 import type { SortKey, TimeBucket } from '../../domain/kitchen/search';
-import { formatList, localizeDigits } from '../../i18n';
+import { formatList, isolateNumber, localizeDigits } from '../../i18n';
 
 /**
  * Words for the kitchen's fixed ids, from the translation file. The domain
@@ -73,7 +73,7 @@ export function groupName(t: TFunction, group: { id: string; name: string }): st
 
 /** "1½ tsp", "2–3 cloves", "12": the domain shapes the number, the translation file names the unit. */
 export function wordAmount(t: TFunction, parts: AmountParts): string {
-  const number = localizeDigits(parts.number);
+  const number = isolateNumber(localizeDigits(parts.number));
   if (parts.unit === null) return number;
   // English uses the singular up to 1 ("½ cup", "1 cup") and the plural above; a count under 1 is read as 1.
   const unit = t(`kitchen.unit.${parts.unit}`, { count: Math.max(1, parts.count) });
@@ -100,8 +100,9 @@ export function formatMinutes(t: TFunction, minutes: number, compact = false): s
   const hours = Math.floor(total / 60);
   const rest = total % 60;
   if (hours === 0) return t('kitchen.duration.minutes', { minutes: rest });
-  if (rest === 0) return t('kitchen.duration.hours', { hours });
-  return t(compact ? 'kitchen.duration.hoursMinutesCompact' : 'kitchen.duration.hoursMinutes', { hours, minutes: rest });
+  // Hours are the count, so a language can say "an hour" or "two hours" in a word.
+  if (rest === 0) return t('kitchen.duration.hours', { count: hours });
+  return t(compact ? 'kitchen.duration.hoursMinutesCompact' : 'kitchen.duration.hoursMinutes', { count: hours, minutes: rest });
 }
 
 /** "47:32" in the locale's digits. */

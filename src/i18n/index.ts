@@ -5,4 +5,4 @@
 export { DEFAULT_LOCALE, LOCALES, LOCALE_PREFERENCE, i18n, localeInfo, readLocale } from './i18n';
 export type { Direction, LocaleInfo } from './i18n';
 export { LocaleProvider, useLocale } from './LocaleProvider';
-export { daysFromToday, formatDate, formatList, formatListParts, formatNumber, formatRelative, localizeDigits } from './format';
+export { daysFromToday, formatDate, formatList, formatListParts, formatNumber, formatRelative, isolateNumber, localizeDigits } from './format';

@@ -2,6 +2,7 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { readDevicePreference } from '../data/local/localStore';
 import en from './locales/en.json';
+import he from './locales/he.json';
 import { pseudoLocalize } from './pseudo';
 
 /**
@@ -30,6 +31,7 @@ const PSEUDO: LocaleInfo = { code: 'en-XA', dir: 'rtl', name: '[!! Pseudo !!]', 
 
 export const LOCALES: readonly LocaleInfo[] = [
   { code: 'en', dir: 'ltr', name: 'English', intl: 'en-GB' },
+  { code: 'he', dir: 'rtl', name: 'עברית', intl: 'he' },
   ...(import.meta.env.DEV ? [PSEUDO] : []),
 ];
 
@@ -48,7 +50,18 @@ export function readLocale(): string {
   return typeof value === 'string' && LOCALES.some((locale) => locale.code === value) ? value : DEFAULT_LOCALE;
 }
 
-const resources: Record<string, { translation: typeof en }> = { en: { translation: en } };
+/**
+ * Other locales are typed loosely: their plural keys follow their own
+ * language's categories (Hebrew adds _two), so they cannot match en.json's
+ * shape exactly. Keys used in code stay typed from en.json (i18next.d.ts), and
+ * i18n.test.ts checks every locale file against it.
+ */
+type Translation = Record<string, unknown>;
+
+const resources: Record<string, { translation: Translation }> = {
+  en: { translation: en },
+  he: { translation: he },
+};
 if (import.meta.env.DEV) resources[PSEUDO.code] = { translation: pseudoLocalize(en) };
 
 void i18next.use(initReactI18next).init({
