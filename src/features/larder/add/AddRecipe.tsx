@@ -10,10 +10,10 @@ import type { AnyRecipe, NewRow, Recipe, Unit } from '../../../domain/types';
 import { CATALOG } from '../../../domain/kitchen/catalog';
 import { detectDurations } from '../../../domain/kitchen/durations';
 import { parseIngredientBlock } from '../../../domain/kitchen/parse';
-import { formatDuration } from '../../../domain/kitchen/quantity';
 import { formatList } from '../../../i18n';
 import { removeRecipeFromList } from '../actions';
 import { useKitchen } from '../KitchenContext';
+import { formatMinutes } from '../labels';
 import { equipmentIcon } from '../recipe/equipment';
 import { recipePath } from '../recipe/recipeView';
 import { emptyDraft, emptyIngredient, emptyStep, fromRecipe, rowFromLine, toRecipe, UNITS, validate } from './draft';
@@ -388,10 +388,9 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
                 shape="field"
                 className={s.unit}
                 value={row.unit ?? ''}
-                // i18n: unit names (g, tbsp, bunch) are the parser's own words, from draft.ts UNITS.
-                display={row.unit ?? (trailing ? t('add.unit') : '—')}
+                display={row.unit !== null ? t(`kitchen.unit.${row.unit}`, { count: 1 }) : trailing ? t('add.unit') : '—'}
                 onChange={(value) => setRow(index, { unit: value === '' ? null : (value as Unit) })}
-                options={[{ value: '', label: '—' }, ...UNITS.map((unit) => ({ value: unit, label: unit }))]}
+                options={[{ value: '', label: '—' }, ...UNITS.map((unit) => ({ value: unit, label: t(`kitchen.unit.${unit}`, { count: 1 }) }))]}
               />
               <input
                 className={s.itemInput}
@@ -481,7 +480,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
                 {timers.length > 0 && (
                   <p className={s.detected}>
                     <Timer size={15} strokeWidth={2.2} aria-hidden />{' '}
-                    <Trans i18nKey="add.timerDetected" values={{ times: formatList(timers.map((timer) => formatDuration(timer.seconds / 60)), 'unit') }} />
+                    <Trans i18nKey="add.timerDetected" values={{ times: formatList(timers.map((timer) => formatMinutes(t, timer.seconds / 60)), 'unit') }} />
                   </p>
                 )}
               </div>

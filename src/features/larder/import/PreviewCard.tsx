@@ -9,15 +9,15 @@ import { EstTag, SourceBadge } from '../recipe/badges';
 import { MatchBlock } from '../recipe/MatchBlock';
 import { Stars } from '../recipe/Rating';
 import type { AnyRecipe, Unit } from '../../../domain/types';
-import { checkDiet, fitsProfileLine } from '../../../domain/kitchen/diet';
+import { checkDiet } from '../../../domain/kitchen/diet';
 import { detectDurations } from '../../../domain/kitchen/durations';
 import { pantryFit } from '../../../domain/kitchen/fit';
-import { formatAmount, formatDuration } from '../../../domain/kitchen/quantity';
 import { totalMinutes } from '../../../domain/kitchen/search';
 import { formatNumber } from '../../../i18n';
 import { saveToLibrary } from '../actions';
 import type { ImportHandoff } from '../add/AddRecipe';
 import { UNITS } from '../add/draft';
+import { dietLabel, fitsProfileText, formatAmountT, formatMinutes } from '../labels';
 import { equipmentIcon } from '../recipe/equipment';
 import { StatusMarker } from '../recipe/StatusMarker';
 import { useKitchen } from '../KitchenContext';
@@ -116,7 +116,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
                 </span>
               )}
               <span>
-                <Clock size={15} strokeWidth={2} aria-hidden /> <bdi>{formatDuration(totalMinutes(recipe))}</bdi>
+                <Clock size={15} strokeWidth={2} aria-hidden /> <bdi>{formatMinutes(t, totalMinutes(recipe))}</bdi>
               </span>
             </div>
           </div>
@@ -128,8 +128,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
               <Leaf size={20} strokeWidth={2} aria-hidden />
               <span>
                 <strong>{t('import.preview.fits')}</strong>
-                {/* i18n: fitsProfileLine (domain/kitchen/diet.ts) builds "No nuts, sesame or cilantro found" in English. */}
-                <span className={s.dietSub}>{fitsProfileLine(kitchen.profile)}</span>
+                <span className={s.dietSub}>{fitsProfileText(t, kitchen.profile)}</span>
               </span>
             </div>
           ) : (
@@ -137,7 +136,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
               <AlertTriangle size={20} strokeWidth={2} aria-hidden />
               <span>
                 <strong>{t('import.preview.conflicts')}</strong>
-                <span className={s.dietSub}>{diet.label}</span>
+                <span className={s.dietSub}>{dietLabel(t, diet)}</span>
               </span>
             </div>
           )}
@@ -171,7 +170,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
                 return (
                   <li key={line.id} className={s.line}>
                     <StatusMarker status={status} />
-                    <span className={cx(s.lineQty, 'tabular')} dir="auto">{formatAmount(line.qty, line.unit, line.qtyMax)}</span>
+                    <span className={cx(s.lineQty, 'tabular')} dir="auto">{formatAmountT(t, line.qty, line.unit, line.qtyMax)}</span>
                     <span className={s.lineItem} dir="auto">
                       {line.item}
                       {line.note !== undefined && `, ${line.note}`}
@@ -204,9 +203,9 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
                     shape="field"
                     className={s.flagUnit}
                     value={fix.unit ?? ''}
-                    display={fix.unit ?? t('add.unit')}
+                    display={fix.unit !== null ? t(`kitchen.unit.${fix.unit}`, { count: 1 }) : t('add.unit')}
                     onChange={(value) => setFix(line.id, { unit: value === '' ? null : (value as Unit) })}
-                    options={[{ value: '', label: '—' }, ...UNITS.map((unit) => ({ value: unit, label: unit }))]}
+                    options={[{ value: '', label: '—' }, ...UNITS.map((unit) => ({ value: unit, label: t(`kitchen.unit.${unit}`, { count: 1 }) }))]}
                   />
                   <span className={s.flagItem} dir="auto">
                     {line.item}
@@ -246,7 +245,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
                     {step.text}{' '}
                     {durations.map((d) => (
                       <span key={d.start} className={s.timerChip}>
-                        <Timer size={13} strokeWidth={2.2} aria-hidden /> <bdi>{formatDuration(d.seconds / 60)}</bdi>
+                        <Timer size={13} strokeWidth={2.2} aria-hidden /> <bdi>{formatMinutes(t, d.seconds / 60)}</bdi>
                       </span>
                     ))}
                   </span>

@@ -4,7 +4,8 @@ import { catalogItem } from './catalog';
 import { lineKey, lineStatus } from './fit';
 import type { PantryIndex } from './fit';
 import { canonicalId, exactCatalogId } from './normalize';
-import { formatAmount } from './quantity';
+import { amountParts, formatAmountParts } from './quantity';
+import type { AmountParts } from './quantity';
 
 /**
  * The shopping list. It is split into groups by where things are bought:
@@ -204,19 +205,20 @@ const FAMILY: Partial<Record<Exclude<Unit, null>, { family: Family; factor: numb
   cup: { family: 'spoon', factor: 48 },
 };
 
-function familyAmount(family: Family, base: number): string {
-  if (family === 'mass') return base >= 1000 ? formatAmount(base / 1000, 'kg') : formatAmount(base, 'g');
-  if (family === 'volume') return base >= 1000 ? formatAmount(base / 1000, 'l') : formatAmount(base, 'ml');
-  if (base >= 48) return formatAmount(base / 48, 'cup');
-  if (base >= 3) return formatAmount(base / 3, 'tbsp');
-  return formatAmount(base, 'tsp');
+function familyAmount(family: Family, base: number): AmountParts {
+  const parts = (qty: number, unit: Unit): AmountParts => amountParts(qty, unit) as AmountParts;
+  if (family === 'mass') return base >= 1000 ? parts(base / 1000, 'kg') : parts(base, 'g');
+  if (family === 'volume') return base >= 1000 ? parts(base / 1000, 'l') : parts(base, 'ml');
+  if (base >= 48) return parts(base / 48, 'cup');
+  if (base >= 3) return parts(base / 3, 'tbsp');
+  return parts(base, 'tsp');
 }
 
 /**
- * "200 g", "1 kg", or "200 g + 1 cup" when units cannot be added up.
- * i18n: built from formatAmount, so the units are English.
+ * A list row's total, one amount per kind of unit that cannot be added up:
+ * [200 g] or [200 g, 1 cup]. Screens word each one (labels.ts formatListQtyT).
  */
-export function formatListQty(parts: readonly ListPart[]): string {
+export function listQtyParts(parts: readonly ListPart[]): AmountParts[] {
   const families = new Map<Family, number>();
   const others = new Map<string, number>();
   const order: string[] = [];
@@ -237,11 +239,15 @@ export function formatListQty(parts: readonly ListPart[]): string {
     .map((key) => {
       if (key.startsWith('unit:')) {
         const unit = key.slice(5) === '' ? null : (key.slice(5) as Unit);
-        return formatAmount(others.get(key) as number, unit);
+        return amountParts(others.get(key) as number, unit) as AmountParts;
       }
       return familyAmount(key as Family, families.get(key as Family) as number);
-    })
-    .join(' + ');
+    });
+}
+
+/** "200 g", "1 kg", or "200 g + 1 cup" when units cannot be added up. */
+export function formatListQty(parts: readonly ListPart[]): string {
+  return listQtyParts(parts).map(formatAmountParts).join(' + ');
 }
 
 export interface ListRecipe {

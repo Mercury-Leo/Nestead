@@ -44,7 +44,7 @@ export interface Draft {
   statedKcal?: number;
 }
 
-// i18n: unit names are the ingredient parser's own words (domain/kitchen/parse.ts) and are shown as they are.
+// The units a row can pick; screens show their names as kitchen.unit.<unit>.
 export const UNITS: Exclude<Unit, null>[] = ['g', 'kg', 'ml', 'l', 'tsp', 'tbsp', 'cup', 'pinch', 'clove', 'can', 'bunch', 'head', 'slice', 'sheet'];
 
 export function emptyIngredient(): IngredientRow {

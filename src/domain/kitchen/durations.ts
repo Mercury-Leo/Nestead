@@ -3,6 +3,13 @@
  * cook mode. Durations are never stored; they are read from the words.
  */
 
+/**
+ * What a timer is called, as data, so a screen can word it: the oven, a
+ * generic cook, the step number, or the step's own verb ("sear"), which is
+ * quoted from the recipe rather than translated.
+ */
+export type TimerLabel = { kind: 'oven' } | { kind: 'cook' } | { kind: 'step'; step: number } | { kind: 'verb'; verb: string };
+
 export interface DetectedDuration {
   /** Offsets into the text of the whole phrase, verb included. */
   start: number;
@@ -11,11 +18,9 @@ export interface DetectedDuration {
   phrase: string;
   /** Timer length. A range uses its lower bound. */
   seconds: number;
-  /**
-   * "Oven", "Sear", or "Step 3".
-   * i18n: English words shown as they are (timer tray, done banner). The verb comes from the step's own text.
-   */
+  /** "Oven", "Sear", or "Step 3": the English wording of labelKind. */
   label: string;
+  labelKind: TimerLabel;
 }
 
 const VERBS = [
@@ -86,6 +91,14 @@ function sentenceAround(text: string, start: number, end: number): string {
   return text.slice(from, after === -1 ? text.length : end + after);
 }
 
+/** The English wording of a timer label. */
+export function timerLabelText(label: TimerLabel): string {
+  if (label.kind === 'oven') return 'Oven';
+  if (label.kind === 'cook') return 'Cook';
+  if (label.kind === 'step') return `Step ${label.step}`;
+  return label.verb.charAt(0).toUpperCase() + label.verb.slice(1);
+}
+
 /**
  * @param stepNumber 1-based, used for the "Step N" label when no verb is found.
  */
@@ -142,19 +155,20 @@ export function detectDurations(text: string, stepNumber = 1): DetectedDuration[
     // "bake 50 min in the oven … and chill 15 min" is an Oven timer and a
     // Chill timer. Only a bare time or a generic "cook" borrows the oven.
     const inOven = /\boven\b/i.test(sentenceAround(text, match.index, end));
-    let label: string;
-    if (verb === 'bake' || verb === 'roast') label = 'Oven';
-    else if (verb !== undefined && verb !== 'cook') label = verb.charAt(0).toUpperCase() + verb.slice(1);
-    else if (inOven) label = 'Oven';
-    else if (verb === 'cook') label = 'Cook';
-    else label = `Step ${stepNumber}`;
+    let labelKind: TimerLabel;
+    if (verb === 'bake' || verb === 'roast') labelKind = { kind: 'oven' };
+    else if (verb !== undefined && verb !== 'cook') labelKind = { kind: 'verb', verb };
+    else if (inOven) labelKind = { kind: 'oven' };
+    else if (verb === 'cook') labelKind = { kind: 'cook' };
+    else labelKind = { kind: 'step', step: stepNumber };
 
     found.push({
       start,
       end,
       phrase: text.slice(start, end),
       seconds,
-      label,
+      label: timerLabelText(labelKind),
+      labelKind,
     });
   }
   return found;

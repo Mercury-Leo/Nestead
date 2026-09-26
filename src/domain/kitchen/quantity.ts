@@ -47,7 +47,8 @@ export function formatQty(qty: number, unit: Unit): string {
   return formatNumber(qty);
 }
 
-// i18n: unit names and their plurals are the parser's English words, shown in amounts as they are.
+// i18n: English unit names, for formatAmount. Screens word units from the translation file
+// (kitchen.unit.<unit>) through amountParts.
 const PLURAL: Partial<Record<Exclude<Unit, null>, string>> = {
   cup: 'cups',
   pinch: 'pinches',
@@ -65,20 +66,41 @@ export function unitLabel(unit: Unit, qty: number | null): string {
   return plural !== undefined && qty !== null && qty > 1 ? plural : unit;
 }
 
-/** "1½ tsp", "2–3 cloves", "12", or "" when there is no amount. */
-export function formatAmount(qty: number | null, unit: Unit, qtyMax?: number): string {
-  if (qty === null) return '';
+/**
+ * An amount in pieces, so a screen can word the unit in its own language:
+ * the number as shown ("1½", "2–3"), the unit, and the quantity the unit
+ * agrees with (the upper bound of a range).
+ */
+export interface AmountParts {
+  number: string;
+  unit: Unit;
+  count: number;
+}
+
+export function amountParts(qty: number | null, unit: Unit, qtyMax?: number): AmountParts | null {
+  if (qty === null) return null;
   const number =
     qtyMax !== undefined && qtyMax !== qty
       ? `${formatQty(qty, unit)}–${formatQty(qtyMax, unit)}`
       : formatQty(qty, unit);
-  const label = unitLabel(unit, qtyMax ?? qty);
-  return label === '' ? number : `${number} ${label}`;
+  return { number, unit, count: qtyMax ?? qty };
+}
+
+/** The English wording of amountParts: "1½ tsp", "2–3 cloves", "12". */
+export function formatAmountParts(parts: AmountParts): string {
+  const label = unitLabel(parts.unit, parts.count);
+  return label === '' ? parts.number : `${parts.number} ${label}`;
+}
+
+/** "1½ tsp", "2–3 cloves", "12", or "" when there is no amount. */
+export function formatAmount(qty: number | null, unit: Unit, qtyMax?: number): string {
+  const parts = amountParts(qty, unit, qtyMax);
+  return parts === null ? '' : formatAmountParts(parts);
 }
 
 /**
  * "35 min", "1 h", "1 h 20 min".
- * i18n: English units, shown as they are on cards, recipe pages and the import preview.
+ * i18n: English; screens word durations from the translation file (labels.ts formatMinutes).
  */
 export function formatDuration(minutes: number): string {
   const total = Math.max(0, Math.round(minutes));
@@ -90,7 +112,7 @@ export function formatDuration(minutes: number): string {
 
 /**
  * 2852 -> "47:32"; 3600 and over -> "1:00:00".
- * i18n: always Latin digits, whatever the locale.
+ * i18n: Latin digits; screens swap in the locale's digits (labels.ts formatClockDigits).
  */
 export function formatClock(seconds: number): string {
   const total = Math.max(0, Math.ceil(seconds));

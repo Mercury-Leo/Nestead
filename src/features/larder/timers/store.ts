@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { readPreference, writePreference } from '../../../data/local/localStore';
+import type { TimerLabel } from '../../../domain/kitchen/durations';
 
 /**
  * Cook-mode timers. They belong to this device, not the family: the oven
@@ -17,8 +18,10 @@ export interface Timer {
   stepIndex: number;
   /** Which chip in which step started it; one active timer per chip. */
   chipKey: string;
-  /** "Oven", "Sear", "Step 3". */
+  /** "Oven", "Sear", "Step 3", in English: the fallback for timers saved before labelKind. */
   label: string;
+  /** The label as data, worded on screen (labels.ts timerLabel). */
+  labelKind?: TimerLabel;
   /** "bake 50 min". */
   phrase: string;
   durationSec: number;
@@ -31,7 +34,7 @@ export interface Timer {
   acknowledged: boolean;
 }
 
-export type NewTimer = Pick<Timer, 'recipeId' | 'recipeTitle' | 'stepIndex' | 'chipKey' | 'label' | 'phrase' | 'durationSec'>;
+export type NewTimer = Pick<Timer, 'recipeId' | 'recipeTitle' | 'stepIndex' | 'chipKey' | 'label' | 'labelKind' | 'phrase' | 'durationSec'>;
 
 // Per device, so not per family: the preference helper's scope is "device".
 const SCOPE = 'device';

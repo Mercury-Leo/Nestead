@@ -2,8 +2,7 @@ import { Bell, Check, Pause, Play, Timer as TimerIcon, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cx } from '../../../components/ui';
 import type { DetectedDuration } from '../../../domain/kitchen/durations';
-// i18n: formatClock (domain/kitchen/quantity.ts) writes "4:05" with Latin digits whatever the locale.
-import { formatClock } from '../../../domain/kitchen/quantity';
+import { formatClockDigits, timerLabel } from '../labels';
 import { addMinute, cancel, dismiss, pause, remaining, resume } from '../timers/store';
 import type { Timer } from '../timers/store';
 import s from './CookMode.module.css';
@@ -28,9 +27,9 @@ export function TimerChip({
     state === 'idle'
       ? t('timers.start', { phrase: duration.phrase })
       : state === 'running'
-        ? t('timers.pause', { phrase: duration.phrase, left: formatClock(left) })
+        ? t('timers.pause', { phrase: duration.phrase, left: formatClockDigits(left) })
         : state === 'paused'
-          ? t('timers.resume', { phrase: duration.phrase, left: formatClock(left) })
+          ? t('timers.resume', { phrase: duration.phrase, left: formatClockDigits(left) })
           : t('timers.again', { phrase: duration.phrase });
   return (
     <button type="button" className={cx(s.chip, s[`chip_${state}`])} aria-label={label} onClick={onPress}>
@@ -44,8 +43,8 @@ export function TimerChip({
         )}
       </span>
       <span className={s.chipPhrase}>{duration.phrase}</span>
-      {state === 'running' && <span className={cx(s.chipTime, 'tabular')}>{t('timers.running', { left: formatClock(left) })}</span>}
-      {state === 'paused' && <span className={cx(s.chipTime, 'tabular')}>{t('timers.paused', { left: formatClock(left) })}</span>}
+      {state === 'running' && <span className={cx(s.chipTime, 'tabular')}>{t('timers.running', { left: formatClockDigits(left) })}</span>}
+      {state === 'paused' && <span className={cx(s.chipTime, 'tabular')}>{t('timers.paused', { left: formatClockDigits(left) })}</span>}
       {state === 'done' && <span className={s.chipTime}>{t('timers.done')}</span>}
     </button>
   );
@@ -61,9 +60,8 @@ export function TrayCard({ timer, now, desktop }: { timer: Timer; now: number; d
           <Bell size={22} strokeWidth={2} />
         </span>
         <div className={s.cardText}>
-          {/* i18n: timer.label comes from detectDurations (domain/kitchen/durations.ts): "Oven", "Step 3" or a verb from the step. */}
-          <span className={s.cardTitle}>{t('timers.cardDone', { label: timer.label })}</span>
-          <span className={s.cardSub}>{t('timers.finished', { time: formatClock(timer.durationSec) })}</span>
+          <span className={s.cardTitle}>{t('timers.cardDone', { label: timerLabel(t, timer) })}</span>
+          <span className={s.cardSub}>{t('timers.finished', { time: formatClockDigits(timer.durationSec) })}</span>
         </div>
         {desktop && (
           <button type="button" className={s.cardGhost} onClick={() => addMinute(timer.id)}>
@@ -81,7 +79,7 @@ export function TrayCard({ timer, now, desktop }: { timer: Timer; now: number; d
     <div className={cx(s.card, timer.state === 'paused' && s.cardPaused)}>
       <div className={s.cardText}>
         <span className={s.cardTitle}>
-          {timer.label}
+          {timerLabel(t, timer)}
           {desktop ? <span className={s.cardPhrase}> · {timer.phrase}</span> : null}
         </span>
         {!desktop && <span className={s.cardPhrase}>{timer.phrase}</span>}
@@ -89,19 +87,19 @@ export function TrayCard({ timer, now, desktop }: { timer: Timer; now: number; d
           <span style={{ width: `${Math.min(100, Math.max(2, progress * 100))}%` }} />
         </span>
       </div>
-      <span className={cx(s.clock, 'tabular')} aria-label={t('timers.left', { time: formatClock(left) })}>
-        {formatClock(left)}
+      <span className={cx(s.clock, 'tabular')} aria-label={t('timers.left', { time: formatClockDigits(left) })}>
+        {formatClockDigits(left)}
       </span>
       {timer.state === 'running' ? (
-        <button type="button" className={s.round} aria-label={t('timers.pauseLabel', { label: timer.label })} onClick={() => pause(timer.id)}>
+        <button type="button" className={s.round} aria-label={t('timers.pauseLabel', { label: timerLabel(t, timer) })} onClick={() => pause(timer.id)}>
           <Pause size={22} strokeWidth={0} fill="currentColor" />
         </button>
       ) : (
-        <button type="button" className={s.round} aria-label={t('timers.resumeLabel', { label: timer.label })} onClick={() => resume(timer.id)}>
+        <button type="button" className={s.round} aria-label={t('timers.resumeLabel', { label: timerLabel(t, timer) })} onClick={() => resume(timer.id)}>
           <Play size={22} strokeWidth={0} fill="currentColor" />
         </button>
       )}
-      <button type="button" className={s.round} aria-label={t('timers.cancelLabel', { label: timer.label })} onClick={() => cancel(timer.id)}>
+      <button type="button" className={s.round} aria-label={t('timers.cancelLabel', { label: timerLabel(t, timer) })} onClick={() => cancel(timer.id)}>
         <X size={22} strokeWidth={2.2} />
       </button>
     </div>

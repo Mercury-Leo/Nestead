@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatClock } from '../../../domain/kitchen/quantity';
 import { i18n } from '../../../i18n';
+import { formatClockDigits, timerLabel } from '../labels';
 import { addMinute, dismiss, tick, useTimers } from './store';
 import type { Timer } from './store';
 import s from './Timers.module.css';
@@ -49,7 +49,7 @@ function alert(timer: Timer): void {
   }
   try {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
-      new Notification(i18n.t('timers.isDone', { label: timer.label }), {
+      new Notification(i18n.t('timers.isDone', { label: timerLabel(i18n.t, timer) }), {
         body: i18n.t('timers.notificationBody', { phrase: timer.phrase, recipe: timer.recipeTitle }),
         tag: timer.id,
       });
@@ -68,8 +68,8 @@ export function DoneBanner({ timer }: { timer: Timer }): JSX.Element {
           <Bell size={26} strokeWidth={2} />
         </span>
         <div>
-          <p className={s.bannerTitle}>{t('timers.isDone', { label: timer.label })}</p>
-          <p className={s.bannerSub}>{t('timers.timerFinished', { time: formatClock(timer.durationSec) })}</p>
+          <p className={s.bannerTitle}>{t('timers.isDone', { label: timerLabel(t, timer) })}</p>
+          <p className={s.bannerSub}>{t('timers.timerFinished', { time: formatClockDigits(timer.durationSec) })}</p>
         </div>
       </div>
       <div className={s.bannerActions}>

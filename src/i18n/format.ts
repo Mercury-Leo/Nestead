@@ -32,6 +32,24 @@ export function daysFromToday(isoDate: string, now = new Date()): number {
   return Math.round((day.getTime() - today.getTime()) / 86_400_000);
 }
 
+const DIGITS = new Map<string, string[]>();
+
+/**
+ * The same text with its digits in the locale's own ("٤٧:٣٢" for "47:32"),
+ * for numbers the domain has already shaped: clocks, "1½", "2–3".
+ */
+export function localizeDigits(text: string): string {
+  const locale = intl();
+  let digits = DIGITS.get(locale);
+  if (digits === undefined) {
+    const format = new Intl.NumberFormat(locale, { useGrouping: false });
+    digits = Array.from({ length: 10 }, (_, d) => format.format(d));
+    DIGITS.set(locale, digits);
+  }
+  const map = digits;
+  return text.replace(/[0-9]/g, (d) => map[Number(d)] as string);
+}
+
 /** "a, b and c", or with type "disjunction", "a, b or c". */
 export function formatList(items: readonly string[], type: Intl.ListFormatType = 'conjunction'): string {
   return new Intl.ListFormat(intl(), { type }).format(items);

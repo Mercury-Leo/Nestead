@@ -16,7 +16,7 @@ export interface Preset {
   noun?: string;
 }
 
-// i18n: name and rule are shown from the translation file by id (kitchen.preset.<id>); noun feeds fitsProfileLine.
+// i18n: English for the domain's own text; screens word name, rule and noun by id (kitchen.preset.<id>).
 export const PRESETS: readonly Preset[] = [
   { id: 'vegetarian', name: 'Vegetarian', rule: 'No meat or fish', group: 'style', excludes: ['meat', 'poultry', 'pork', 'fish', 'shellfish'], noun: 'meat' },
   { id: 'vegan', name: 'Vegan', rule: 'No animal products at all', group: 'style', excludes: ['animal'], noun: 'animal products' },
@@ -31,7 +31,7 @@ export const PRESETS: readonly Preset[] = [
   { id: 'kosher', name: 'Kosher', rule: 'No pork or shellfish; meat and dairy kept apart', group: 'religious', excludes: ['pork', 'shellfish'], noun: 'pork' },
 ];
 
-// i18n: English words, shown inside checkDiet's labels and search's "contains …".
+// i18n: English words for checkDiet's own text; screens word flags as kitchen.flag.<flag>.
 const FLAG_WORD: Record<DietFlag, string> = {
   meat: 'meat',
   poultry: 'poultry',
@@ -90,6 +90,12 @@ function capitalise(text: string): string {
 export function parseCustomRule(text: string): CustomDietRule | null {
   const subject = subjectOf(text);
   if (subject === '') return null;
+  const { terms, hints } = matchesFor(subject);
+  return { id: localId('r'), label: capitalise(text.trim().replace(/^["“”']|["“”']$/g, '')), terms, hint: hintText(subject, hints) };
+}
+
+/** Every name a rule's subject matches, and the two worth mentioning in its hint. */
+function matchesFor(subject: string): { terms: string[]; hints: string[] } {
   const subjectKey = normalizeText(subject);
 
   const terms: string[] = [subject];
@@ -126,12 +132,25 @@ export function parseCustomRule(text: string): CustomDietRule | null {
     addTerm(name);
     if (hints.length < 2) hints.push(name.toLowerCase());
   }
+  return { terms, hints: hints.slice(0, 2) };
+}
 
-  // i18n: stored with the rule and shown as written, in English.
-  const hint =
-    hints.length === 0 ? `Matches “${subject}”` : `Also matches ${hints.slice(0, 2).join(' and ')}`;
+/**
+ * What a rule's hint says, as data: the names it also matches (catalog names,
+ * in English), or just its own subject. Worked out again from the rule, so a
+ * screen can word it; the English hint stored on the rule is kept for older
+ * clients.
+ */
+export type RuleHint = { kind: 'matches'; subject: string } | { kind: 'alsoMatches'; terms: string[] };
 
-  return { id: localId('r'), label: capitalise(text.trim().replace(/^["“”']|["“”']$/g, '')), terms, hint };
+export function customRuleHint(rule: CustomDietRule): RuleHint {
+  const subject = ruleSubject(rule);
+  const { hints } = matchesFor(subject);
+  return hints.length === 0 ? { kind: 'matches', subject } : { kind: 'alsoMatches', terms: hints };
+}
+
+function hintText(subject: string, hints: string[]): string {
+  return hints.length === 0 ? `Matches “${subject}”` : `Also matches ${hints.join(' and ')}`;
 }
 
 /** The word used in "Contains cilantro" and "No nuts, sesame or cilantro found". */
@@ -158,18 +177,43 @@ function ruleMatchesLine(rule: CustomDietRule, line: IngredientLine): boolean {
 
 /* --------------------------------------------------------------- checks -- */
 
-/** i18n: reasons, things and label are English sentences and words, shown as they are on warning badges. */
+/**
+ * One thing a recipe has that the profile rules out, as data, so a screen
+ * can word it: a flag ("peanuts"), an animal product the catalog knows no
+ * finer than that ("honey", from the recipe's own line), one of the family's
+ * rules (in their words), too many carbs, or meat with dairy.
+ */
+export type DietThing =
+  | { kind: 'flag'; flag: DietFlag }
+  | { kind: 'item'; name: string }
+  | { kind: 'rule'; subject: string }
+  | { kind: 'carbs' }
+  | { kind: 'meatWithDairy' };
+
+/** One reason, as data: "Contains …", "Mixes meat and dairy", "About 32 g net carbs per serving". */
+export type DietIssue = { kind: 'contains'; things: DietThing[] } | { kind: 'meatWithDairy' } | { kind: 'netCarbs'; grams: number };
+
 export interface DietCheck {
   ok: boolean;
-  /** Human reasons: "Contains peanuts, sesame", "Mixes meat and dairy". */
+  /** Human reasons: "Contains peanuts, sesame", "Mixes meat and dairy". English; issues is the same as data. */
   reasons: string[];
-  /** The short words behind them: "peanuts", "sesame". */
+  issues: DietIssue[];
+  /** The short words behind them: "peanuts", "sesame". English; thingKeys is the same as data. */
   things: string[];
+  thingKeys: DietThing[];
   /** reasons joined, for a badge. */
   label: string;
 }
 
-const OK: DietCheck = { ok: true, reasons: [], things: [], label: '' };
+const OK: DietCheck = { ok: true, reasons: [], issues: [], things: [], thingKeys: [], label: '' };
+
+/** The English word for a DietThing, as in DietCheck.things. */
+export function dietThingText(thing: DietThing): string {
+  if (thing.kind === 'flag') return FLAG_WORD[thing.flag];
+  if (thing.kind === 'item') return thing.name;
+  if (thing.kind === 'rule') return thing.subject;
+  return thing.kind === 'carbs' ? 'carbs' : 'meat with dairy';
+}
 
 export function lineFlags(line: IngredientLine): DietFlag[] {
   return catalogFor(line)?.flags ?? [];
@@ -189,59 +233,91 @@ export function checkDiet(recipe: Pick<AnyRecipe, 'ingredients' | 'servings'>, p
   }
 
   const excluded = new Set<DietFlag>(presets.flatMap((preset) => preset.excludes));
+  // things and thingKeys stay in step: the English word, and the same as data.
   const things: string[] = [];
-  const extra: string[] = [];
+  const thingKeys: DietThing[] = [];
+  const add = (thing: DietThing): void => {
+    thingKeys.push(thing);
+    things.push(dietThingText(thing));
+  };
+  const extra: DietIssue[] = [];
 
   const vegan = excluded.has('animal');
   for (const flag of FLAG_ORDER) {
     if (flag === 'animal' || !present.has(flag)) continue;
-    if (excluded.has(flag) || (vegan && ANIMAL_KINDS.includes(flag))) things.push(FLAG_WORD[flag]);
+    if (excluded.has(flag) || (vegan && ANIMAL_KINDS.includes(flag))) add({ kind: 'flag', flag });
   }
   // Honey, gelatin: animal, but none of the specific kinds. Name the thing.
   if (vegan && present.has('animal') && !ANIMAL_KINDS.some((flag) => present.has(flag))) {
-    things.push(...(animalOnly.length > 0 ? animalOnly : ['animal products']));
+    if (animalOnly.length > 0) animalOnly.forEach((name) => add({ kind: 'item', name }));
+    else add({ kind: 'flag', flag: 'animal' });
   }
 
   for (const rule of profile.custom) {
     const hit = recipe.ingredients.some((line) => ruleMatchesLine(rule, line));
     if (hit) {
       const subject = ruleSubject(rule);
-      if (!things.includes(subject)) things.push(subject);
+      if (!things.includes(subject)) add({ kind: 'rule', subject });
     }
   }
 
-  if (profile.presets.kosher === true && (present.has('meat') || present.has('poultry')) && present.has('dairy')) {
-    extra.push('Mixes meat and dairy');
-  }
+  const mixes = profile.presets.kosher === true && (present.has('meat') || present.has('poultry')) && present.has('dairy');
+  if (mixes) extra.push({ kind: 'meatWithDairy' });
 
   if (profile.presets.lowCarb === true) {
     const carbs = netCarbsPerServing(recipe);
     if (carbs !== null && carbs > LOW_CARB_LIMIT) {
-      extra.push(`About ${Math.round(carbs)} g net carbs per serving`);
-      things.push('carbs');
+      extra.push({ kind: 'netCarbs', grams: Math.round(carbs) });
+      add({ kind: 'carbs' });
     }
   }
 
-  const containsThings = things.filter((thing) => thing !== 'carbs');
-  const reasons = [...(containsThings.length > 0 ? [`Contains ${containsThings.join(', ')}`] : []), ...extra];
-  if (reasons.length === 0) return OK;
-  if (extra.includes('Mixes meat and dairy')) things.push('meat with dairy');
-  return { ok: false, reasons, things, label: reasons.join(' · ') };
+  const containsKeys = thingKeys.filter((_, i) => things[i] !== 'carbs');
+  const issues: DietIssue[] = [...(containsKeys.length > 0 ? [{ kind: 'contains', things: containsKeys } as const] : []), ...extra];
+  if (issues.length === 0) return OK;
+  if (mixes) add({ kind: 'meatWithDairy' });
+  const reasons = issues.map(dietIssueText);
+  return { ok: false, reasons, issues, things, thingKeys, label: reasons.join(' · ') };
+}
+
+/** The English wording of a DietIssue, as in DietCheck.reasons. */
+export function dietIssueText(issue: DietIssue): string {
+  if (issue.kind === 'contains') return `Contains ${issue.things.map(dietThingText).join(', ')}`;
+  if (issue.kind === 'meatWithDairy') return 'Mixes meat and dairy';
+  return `About ${issue.grams} g net carbs per serving`;
 }
 
 /**
- * "No nuts, sesame or cilantro found".
- * i18n: an English sentence, shown as it is in the import preview.
+ * What the profile rules out, one noun each, as data for "No nuts, sesame or
+ * cilantro found": a preset's noun (by preset, so a screen can word it) or a
+ * rule's own subject. Presets sharing a noun (Halal and Kosher: pork) count once.
  */
-export function fitsProfileLine(profile: Pick<DietProfile, 'presets' | 'custom'> | null | undefined): string {
-  const nouns: string[] = [];
+export type DietNoun = { kind: 'preset'; id: PresetId } | { kind: 'rule'; subject: string };
+
+export function profileNouns(profile: Pick<DietProfile, 'presets' | 'custom'> | null | undefined): DietNoun[] {
+  const seen: string[] = [];
+  const nouns: DietNoun[] = [];
   for (const preset of activePresets(profile)) {
-    if (preset.noun !== undefined && !nouns.includes(preset.noun)) nouns.push(preset.noun);
+    if (preset.noun !== undefined && !seen.includes(preset.noun)) {
+      seen.push(preset.noun);
+      nouns.push({ kind: 'preset', id: preset.id });
+    }
   }
   for (const rule of profile?.custom ?? []) {
     const subject = ruleSubject(rule);
-    if (!nouns.includes(subject)) nouns.push(subject);
+    if (!seen.includes(subject)) {
+      seen.push(subject);
+      nouns.push({ kind: 'rule', subject });
+    }
   }
+  return nouns;
+}
+
+/** "No nuts, sesame or cilantro found", in English. */
+export function fitsProfileLine(profile: Pick<DietProfile, 'presets' | 'custom'> | null | undefined): string {
+  const nouns = profileNouns(profile).map((noun) =>
+    noun.kind === 'rule' ? noun.subject : (PRESETS.find((preset) => preset.id === noun.id)?.noun as string),
+  );
   if (nouns.length === 0) return 'No diet rules are set';
   const list = nouns.length === 1 ? nouns[0] : `${nouns.slice(0, -1).join(', ')} or ${nouns[nouns.length - 1]}`;
   return `No ${list} found`;

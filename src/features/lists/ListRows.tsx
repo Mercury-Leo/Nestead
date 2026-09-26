@@ -4,10 +4,8 @@ import { Ellipsis, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, Checkbox, IconButton, TextField, cx } from '../../components/ui';
 import type { ListGroup, ListItem } from '../../domain/types';
-import {
-  SUPERMARKET,
-  formatListQty,
-} from '../../domain/kitchen/list';
+import { SUPERMARKET } from '../../domain/kitchen/list';
+import { formatListQtyT } from '../larder/labels';
 import s from './ShoppingList.module.css';
 import { forLine } from './format';
 
@@ -45,8 +43,9 @@ export function ItemRow({
           )}
         </span>
       </Checkbox>
-      {/* i18n: formatListQty (domain/kitchen/list.ts) writes amounts with the parser's English units. */}
-      <span className={cx(s.rowQty, 'tabular')} dir="auto">{formatListQty(item.parts)}</span>
+      <span className={cx(s.rowQty, 'tabular')} dir="auto">
+        {formatListQtyT(t, item.parts)}
+      </span>
       <IconButton label={t('lists.editItem', { name: item.name })} icon={Ellipsis} className={s.rowEdit} onClick={onEdit} />
     </li>
   );

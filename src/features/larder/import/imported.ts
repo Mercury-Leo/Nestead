@@ -2,9 +2,9 @@ import type { AnyRecipe, IngredientLine, Unit } from '../../../domain/types';
 import { estimateKcal } from '../../../domain/kitchen/calories';
 import { dietTags } from '../../../domain/kitchen/diet';
 import { parseIngredientLine, parseNumber } from '../../../domain/kitchen/parse';
-import { formatDuration } from '../../../domain/kitchen/quantity';
 import { totalMinutes } from '../../../domain/kitchen/search';
 import { i18n } from '../../../i18n';
+import { formatMinutes } from '../labels';
 import type { ImportedRecipe } from '../../../../server/import';
 
 /**
@@ -81,8 +81,7 @@ export function whatWeRead(recipe: AnyRecipe, stated: { photo: boolean; servings
   const lines: ReadLine[] = [
     { ok: true, text: titleLine },
     stated.times
-      ? // i18n: formatDuration (domain/kitchen/quantity.ts) writes English units.
-        { ok: true, text: t('import.read.times', { prep: formatDuration(recipe.prepMin), cook: formatDuration(recipe.cookMin) }) }
+      ? { ok: true, text: t('import.read.times', { prep: formatMinutes(t, recipe.prepMin), cook: formatMinutes(t, recipe.cookMin) }) }
       : { ok: false, text: t('import.read.noTimes') },
     {
       ok: true,

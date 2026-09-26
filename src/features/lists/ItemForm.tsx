@@ -6,11 +6,8 @@ import { useSession } from '../../auth/session';
 import { Button, RadioList, TextField } from '../../components/ui';
 import type { ListItem, NewRow } from '../../domain/types';
 import { catalogItem } from '../../domain/kitchen/catalog';
-import {
-  SUPERMARKET,
-  formatListQty,
-  groupOf,
-} from '../../domain/kitchen/list';
+import { SUPERMARKET, groupOf } from '../../domain/kitchen/list';
+import { formatListQtyT } from '../larder/labels';
 import { canonicalId, exactCatalogId } from '../../domain/kitchen/normalize';
 import s from './ShoppingList.module.css';
 import { forLine } from './format';
@@ -69,7 +66,7 @@ export function ItemForm({ item, groups, onDone }: { item: ListItem; groups: Gro
         onChange={(event) => setNote(event.target.value)}
       />
       {recipes !== null && (
-        <p className={s.muted}>{t('lists.form.recipes', { qty: formatListQty(item.parts), recipes })}</p>
+        <p className={s.muted}>{t('lists.form.recipes', { qty: formatListQtyT(t, item.parts), recipes })}</p>
       )}
       <div>
         <p className={s.legend} aria-hidden>

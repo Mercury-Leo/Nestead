@@ -12,11 +12,11 @@ import { checkDiet } from '../../../domain/kitchen/diet';
 import { detectDurations } from '../../../domain/kitchen/durations';
 import { pantryFit } from '../../../domain/kitchen/fit';
 import type { LineStatus } from '../../../domain/kitchen/fit';
-import { formatDuration } from '../../../domain/kitchen/quantity';
 import { formatNumber } from '../../../i18n';
 import { totalMinutes } from '../../../domain/kitchen/search';
 import type { ListHandoff } from '../../lists/useJustAdded';
 import { addRecipeToList, saveToLibrary } from '../actions';
+import { dietLabel, formatMinutes } from '../labels';
 import { useKitchen } from '../KitchenContext';
 import { RecipePhoto } from '../recipe/RecipePhoto';
 import { recipePath } from '../recipe/recipeView';
@@ -223,8 +223,8 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
       <div className={s.stat}>
         <span className={s.statLabel}>{desktop ? t('detail.stats.totalTime') : t('detail.stats.total')}</span>
         <span className={s.statValue} dir="auto">
-          {/* i18n: formatDuration (domain/kitchen/quantity.ts) writes English units; the phone drops " min" from "1 h 20 min" to fit. */}
-          {desktop || total < 60 ? formatDuration(total) : formatDuration(total).replace(' min', '')}
+          {/* The phone drops the last " min" from "1 h 20 min" to fit. */}
+          {formatMinutes(t, total, !desktop)}
         </span>
         <span className={s.statSub}>{t('detail.stats.prepCook', { prep: recipe.prepMin, cook: recipe.cookMin })}</span>
       </div>
@@ -375,7 +375,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
               {recipe.description}
             </p>
           )}
-          {!diet.ok && <WarningBadge className={s.dietWarn}>{diet.label}</WarningBadge>}
+          {!diet.ok && <WarningBadge className={s.dietWarn}>{dietLabel(t, diet)}</WarningBadge>}
           {ratingRow}
           {stats}
           <h2 className={s.sectionTitle}>{t('detail.requires')}</h2>
@@ -411,7 +411,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
               {recipe.description}
             </p>
           )}
-          {!diet.ok && <WarningBadge className={s.dietWarn}>{diet.label}</WarningBadge>}
+          {!diet.ok && <WarningBadge className={s.dietWarn}>{dietLabel(t, diet)}</WarningBadge>}
           {ratingRow}
           {stats}
           {actions}
@@ -427,7 +427,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
                 <Clock size={18} strokeWidth={2} />
               </span>
               <span>
-                <strong dir="auto">{formatDuration(total)}</strong>
+                <strong dir="auto">{formatMinutes(t, total)}</strong>
                 <span className={s.summarySub}>{t('detail.summary.totalTime')}</span>
               </span>
             </span>

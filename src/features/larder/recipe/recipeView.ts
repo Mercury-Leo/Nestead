@@ -3,8 +3,8 @@ import { checkDiet } from '../../../domain/kitchen/diet';
 import type { DietCheck } from '../../../domain/kitchen/diet';
 import { pantryFit } from '../../../domain/kitchen/fit';
 import type { PantryFit, PantryIndex } from '../../../domain/kitchen/fit';
-import { formatDuration } from '../../../domain/kitchen/quantity';
 import { i18n } from '../../../i18n';
+import { formatMinutes } from '../labels';
 import { displayRating, totalMinutes } from '../../../domain/kitchen/search';
 
 /** Everything a card or row shows about a recipe, worked out once. */
@@ -31,8 +31,7 @@ export function recipeView(
     fit,
     diet: known?.diet ?? checkDiet(recipe, profile),
     rating: displayRating(recipe),
-    // i18n: formatDuration (domain/kitchen/quantity.ts) writes English units, "1 h 20 min".
-    total: formatDuration(totalMinutes(recipe)),
+    total: formatMinutes(i18n.t, totalMinutes(recipe)),
     kcal:
       recipe.kcalPerServing === undefined
         ? null

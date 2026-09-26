@@ -8,6 +8,7 @@ import { EstTag, SourceBadge, WarningBadge } from './badges';
 import { MatchBlock } from './MatchBlock';
 import { Stars } from './Rating';
 import { RecipePhoto } from './RecipePhoto';
+import { dietLabel } from '../labels';
 import type { RecipeView } from './recipeView';
 import { recipePath, siteOf } from './recipeView';
 import s from './RecipeCard.module.css';
@@ -52,6 +53,7 @@ function hasPhoto(recipe: RecipeView['recipe']): boolean {
  * you would need to buy, so the card is shorter and says more.
  */
 export function RecipeCard({ view, showNeed = false }: { view: RecipeView; showNeed?: boolean }): JSX.Element {
+  const { t } = useTranslation();
   const { recipe, fit, diet } = view;
   const photo = hasPhoto(recipe);
   const site = siteOf(recipe);
@@ -62,8 +64,7 @@ export function RecipeCard({ view, showNeed = false }: { view: RecipeView; showN
           <div className={s.photo}>
             <RecipePhoto recipe={recipe} />
             <SourceBadge kind={recipe.source.kind} className={s.badge} />
-            {/* i18n: diet.label is a sentence the domain builds in English (diet.ts). */}
-            {!diet.ok && <WarningBadge className={s.warn}>{diet.label}</WarningBadge>}
+            {!diet.ok && <WarningBadge className={s.warn}>{dietLabel(t, diet)}</WarningBadge>}
           </div>
         ) : (
           <div className={s.plainHead}>
@@ -85,7 +86,7 @@ export function RecipeCard({ view, showNeed = false }: { view: RecipeView; showN
               {recipe.description}
             </p>
           )}
-          {!photo && !diet.ok && <WarningBadge className={s.plainWarn}>{diet.label}</WarningBadge>}
+          {!photo && !diet.ok && <WarningBadge className={s.plainWarn}>{dietLabel(t, diet)}</WarningBadge>}
           <Meta view={view} wrap />
           <div className={s.divider} />
           <MatchBlock
@@ -126,7 +127,7 @@ export function RecipeRow({ view, showNeed = false, onChoose }: { view: RecipeVi
             {recipe.description}
           </p>
         )}
-        {!diet.ok && <WarningBadge className={s.rowWarn}>{diet.label}</WarningBadge>}
+        {!diet.ok && <WarningBadge className={s.rowWarn}>{dietLabel(t, diet)}</WarningBadge>}
         <Meta view={view} wrap />
         <MatchBlock
           compact

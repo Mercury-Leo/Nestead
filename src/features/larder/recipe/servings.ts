@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { AnyRecipe, IngredientLine } from '../../../domain/types';
-import { formatAmount, scaleQty } from '../../../domain/kitchen/quantity';
+import { scaleQty } from '../../../domain/kitchen/quantity';
+import { i18n } from '../../../i18n';
+import { formatAmountT } from '../labels';
 
 /**
  * The servings chosen on a recipe page. Cook mode reads the same number, so
@@ -27,5 +29,5 @@ export function useServings(recipe: Pick<AnyRecipe, 'id' | 'servings'>): [number
 /** "300 g" at the recipe's own servings becomes "450 g" at 6 of 4. */
 export function scaledAmount(line: IngredientLine, factor: number): string {
   const qtyMax = line.qtyMax === undefined ? undefined : (scaleQty(line.qtyMax, factor) ?? undefined);
-  return formatAmount(scaleQty(line.qty, factor), line.unit, qtyMax);
+  return formatAmountT(i18n.t, scaleQty(line.qty, factor), line.unit, qtyMax);
 }

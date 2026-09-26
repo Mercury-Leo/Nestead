@@ -110,6 +110,7 @@ function Cook({ recipe }: { recipe: AnyRecipe }): JSX.Element {
         stepIndex: index,
         chipKey: key,
         label: duration.label,
+        labelKind: duration.labelKind,
         phrase: duration.phrase,
         durationSec: duration.seconds,
       });

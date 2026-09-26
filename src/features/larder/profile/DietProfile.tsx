@@ -11,7 +11,7 @@ import { checkDiet, parseCustomRule, PRESETS } from '../../../domain/kitchen/die
 import type { Preset } from '../../../domain/kitchen/diet';
 import { formatNumber } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
-import { presetName, presetRule } from '../labels';
+import { dietLabel, presetName, presetRule, ruleHintText } from '../labels';
 import { RecipePhoto } from '../recipe/RecipePhoto';
 import { recipePath } from '../recipe/recipeView';
 import s from './DietProfile.module.css';
@@ -127,8 +127,7 @@ export function DietProfilePage(): JSX.Element {
                     <span className={s.ruleLabel} dir="auto">
                       {rule.label}
                     </span>
-                    {/* i18n: the hint was written in English by parseCustomRule (domain/kitchen/diet.ts) and is stored with the rule. */}
-                    <span className={s.ruleHint}>{rule.hint}</span>
+                    <span className={s.ruleHint}>{ruleHintText(t, rule)}</span>
                   </span>
                   <button
                     type="button"
@@ -191,7 +190,7 @@ export function DietProfilePage(): JSX.Element {
                         <span className={s.conflictTitle} dir="auto">
                           {recipe.title}
                         </span>
-                        <WarningBadge>{diet.label}</WarningBadge>
+                        <WarningBadge>{dietLabel(t, diet)}</WarningBadge>
                       </span>
                     </Link>
                   </li>

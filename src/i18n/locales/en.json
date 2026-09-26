@@ -217,15 +217,18 @@
     "preset": {
       "vegetarian": {
         "name": "Vegetarian",
-        "rule": "No meat or fish"
+        "rule": "No meat or fish",
+        "noun": "meat"
       },
       "vegan": {
         "name": "Vegan",
-        "rule": "No animal products at all"
+        "rule": "No animal products at all",
+        "noun": "animal products"
       },
       "pescatarian": {
         "name": "Pescatarian",
-        "rule": "Fish and seafood, no other meat"
+        "rule": "Fish and seafood, no other meat",
+        "noun": "meat"
       },
       "lowCarb": {
         "name": "Low-carb",
@@ -233,32 +236,101 @@
       },
       "glutenFree": {
         "name": "Gluten-free",
-        "rule": "No wheat, barley or rye"
+        "rule": "No wheat, barley or rye",
+        "noun": "gluten"
       },
       "dairyFree": {
         "name": "Dairy-free",
-        "rule": "No milk, butter, cheese or yogurt"
+        "rule": "No milk, butter, cheese or yogurt",
+        "noun": "dairy"
       },
       "nutAllergy": {
         "name": "Nut allergy",
-        "rule": "Peanuts and tree nuts, including nut oils"
+        "rule": "Peanuts and tree nuts, including nut oils",
+        "noun": "nuts"
       },
       "eggAllergy": {
         "name": "Egg allergy",
-        "rule": "No eggs or egg-based sauces"
+        "rule": "No eggs or egg-based sauces",
+        "noun": "eggs"
       },
       "shellfishAllergy": {
         "name": "Shellfish allergy",
-        "rule": "No shrimp, crab, lobster or mussels"
+        "rule": "No shrimp, crab, lobster or mussels",
+        "noun": "shellfish"
       },
       "halal": {
         "name": "Halal",
-        "rule": "No pork or alcohol; halal meat only"
+        "rule": "No pork or alcohol; halal meat only",
+        "noun": "pork"
       },
       "kosher": {
         "name": "Kosher",
-        "rule": "No pork or shellfish; meat and dairy kept apart"
+        "rule": "No pork or shellfish; meat and dairy kept apart",
+        "noun": "pork"
       }
+    },
+    "amount": "{{number}} {{unit}}",
+    "unit": {
+      "g": "g",
+      "kg": "kg",
+      "ml": "ml",
+      "l": "l",
+      "tsp": "tsp",
+      "tbsp": "tbsp",
+      "cup_one": "cup",
+      "cup_other": "cups",
+      "pinch_one": "pinch",
+      "pinch_other": "pinches",
+      "clove_one": "clove",
+      "clove_other": "cloves",
+      "can_one": "can",
+      "can_other": "cans",
+      "bunch_one": "bunch",
+      "bunch_other": "bunches",
+      "head_one": "head",
+      "head_other": "heads",
+      "slice_one": "slice",
+      "slice_other": "slices",
+      "sheet_one": "sheet",
+      "sheet_other": "sheets"
+    },
+    "duration": {
+      "minutes": "{{minutes, number}} min",
+      "hours": "{{hours, number}} h",
+      "hoursMinutes": "{{hours, number}} h {{minutes, number}} min",
+      "hoursMinutesCompact": "{{hours, number}} h {{minutes, number}}"
+    },
+    "timer": {
+      "oven": "Oven",
+      "cook": "Cook",
+      "step": "Step {{step, number}}"
+    },
+    "flag": {
+      "meat": "meat",
+      "poultry": "poultry",
+      "pork": "pork",
+      "fish": "fish",
+      "shellfish": "shellfish",
+      "dairy": "dairy",
+      "egg": "eggs",
+      "gluten": "gluten",
+      "peanut": "peanuts",
+      "treeNut": "tree nuts",
+      "sesame": "sesame",
+      "alcohol": "alcohol",
+      "animal": "animal products"
+    },
+    "diet": {
+      "contains": "Contains {{things}}",
+      "meatWithDairy": "Mixes meat and dairy",
+      "netCarbs": "About {{grams, number}} g net carbs per serving",
+      "carbs": "carbs",
+      "meatWithDairyThing": "meat with dairy",
+      "noRules": "No diet rules are set",
+      "noneFound": "No {{list}} found",
+      "matches": "Matches “{{subject}}”",
+      "alsoMatches": "Also matches {{terms}}"
     }
   },
   "recipe": {

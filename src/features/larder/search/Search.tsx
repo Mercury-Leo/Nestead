@@ -9,7 +9,7 @@ import { activeFilters, defaultFilters, search, suggestions } from '../../../dom
 import type { SearchFilters, SearchHit, SearchQuery, SortKey } from '../../../domain/kitchen/search';
 import { formatList, formatListParts } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
-import { sortShort } from '../labels';
+import { dietThingWord, sortShort } from '../labels';
 import { RecipeCard, RecipeGrid, RecipeList, RecipeRow } from '../recipe/RecipeCard';
 import { recipeView } from '../recipe/recipeView';
 import { FilterControls } from './FilterControls';
@@ -78,8 +78,8 @@ export function Search(): JSX.Element {
       : text.trim() !== ''
         ? t('search.quoted', { text: text.trim() })
         : null;
-  // i18n: diet.things are the domain's English words ("peanuts", "meat with dairy"), or a family rule's own words.
-  const hiddenThings = [...new Set(outcome.hidden.flatMap((hit) => hit.diet.things))];
+  const thingWords = (hit: SearchHit): string[] => hit.diet.thingKeys.map((thing) => dietThingWord(t, thing));
+  const hiddenThings = [...new Set(outcome.hidden.flatMap(thingWords))];
   const phrases = filterPhrases(t, filters);
   // Each phrase bold, the ", " and " and " between them plain. Fragments, not bare strings, so <Trans> keeps them.
   const phraseNodes = formatListParts(phrases).map((part, i) =>
@@ -113,7 +113,7 @@ export function Search(): JSX.Element {
             count={outcome.hidden.length}
             values={{
               list: formatList(
-                outcome.hidden.map((hit) => t('search.hiddenItem', { title: hit.recipe.title, things: formatList(hit.diet.things, 'unit') })),
+                outcome.hidden.map((hit) => t('search.hiddenItem', { title: hit.recipe.title, things: formatList(thingWords(hit), 'unit') })),
               ),
             }}
           />
