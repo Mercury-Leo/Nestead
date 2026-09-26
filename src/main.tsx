@@ -8,6 +8,7 @@ import '@fontsource/hanken-grotesk/600.css';
 import '@fontsource/hanken-grotesk/700.css';
 import './styles/fonts.css';
 import { App } from './app/App';
+import { captureInvite } from './auth/invite';
 import { SessionProvider } from './auth/session';
 import { LocaleProvider } from './i18n';
 import { ThemeProvider } from './components/theme/theme';
@@ -19,6 +20,9 @@ import './features/board/board.css';
 import './auth/auth.css';
 
 // No StrictMode: its double-mount would run the session seed twice.
+// Before the router reads the address: /join/<code> is not a route.
+captureInvite();
+
 const container = document.getElementById('root');
 if (container === null) throw new Error('#root is missing from index.html');
 

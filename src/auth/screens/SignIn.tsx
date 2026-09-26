@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { getRememberMe, getSupabaseClient, setRememberMe, takeLinkError } from '../../data/supabase/supabaseClient';
+import { inviteLink } from '../invite';
+import { useInviteFamily } from '../useInviteFamily';
 
 /**
  * Email and password rather than a magic link: a link depends on email actually
@@ -14,21 +16,26 @@ import { getRememberMe, getSupabaseClient, setRememberMe, takeLinkError } from '
  *
  * Forgotten passwords are the one place email is unavoidable. The link comes
  * back to this app, and SupabaseSession shows SetNewPassword instead of the app.
+ *
+ * Opened from an invite link, it starts on Create account: the person invited
+ * is most likely new, and it names the family they are about to join. Signing
+ * in instead works just as well.
  */
 
 type Mode = 'signIn' | 'signUp' | 'forgot';
 
-export function SignIn(): JSX.Element {
+export function SignIn({ inviteCode }: { inviteCode: string | null }): JSX.Element {
   const { t } = useTranslation();
   const client = getSupabaseClient();
 
-  const [mode, setMode] = useState<Mode>('signIn');
+  const [mode, setMode] = useState<Mode>(inviteCode !== null ? 'signUp' : 'signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(getRememberMe);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(takeLinkError);
   const [notice, setNotice] = useState<string | null>(null);
+  const invite = useInviteFamily(inviteCode);
 
   const switchTo = (next: Mode): void => {
     setMode(next);
@@ -61,7 +68,13 @@ export function SignIn(): JSX.Element {
     const credentials = { email: email.trim(), password };
     const { data, error: failed } =
       mode === 'signUp'
-        ? await client.auth.signUp(credentials)
+        ? await client.auth.signUp({
+            ...credentials,
+            // The confirmation email comes back to the invite, so it is not lost
+            // if the link is opened in another browser. Supabase only follows
+            // redirect URLs on its allow list and otherwise uses the Site URL.
+            options: inviteCode !== null ? { emailRedirectTo: inviteLink(inviteCode) } : undefined,
+          })
         : await client.auth.signInWithPassword(credentials);
 
     setBusy(false);
@@ -85,6 +98,17 @@ export function SignIn(): JSX.Element {
     <div className="gate">
       <h1>Nestead</h1>
       <p className="gate-sub">{t(`auth.signIn.subtitle.${mode}`)}</p>
+      {inviteCode !== null && mode !== 'forgot' && invite.kind !== 'loading' && (
+        <p className="notice">
+          {invite.kind === 'found' ? (
+            <Trans i18nKey="auth.signIn.invitedTo" values={{ family: invite.name }} />
+          ) : invite.kind === 'unknown' ? (
+            t('auth.signIn.inviteExpired')
+          ) : (
+            t('auth.signIn.invited')
+          )}
+        </p>
+      )}
 
       <form
         onSubmit={(event) => {

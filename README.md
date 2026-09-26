@@ -110,7 +110,7 @@ src/
   components/theme/          Light/dark theme provider and toggle.
   hooks/                     useMediaQuery, useIsNarrow, useWakeLock.
   features/board/            The kanban board.
-  features/family/           The Family page and join code.
+  features/family/           The Family page, invite link and join code.
   features/lists/            The shopping list: Supermarket, General, your own sections.
   features/larder/           The kitchen: a folder per screen, recipe/ for what
                              they share, timers/, and seed/ (demo data only).
@@ -147,8 +147,8 @@ in a feature knows or cares where the rows live.
 Summarised: apply `supabase/schema.sql` → write `createSupabaseStore()` → make
 it pass `runDataStoreContract()` **unchanged** → add one case to
 `src/data/index.ts` → replace the internals of `SessionProvider` with Supabase
-Auth, one account per person joining a family by **code** (never a shared family
-password). The full step-by-step is in
+Auth, one account per person joining a family by **code** or an invite link that
+carries it (never a shared family password). The full step-by-step is in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 Only the Supabase **anon** key may go in a `VITE_*` variable — every `VITE_*`

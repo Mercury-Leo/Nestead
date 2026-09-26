@@ -8,6 +8,7 @@ import type { DataStore } from '../data/types';
 import { useCollection } from '../data/useCollection';
 import { ensureKitchen } from '../features/larder/setup';
 import { seedDefaultColumns } from '../features/board/defaultColumns';
+import { clearInvite, pendingInvite } from './invite';
 import { JoinOrCreate } from './screens/JoinOrCreate';
 import type { Family } from './session';
 import { SessionContext } from './session';
@@ -68,6 +69,9 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
         return;
       }
 
+      // Already in a family (one per person), so an invite opened on this
+      // device has nothing left to do.
+      clearInvite();
       const family = await readFamily(client, familyId);
 
       const store = createSupabaseStore(familyId, client);
@@ -121,7 +125,7 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
         </p>
       );
     case 'signedOut':
-      return <SignIn />;
+      return <SignIn inviteCode={pendingInvite()} />;
     case 'recovering':
       return (
         <SetNewPassword
@@ -133,7 +137,7 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
         />
       );
     case 'noFamily':
-      return <JoinOrCreate onJoined={() => void resolve(phase.userId)} onSignOut={signOut} />;
+      return <JoinOrCreate inviteCode={pendingInvite()} onJoined={() => void resolve(phase.userId)} onSignOut={signOut} />;
     case 'ready':
       return (
         <Ready client={client} userId={phase.userId} store={phase.store} initialFamily={phase.family} signOut={signOut}>

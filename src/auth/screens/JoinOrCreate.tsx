@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { getSupabaseClient } from '../../data/supabase/supabaseClient';
+import { clearInvite } from '../invite';
+import { useInviteFamily } from '../useInviteFamily';
 
 /**
  * Shown to somebody signed in who is not in a family yet.
@@ -9,23 +11,29 @@ import { getSupabaseClient } from '../../data/supabase/supabaseClient';
  * makes them impossible from here: you cannot insert a family whose policy
  * requires you to be in it, and you cannot look one up by a code the policy is
  * hiding from you.
+ *
+ * After an invite link, it opens on Join with the code filled in and the
+ * family named, so only a name is left to type.
  */
 export function JoinOrCreate({
+  inviteCode,
   onJoined,
   onSignOut,
 }: {
+  inviteCode: string | null;
   onJoined: () => void;
   onSignOut: () => Promise<void>;
 }): JSX.Element {
   const { t } = useTranslation();
   const client = getSupabaseClient();
 
-  const [joining, setJoining] = useState(false);
+  const [joining, setJoining] = useState(inviteCode !== null);
   const [displayName, setDisplayName] = useState('');
   const [familyName, setFamilyName] = useState('');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(inviteCode ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const invite = useInviteFamily(inviteCode);
 
   const submit = async (): Promise<void> => {
     setBusy(true);
@@ -57,6 +65,17 @@ export function JoinOrCreate({
     <div className="gate">
       <h1>Nestead</h1>
       <p className="gate-sub">{joining ? t('auth.join.subtitleJoin') : t('auth.join.subtitleCreate')}</p>
+      {joining && inviteCode !== null && code === inviteCode && invite.kind !== 'loading' && (
+        <p className="notice">
+          {invite.kind === 'found' ? (
+            <Trans i18nKey="auth.join.invitedTo" values={{ family: invite.name }} />
+          ) : invite.kind === 'unknown' ? (
+            t('auth.join.inviteExpired')
+          ) : (
+            t('auth.join.invited')
+          )}
+        </p>
+      )}
 
       <form
         onSubmit={(event) => {
@@ -70,6 +89,8 @@ export function JoinOrCreate({
             dir="auto"
             value={displayName}
             placeholder={t('auth.join.namePlaceholder')}
+            // The code is already in, so the name is all that is left.
+            autoFocus={inviteCode !== null}
             required
             onChange={(event) => setDisplayName(event.target.value)}
           />
@@ -112,6 +133,8 @@ export function JoinOrCreate({
         type="button"
         className="link"
         onClick={() => {
+          // Starting a family instead means the invite is not wanted.
+          if (joining) clearInvite();
           setJoining(!joining);
           setError(null);
         }}

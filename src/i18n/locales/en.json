@@ -70,7 +70,10 @@
       "needAccount": "I need an account",
       "backToSignIn": "Back to sign in",
       "resetSent": "If that email has an account, a reset link is on its way. It expires in an hour.",
-      "confirmEmail": "Account created. Check your email to confirm it, then sign in."
+      "confirmEmail": "Account created. Check your email to confirm it, then sign in.",
+      "invited": "You’ve been invited to a family on Nestead. Create an account, or sign in if you have one, and you’ll join it next.",
+      "invitedTo": "You’ve been invited to join <strong><bdi>{{family}}</bdi></strong> on Nestead. Create an account, or sign in if you have one, and you’ll join it next.",
+      "inviteExpired": "This invite link no longer works: the family has a new code since. Ask them for a new link, or create an account and enter their code."
     },
     "join": {
       "subtitleJoin": "Join a family",
@@ -83,7 +86,10 @@
       "join": "Join",
       "create": "Create",
       "switchToCreate": "Start a new family instead",
-      "switchToJoin": "I have a join code"
+      "switchToJoin": "I have a join code",
+      "invited": "Your invite code is filled in. Add your name to join.",
+      "invitedTo": "You’re joining <strong><bdi>{{family}}</bdi></strong>. Add your name to join.",
+      "inviteExpired": "This invite link no longer works: the family has a new code since. Ask them for the new one."
     },
     "newPassword": {
       "subtitle": "Choose a new password",
@@ -100,7 +106,7 @@
     "subtitleFamily": "Everything <bdi>{{family}}</bdi> has on the go.",
     "iAm": "I am",
     "family": "Family",
-    "invite": "You are the only one here. Share this code so someone can join: <code>{{code}}</code>. It stays on the <link>Family</link> page.",
+    "invite": "You are the only one here. Share this code so someone can join: <code>{{code}}</code>. It stays on the <link>Family</link> page, with an invite link you can send.",
     "filter": {
       "search": "Search tasks",
       "mine": "Mine",
@@ -158,11 +164,18 @@
     "invite": {
       "title": "Invite someone",
       "demo": "Join codes come with real accounts. In demo mode everyone is already here.",
-      "howTo": "They sign up with their own account, choose “I have a join code” and enter this. It lets them in; it is not a password.",
+      "howTo": "Send them the invite link: it opens Nestead with the code filled in, so they only need an account and their name. The code lets them in; it is not a password.",
+      "linkLabel": "Invite link",
+      "share": "Share invite link",
+      "copyLink": "Copy invite link",
+      "linkCopied": "Link copied",
+      "shareTitle": "Join {{family}} on Nestead",
+      "shareText": "Join {{family}} on Nestead, our family board and kitchen.",
+      "orCode": "Or they sign up, choose “I have a join code” and type this:",
       "codeLabel": "Join code {{spelled}}",
       "copy": "Copy",
       "copied": "Copied",
-      "rotateHint": "Shared it somewhere you shouldn’t have? Swap it for a new one.",
+      "rotateHint": "Shared it somewhere you shouldn’t have? Swap it for a new one; the old link stops working too.",
       "newCode": "New code"
     },
     "members": "Members",
@@ -172,7 +185,7 @@
       "title": "Get a new join code?",
       "keep": "Keep this one",
       "changing": "Changing…",
-      "body": "The current code stops working straight away. Everyone already in the family stays in; only people who have not joined yet will need the new code.",
+      "body": "The current code and invite link stop working straight away. Everyone already in the family stays in; only people who have not joined yet will need the new code or link.",
       "failed": "Could not change the code"
     }
   },

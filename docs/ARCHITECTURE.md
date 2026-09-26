@@ -63,6 +63,7 @@ src/
     session.tsx              SessionProvider / useSession: the Session shape.
     demoSession.tsx          Local backend: pick a member per tab.
     supabaseSession.tsx      Supabase Auth: one account per person.
+    invite.ts                Invite links: /join/<code>, kept until the join screen uses it.
     screens/                 SignIn, JoinOrCreate, SetNewPassword.
     auth.css                 Styles for those screens (global class names).
   data/
@@ -88,7 +89,7 @@ src/
   features/
     board/                   The kanban board, its actions, default columns,
                              and board.css (global class names).
-    family/                  The Family page: join code and members.
+    family/                  The Family page: invite link, join code and members.
     lists/                   The shopping list: page, rows, item and section forms.
     larder/
       KitchenContext.tsx     The kitchen's rows, read once for every screen.
@@ -260,7 +261,8 @@ throughout.
 
 1. **Apply the schema.** `supabase/schema.sql` is complete: tables, RLS and
    policies, `updated_at` triggers, `create_family()` / `join_family(code)` /
-   `rotate_join_code()`, and the realtime publication. Apply it in one run,
+   `rotate_join_code()` / `invite_family_name(code)`, and the realtime
+   publication. Apply it in one run,
    since a table that exists before its policy is briefly world-readable. Then
    confirm RLS is on for every table and that a second account sees nothing of
    the first family.
@@ -286,7 +288,12 @@ throughout.
      person, gives no per-person attribution, and makes `members.id =
      auth.users.id` meaningless;
    - on first sign-in, `create_family()` or `join_family(code)` decides which
-     family the person belongs to;
+     family the person belongs to. An invite link, `/join/<code>`, opens
+     sign-up naming the family (`invite_family_name()`, callable signed out)
+     and fills in the code. Add `<site>/join/**` to Supabase Auth's
+     redirect URLs so the confirmation email returns to the invite; without
+     it the email goes to the Site URL, and only the device that opened the
+     link still has the code;
    - `familyId` comes from the signed-in member's row, not from a constant;
    - `me` is the signed-in member; `setMe` becomes sign-out/switch-account, or
      goes away — that change is visible to screens, so do it deliberately.

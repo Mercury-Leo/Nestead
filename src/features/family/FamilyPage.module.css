@@ -39,6 +39,44 @@
   font-size: 14.5px;
 }
 
+.linkBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.link {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: ui-monospace, monospace;
+  font-size: 14px;
+  user-select: all;
+}
+
+.link svg {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+
+/* A long address wraps anywhere rather than widening the card. */
+.link bdi {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.linkActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .codeRow {
   display: flex;
   flex-wrap: wrap;

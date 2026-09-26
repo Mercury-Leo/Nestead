@@ -304,6 +304,20 @@ begin
 end;
 $fn$;
 
+-- Tells somebody opening an invite link which family it is for, before they
+-- have an account. Only the name, and only for an exact code: the code is
+-- already the secret that lets you in, so whoever holds it may know whose
+-- family it opens. Null for a code no family has, such as a rotated one.
+create function invite_family_name(code text)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $fn$
+  select name from families where join_code = upper(trim(code));
+$fn$;
+
 -- Functions are executable by PUBLIC unless told otherwise. The helpers are
 -- internal to the definer functions above and must not be callable at all.
 revoke all on function generate_join_code()         from public;
@@ -313,11 +327,14 @@ revoke all on function create_family(text, text)    from public;
 revoke all on function join_family(text, text)      from public;
 revoke all on function rotate_join_code()           from public;
 revoke all on function current_family_id()          from public;
+revoke all on function invite_family_name(text)     from public;
 
 grant execute on function create_family(text, text) to authenticated;
 grant execute on function join_family(text, text)   to authenticated;
 grant execute on function rotate_join_code()        to authenticated;
 grant execute on function current_family_id()       to authenticated;
+-- Signed out too: an invite link is opened before there is an account.
+grant execute on function invite_family_name(text)  to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Realtime
@@ -509,7 +526,8 @@ create policy recipe_photos_delete on storage.objects
 -- join_family() is not rate limited. 32^8 is about 1.1 trillion codes, so
 -- guessing one is impractical, but a determined attacker is throttled only by
 -- the platform's own limits. If that ever matters, log attempts per user and
--- refuse after a handful.
+-- refuse after a handful. invite_family_name() is callable signed out, so
+-- it is the same guess without an account; it reveals only a family's name.
 --
 -- One family per person, as noted on the members table.
 --
