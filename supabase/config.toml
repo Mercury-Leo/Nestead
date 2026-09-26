@@ -18,3 +18,7 @@ project_id = "nestead"
 # Where confirmation and recovery links send people. Must be the deployed app,
 # not localhost, or a real sign-up emails you a link to your own laptop.
 site_url = "https://nestead.pages.dev"
+# Invite links, /join/<code>: sign-up sends the confirmation email back to the
+# invite, so the code survives it being opened in another browser. Anything
+# not on this list falls back to site_url.
+additional_redirect_urls = ["https://nestead.pages.dev/join/**"]
