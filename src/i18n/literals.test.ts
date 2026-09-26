@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
  * between JSX tags, in the attributes people read (aria-label, placeholder,
  * title, alt and our own label props), and sentence-like string literals in
  * screen code. It is a set of patterns, not a parser, so it errs towards
- * quiet; the en-XA pseudo-locale is the thorough check.
+ * quiet; walking the app in a second language is the thorough check.
  *
  * To keep English on purpose, put an `i18n:` comment on the line or the line
  * above saying why, or add the text to ALLOWED.

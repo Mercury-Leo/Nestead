@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 import en from './locales/en.json';
 import { formatList, isolateNumber } from './format';
 import { LOCALES, i18n, localeInfo } from './i18n';
-import { pseudoLocalize, pseudoString } from './pseudo';
 
 const SRC = join(__dirname, '..');
 
@@ -215,20 +214,5 @@ describe('right-to-left formatting', () => {
     expect(list).toContain('\u2068Soup\u2069');
     expect(list).toContain('\u2068Bread\u2069');
     expect(isolateNumber('1½')).toBe('\u20661½\u2069');
-  });
-});
-
-describe('pseudo-locale', () => {
-  it('wraps, accents and lengthens, and leaves placeholders and tags alone', () => {
-    const out = pseudoString('Delete “<bdi>{{name}}</bdi>” for everyone?');
-    expect(out.startsWith('[!! ')).toBe(true);
-    expect(out.endsWith(' !!]')).toBe(true);
-    expect(out).toContain('<bdi>{{name}}</bdi>');
-    expect(out).toContain('Délété');
-    expect(out.length).toBeGreaterThan('Delete “<bdi>{{name}}</bdi>” for everyone?'.length * 1.2);
-  });
-
-  it('keeps every key', () => {
-    expect(flatten(pseudoLocalize(en))).toEqual(flatten(en));
   });
 });

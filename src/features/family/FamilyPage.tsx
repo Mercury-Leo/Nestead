@@ -128,7 +128,7 @@ export function FamilyPage(): JSX.Element {
           <ThemeToggle className={s.theme} />
         </section>
 
-        {/* Only English ships, so production builds have nothing to choose; dev adds the en-XA pseudo-locale. */}
+        {/* A build with a single language has nothing to choose. */}
         {LOCALES.length > 1 && (
           <section className={s.card} aria-labelledby="locale-title">
             <h2 id="locale-title" className={s.cardTitle}>

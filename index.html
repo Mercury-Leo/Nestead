@@ -25,8 +25,7 @@
           locale = JSON.parse(localStorage.getItem('nestead:device:pref:locale')) || 'en';
         } catch (e) {}
         if (typeof locale !== 'string') locale = 'en';
-        // en-XA is the dev-only pseudo-locale, laid out right-to-left on purpose.
-        var rtl = locale === 'en-XA' || /^(ar|he|fa|ur|ps|yi|dv|ckb)(-|$)/i.test(locale);
+        var rtl = /^(ar|he|fa|ur|ps|yi|dv|ckb)(-|$)/i.test(locale);
         document.documentElement.lang = locale;
         document.documentElement.dir = rtl ? 'rtl' : 'ltr';
       })();

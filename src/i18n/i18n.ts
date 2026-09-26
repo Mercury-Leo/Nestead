@@ -3,7 +3,6 @@ import { initReactI18next } from 'react-i18next';
 import { readDevicePreference } from '../data/local/localStore';
 import en from './locales/en.json';
 import he from './locales/he.json';
-import { pseudoLocalize } from './pseudo';
 
 /**
  * The i18next instance. Translations are bundled, not fetched: adding a
@@ -26,13 +25,9 @@ export interface LocaleInfo {
   intl: string;
 }
 
-/** Dev-only: every string wrapped and lengthened, laid out right to left. */
-const PSEUDO: LocaleInfo = { code: 'en-XA', dir: 'rtl', name: '[!! Pseudo !!]', intl: 'en-GB' };
-
 export const LOCALES: readonly LocaleInfo[] = [
   { code: 'en', dir: 'ltr', name: 'English', intl: 'en-GB' },
   { code: 'he', dir: 'rtl', name: 'עברית', intl: 'he' },
-  ...(import.meta.env.DEV ? [PSEUDO] : []),
 ];
 
 export const DEFAULT_LOCALE = 'en';
@@ -62,7 +57,6 @@ const resources: Record<string, { translation: Translation }> = {
   en: { translation: en },
   he: { translation: he },
 };
-if (import.meta.env.DEV) resources[PSEUDO.code] = { translation: pseudoLocalize(en) };
 
 void i18next.use(initReactI18next).init({
   resources,
