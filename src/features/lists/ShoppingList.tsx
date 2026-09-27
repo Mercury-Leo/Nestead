@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { Check, ChevronDown, Ellipsis, Milk, Plus, ShoppingBag, X } from 'lucide-react';
 import { useSession } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
+import { readPreference, writePreference } from '../../data/local/localStore';
 import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { Button, ButtonLink, EmptyState, IconButton, Sheet, cx } from '../../components/ui';
 import type { ListItem } from '../../domain/types';
@@ -49,6 +50,17 @@ export function ShoppingList(): JSX.Element {
   const [editingId, setEditingId] = useState<string | null>(null);
   /** 'new', a ListGroup id, or null when the sheet is shut. */
   const [groupSheet, setGroupSheet] = useState<string | null>(null);
+  // Folded sections, remembered per family in this browser.
+  const [collapsed, setCollapsed] = useState<string[]>(() => {
+    const saved = readPreference(store.familyId, 'listCollapsed');
+    return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string') : [];
+  });
+  useEffect(() => {
+    writePreference(store.familyId, 'listCollapsed', collapsed);
+  }, [store.familyId, collapsed]);
+  const toggleCollapsed = (id: string): void => {
+    setCollapsed((ids) => (ids.includes(id) ? ids.filter((other) => other !== id) : [...ids, id]));
+  };
 
   const items = kitchen.listItems;
   const groups: Group[] = [
@@ -70,6 +82,14 @@ export function ShoppingList(): JSX.Element {
   const leftOffCount = leftOff.pantry.length + leftOff.staples.length;
   const editing = items.find((item) => item.id === editingId);
   const editingGroup = kitchen.listGroups.find((group) => group.id === groupSheet) ?? null;
+
+  // A recipe just added to a folded section: open it so the new items show.
+  const unfold = collapsed.filter((id) => items.some((item) => justAdded.has(item.id) && placeOf(item) === id));
+  const isOpen = (id: string): boolean => !collapsed.includes(id) || unfold.includes(id);
+  // And keep it open after the flash fades. Runs only when a handoff arrives.
+  useEffect(() => {
+    if (unfold.length > 0) setCollapsed((ids) => ids.filter((id) => !unfold.includes(id)));
+  }, [justAdded]);
 
   const toggle = (item: ListItem, value: boolean): void => {
     void store.listItems.update(item.id, { checked: value });
@@ -155,32 +175,47 @@ export function ShoppingList(): JSX.Element {
       </ul>
     );
     const titleId = `list-group-${group.id}`;
+    const bodyId = `list-group-body-${group.id}`;
+    const open = isOpen(group.id);
     return (
       <section key={group.id} className={s.card} aria-labelledby={titleId}>
         <header className={s.groupHead}>
           <h2 id={titleId} className={s.cardTitle}>
-            <bdi>{group.name}</bdi> {rows.length > 0 && <span className={s.groupCount}>{formatNumber(rows.length)}</span>}
+            <button
+              type="button"
+              className={s.groupToggle}
+              aria-expanded={open}
+              aria-controls={bodyId}
+              onClick={() => toggleCollapsed(group.id)}
+            >
+              <ChevronDown size={20} strokeWidth={2.2} aria-hidden className={cx(s.groupChevron, !open && s.groupChevronShut)} />
+              <bdi>{group.name}</bdi> {rows.length > 0 && <span className={s.groupCount}>{formatNumber(rows.length)}</span>}
+            </button>
           </h2>
           {group.row !== undefined && (
             <IconButton label={t('lists.renameGroup', { name: group.name })} icon={Ellipsis} onClick={() => setGroupSheet(group.id)} />
           )}
         </header>
-        {rows.length === 0 && group.id === SUPERMARKET && (
-          <p className={s.muted}>
-            <Trans i18nKey="lists.supermarketEmpty" />
-          </p>
+        {open && (
+          <div id={bodyId} className={s.groupBody}>
+            {rows.length === 0 && group.id === SUPERMARKET && (
+              <p className={s.muted}>
+                <Trans i18nKey="lists.supermarketEmpty" />
+              </p>
+            )}
+            {group.id === SUPERMARKET
+              ? groupBySection(rows).map(([aisle, aisleRows]) => (
+                  <div key={aisle} className={s.group}>
+                    <h3 className={s.groupTitle}>
+                      {sectionLabel(t, aisle)} <span className={s.groupCount}>{formatNumber(aisleRows.length)}</span>
+                    </h3>
+                    {itemRows(aisleRows)}
+                  </div>
+                ))
+              : rows.length > 0 && itemRows(rows)}
+            <AddItem group={group} onAdd={(names) => void addOwnToList(store, items, names, group.id)} />
+          </div>
         )}
-        {group.id === SUPERMARKET
-          ? groupBySection(rows).map(([aisle, aisleRows]) => (
-              <div key={aisle} className={s.group}>
-                <h3 className={s.groupTitle}>
-                  {sectionLabel(t, aisle)} <span className={s.groupCount}>{formatNumber(aisleRows.length)}</span>
-                </h3>
-                {itemRows(aisleRows)}
-              </div>
-            ))
-          : rows.length > 0 && itemRows(rows)}
-        <AddItem group={group} onAdd={(names) => void addOwnToList(store, items, names, group.id)} />
       </section>
     );
   });

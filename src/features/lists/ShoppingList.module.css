@@ -83,6 +83,42 @@
   min-height: 44px;
 }
 
+/* The whole title folds its section away. */
+.groupToggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.groupChevron {
+  flex-shrink: 0;
+  color: var(--ink-2);
+  transition: transform 150ms;
+}
+
+/* Points toward the reading direction when folded: right in LTR, left in RTL. */
+.groupChevronShut {
+  transform: rotate(-90deg);
+}
+
+:dir(rtl) .groupChevronShut {
+  transform: rotate(90deg);
+}
+
+.groupBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .group {
   margin-top: 8px;
 }
