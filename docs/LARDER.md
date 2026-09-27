@@ -60,7 +60,10 @@ placeholder, stars, badges, match bar, status marker, step text).
   board, above the "Larder" heading, and its screen lives in `features/lists/`.
   It is split by where things are bought: **Supermarket**, where recipes put
   their groceries (still grouped by aisle); **General**, for everything else;
-  and any sections the family adds (`list_groups`). Anything can be typed into
+  and any sections the family adds (`list_groups`). Sections go in the family's
+  own order, dragged by a grip or moved with its arrow keys (`useSectionDrag.ts`,
+  `ShoppingList.tsx`); built-in sections get a row only once moved, to hold
+  their place. Anything can be typed into
   any section, and an item's menu renames it, adds a note ("2 packs"), moves it
   to another section or takes it off. Something added by hand stays when the
   last recipe that also needed it comes off the list. Deleting a section moves
@@ -89,15 +92,14 @@ placeholder, stars, badges, match bar, status marker, step text).
 - **Additions not in the brief:** deleting a recipe (from its edit page, with a
   confirmation); "Save to library" on a web recipe's page; an error boundary
   with a Reload button.
-- **Not built:** PWA/offline install, Playwright end-to-end tests and the
-  screenshot comparison. Verified instead by unit tests and by walking each
-  screen at 360, 375, 768, 1024, 1280 and 1440px.
+- **Not built:** offline use (there is no service worker; the app does install
+  to a home screen through `public/manifest.webmanifest`), Playwright
+  end-to-end tests and the screenshot comparison. Verified instead by unit tests
+  and by walking each screen at 360, 375, 768, 1024, 1280 and 1440px.
 
-## Before merging
+## The kitchen tables
 
-1. Apply `supabase/migrations/20260924120000_kitchen.sql` to the Supabase
-   project. Until then the Supabase contract suite fails (the kitchen tables
-   do not exist) and signed-in families see an empty kitchen; the board is
-   unaffected because `ensureKitchen()` never throws.
-2. Run `npm test` with `.env.test` present and confirm the contract suite passes
-   against the migrated project.
+The kitchen arrived in `supabase/migrations/20260924120000_kitchen.sql`, since
+folded into `supabase/schema.sql`. A project without those tables fails the
+Supabase contract suite, and its families see an empty kitchen; the board is
+unaffected because `ensureKitchen()` never throws.

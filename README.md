@@ -7,8 +7,8 @@ board, pantry and list.
 
 The board is the home page; the kitchen sits beside it in the same sidebar (or
 tab bar on a phone). Underneath both is the core: a family-scoped data layer,
-the session, the domain types, a single backend swap point and the contract
-tests that any backend has to pass.
+the session, the domain types, one place that picks the backend, and the
+contract tests that any backend has to pass.
 
 ## Getting started
 
@@ -17,16 +17,19 @@ npm install
 npm run dev
 ```
 
-You get a board with three seeded columns (To do / Doing / Done), two seeded
-members, and an "I am" switcher so two tabs can be two people.
+With the default local backend you get a board with three seeded columns
+(To do / Doing / Done), two seeded members, and an "I am" switcher so two tabs
+can be two people.
 
-Tasks have a title, an emoji icon and an assignee. Tap a card to move it to
-another column, reorder it, change its icon or assignee, or delete it. Column
-headers rename in place and can be reordered or removed once empty.
+Tasks have a title, an emoji icon and an assignee, and optionally a
+description, a due date and a repeat (daily to every three months). Drag a card
+to move it within its column or to another; tap it to edit the rest or delete
+it. A search box and an assignee filter narrow the board. Column headers rename
+in place and can be reordered or removed once empty.
 
-No drag and drop: cards move by an explicit picker, which works on touch and
-with a keyboard and costs no dependency. It can be added later without any
-change to stored data.
+Dragging uses pointer events, so it works with a finger as well as a mouse: a
+finger rests on a card for a moment to lift it. A repeating chore is one card
+that comes back round: done, it returns on its next date.
 
 On a phone the columns stack into collapsible sections, Done folded by default,
 so every column and its count stays on screen instead of hiding behind a
@@ -57,7 +60,7 @@ leaving cook mode, and alert (sound, vibration, notification) on any screen.
 | --------------- | --------------------------------------------------- |
 | `npm run dev`   | Vite dev server                                      |
 | `npm run build` | `tsc --noEmit` then `vite build`                     |
-| `npm test`      | Vitest: domain, seed, import and data-store suites   |
+| `npm test`      | Vitest; with `.env.test`, also the live Supabase suites |
 
 Copy `.env.example` to `.env.local` if you want to change `VITE_BACKEND`. The
 default is `local`, the no-accounts demo. `npm run build` refuses to build
@@ -72,24 +75,28 @@ demo build, run `npx vite build --mode demo`.
 | UI              | React 18 + TypeScript (strict)     |
 | Build           | Vite 5                             |
 | Tests           | Vitest 2 + jsdom                   |
-| Data (today)    | `localStorage`, per family         |
-| Data (planned)  | Supabase Postgres + RLS            |
-| Auth (today)    | Fake: pick a member, per tab       |
-| Auth (planned)  | Supabase Auth + family join code   |
-| Hosting         | Static: Cloudflare Pages or Vercel |
+| Data            | Supabase Postgres + RLS            |
+| Data (demo)     | `localStorage`, per family         |
+| Auth            | Supabase Auth, one account per person, family join code |
+| Auth (demo)     | None: pick a member, per tab       |
+| Text            | i18next: English, Hebrew           |
+| Hosting         | Cloudflare Pages, plus a Pages Function for `/api/import` |
 
 Runtime dependencies: `react`, `react-dom`, `@supabase/supabase-js`,
-`react-router-dom` (routes), `lucide-react` (icons) and the two self-hosted font
-packages (`@fontsource-variable/newsreader`, `@fontsource/hanken-grotesk`).
-Nothing else: timers, drag handles, sheets and the import parser are hand-written.
+`react-router-dom` (routes), `i18next` and `react-i18next` (translations),
+`lucide-react` (icons) and six self-hosted font packages: Newsreader and Hanken
+Grotesk, plus Noto Arabic and Hebrew faces for text in those scripts. Nothing
+else: timers, drag and drop, sheets and the import parser are hand-written.
 
 ## Principles
 
-1. **Screens never touch storage** — only `useSession()` and `useCollection()`.
+1. **Screens never touch storage** — rows only through `useSession()` and
+   `useCollection()`; device preferences through the helpers in
+   `src/data/local/localStore.ts`.
 2. **Every row is family-scoped** — `familyId` on every row, enforced by RLS in
-   the target schema.
-3. **Backends swap in one place** (`src/data/index.ts`) **and must pass the same
-   contract** (`runDataStoreContract`).
+   `supabase/schema.sql`.
+3. **The backend is chosen in one place** (`SessionProvider`, `src/auth/session.tsx`)
+   **and must pass the same contract** (`runDataStoreContract`).
 4. **Domain types mirror the SQL schema** — camelCase in TS, snake_case in
    Postgres, same shapes.
 5. **Features are additive** — a new screen never edits the data layer.
@@ -99,29 +106,37 @@ Nothing else: timers, drag handles, sheets and the import parser are hand-writte
 ```
 src/
   app/                       Shell, navigation (sidebar and tab bar), routes.
-  auth/                      SessionProvider / useSession; screens/ for sign-in.
-  data/                      Collection/DataStore, the swap point, the row cache, useCollection,
-                             the contract; local/ and supabase/ backends.
-  domain/                    Entities, Base, NewRow, board ordering.
+  auth/                      SessionProvider / useSession, demo and Supabase
+                             sessions, invite links; screens/ for sign-in.
+  data/                      Collection/DataStore, createStore, the row cache,
+                             useCollection, the contract; local/ and supabase/ backends.
+  domain/                    Entities, Base, NewRow, ordering for board rows and list sections.
   domain/kitchen/            Pure kitchen logic: ingredient catalog and parser,
                              pantry fit, diet rules, scaling, timers in text,
                              calorie estimates, shopping list, search.
   components/ui/             The generic UI kit, one file per component family.
   components/theme/          Light/dark theme provider and toggle.
-  hooks/                     useMediaQuery, useIsNarrow, useWakeLock.
-  features/board/            The kanban board.
-  features/family/           The Family page, invite link and join code.
+  hooks/                     useMediaQuery, useIsNarrow, useDirection, useWakeLock, pointerDrag.
+  i18n/                      i18next, the locale provider (lang and dir), formatting; locales/.
+  features/board/            The kanban board: drag and drop, filter, repeating chores.
+  features/family/           The Family page: invite link, join code, members, theme, language.
   features/lists/            The shopping list: Supermarket, General, your own sections.
   features/larder/           The kitchen: a folder per screen, recipe/ for what
-                             they share, timers/, and seed/ (demo data only).
-  styles/                    tokens.css (the one palette) and global.css.
+                             they share, timers/, and seed/ (the demo kitchen,
+                             plus the offline web index every build uses).
+  styles/                    tokens.css (the one palette), global.css, fonts.css.
   main.tsx                   Entry point.
 server/import/               Recipe import: fetch a page, read schema.org data.
 functions/api/import.ts      The same, as a Cloudflare Pages Function.
 supabase/schema.sql          Postgres schema; migrations/ for existing projects.
-docs/ARCHITECTURE.md         The long version, including the Supabase path.
+docs/ARCHITECTURE.md         The long version, including the Supabase backend.
 docs/LARDER.md               The kitchen: design notes, decisions, deviations.
+CLAUDE.md                    The short guide for working in this repo.
 ```
+
+Each folder under `src/` (except `hooks/` and `styles/`), plus `server/import/`
+and `supabase/`, has a `README.md` with its files, how it works and its rules;
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) links them all.
 
 ## Writing a feature
 
@@ -144,28 +159,31 @@ screen watching a collection shares one copy of its rows, and `update` and
 `remove` show on screen before the backend confirms them (see `src/data/cache.ts`). Nothing
 in a feature knows or cares where the rows live.
 
-## Adding Supabase later
+## Supabase
 
-Summarised: apply `supabase/schema.sql` → write `createSupabaseStore()` → make
-it pass `runDataStoreContract()` **unchanged** → add one case to
-`src/data/index.ts` → replace the internals of `SessionProvider` with Supabase
-Auth, one account per person joining a family by **code** or an invite link that
-carries it (never a shared family password). The full step-by-step is in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Production runs on Supabase: `VITE_BACKEND=supabase` in `.env.local`, or set by
+the deploy workflow. A new project applies `supabase/schema.sql` in one run; an
+existing one applies the files in `supabase/migrations/`. Everyone signs in with
+their own email and password (never a shared family password) and joins a family
+by **code** or an invite link that carries it. Setup, the contract tests against
+a test project, and the reasons are in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#the-supabase-backend).
 
-Only the Supabase **anon** key may go in a `VITE_*` variable — every `VITE_*`
-value is inlined into the public bundle. A service-role key must never appear
-in this repo.
+Only the Supabase **publishable (anon)** key may go in a `VITE_*` variable —
+every `VITE_*` value is inlined into the public bundle. A secret (service-role)
+key must never appear in this repo.
 
 ## Known limits
 
-- **Auth is fake.** No access control at all: anyone who opens the app is in the
-  demo family and can be anyone in it.
-- **~5 MB of storage.** `localStorage` is capped around 5 MB per origin. Plenty
-  for text, but it is a ceiling, not a horizon.
+- **The demo has no auth.** With the local backend, anyone who opens the app is
+  in the demo family and can be anyone in it. `npm run build` will not ship it.
+- **~5 MB of demo storage.** `localStorage` is capped around 5 MB per origin.
+  Plenty for text, but it is a ceiling, not a horizon.
 - **Last write wins.** No merge, no conflict detection.
-- **Same-browser sync only.** The `storage` event reaches other tabs, not other
-  devices.
+- **The demo syncs within one browser.** The `storage` event reaches other tabs,
+  not other devices; with Supabase, changes reach every member live.
+- **No offline use.** The app installs to a phone's home screen but has no
+  service worker.
 - **No prices.** Shopping lists have quantities, not costs.
 - **Offline web search only.** "Search online" looks through a bundled index
   of recipes. A real search provider needs an API key and is not wired up.

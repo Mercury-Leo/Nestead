@@ -9,9 +9,9 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 
 ## Architecture
 - Screens: rows only through `useSession()`, `useCollection()` and `useKitchen()`; from a backend module they import only the preference helpers.
-- Data: `createStore()` in `src/data/index.ts` is the one backend swap point; a backend counts once it passes `runDataStoreContract()` unchanged.
+- Backend: `SessionProvider` (`src/auth/session.tsx`) picks demo or Supabase by `VITE_BACKEND`; a backend counts once it passes `runDataStoreContract()` unchanged.
 - Cache: `withCache()` wraps every backend, so writes show before the backend confirms (`src/data/cache.ts`).
-- Session: `SessionProvider` picks demo or Supabase by `VITE_BACKEND`; screens rely only on the `Session` type (`src/auth/session.tsx`).
+- Session: screens rely only on the `Session` type in `src/auth/session.tsx`, never on which session provides it.
 - Domain: `src/domain/` is pure and imports nothing outside itself; `types.ts` mirrors `supabase/schema.sql`.
 - Kitchen: screens read shared rows from `useKitchen()` and write through `src/features/larder/actions.ts`.
 - Import API: one `(Request) => Response` handler in `server/import/`, run by `vite.config.ts` in dev and `functions/api/import.ts` on Cloudflare.
@@ -51,4 +51,4 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 - `src/features/larder/seed/webIndex.ts` is production code (the offline search index), not demo data.
 - Don't add `StrictMode`: `src/main.tsx` leaves it out so the demo seed does not run twice.
 - `index.html` reads the theme and locale preferences before React; keep its keys in step with `src/components/theme/theme.tsx` and `src/i18n/i18n.ts`.
-- `docs/ARCHITECTURE.md` and `README.md` predate drag and drop: both say there is none, and ARCHITECTURE names `moveTaskToColumn()`, now `placeTask()`. Trust the code and the folder READMEs.
+- Only `DemoSession` calls `createStore()` (`src/data/index.ts`); `SupabaseSession` builds its store itself, so production never runs `createStore()`'s Supabase branch.

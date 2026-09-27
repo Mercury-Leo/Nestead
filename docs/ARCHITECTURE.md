@@ -20,28 +20,39 @@ same way the board was, without changing anything the core guarantees.
 | UI              | React 18 + TypeScript strict  | `noUnusedLocals`, ES modules                        |
 | Build           | Vite 5                        | `npm run build` = `tsc --noEmit && vite build`      |
 | Tests           | Vitest 2 + jsdom              | `npm test`                                          |
-| Data (today)    | `localStorage`                | `src/data/local/localStore.ts`                      |
-| Data (planned)  | Supabase Postgres + RLS       | `supabase/schema.sql`, not applied                  |
-| Auth (today)    | Fake: pick a member per tab   | `src/auth/session.tsx`                              |
-| Auth (planned)  | Supabase Auth + family join code | one account per person                           |
+| Data            | Supabase Postgres + RLS       | `src/data/supabase/supabaseStore.ts`, `supabase/schema.sql` |
+| Data (demo)     | `localStorage`                | `src/data/local/localStore.ts`                      |
+| Auth            | Supabase Auth, one account per person | `src/auth/supabaseSession.tsx`              |
+| Auth (demo)     | None: pick a member per tab   | `src/auth/demoSession.tsx`                          |
+| Text            | i18next: English bundled, Hebrew fetched on first use | `src/i18n/`                 |
 | Hosting         | Cloudflare Pages               | static, plus one Pages Function: `/api/import`      |
 
-Runtime dependencies are `react`, `react-dom`, `@supabase/supabase-js`,
-`react-router-dom`, `lucide-react` and two self-hosted font packages. Everything
-else is a dev dependency.
+The deploy workflow builds with `VITE_BACKEND=supabase`
+(`.github/workflows/deploy.yml`), and `npm run build` refuses anything else
+(`vite.config.ts`), so the demo backend is for development only.
+
+Runtime dependencies are `react`, `react-dom`, `react-router-dom`,
+`@supabase/supabase-js`, `i18next`, `react-i18next`, `lucide-react` and six
+self-hosted font packages: Newsreader and Hanken Grotesk, plus Noto Arabic and
+Hebrew faces for text in those scripts (`src/styles/fonts.css`). Everything else
+is a dev dependency.
 
 ## Principles
 
-1. **Screens never touch storage.** A feature reads and writes only through
-   `useSession()` and `useCollection()`. No component imports `localStorage`, a
-   backend module, or a Supabase client.
+1. **Screens never touch storage.** A feature reads and writes rows only through
+   `useSession()` and `useCollection()` (or `useKitchen()`, built on them). No
+   feature imports `localStorage` or a Supabase client; the one thing screens
+   take from a backend module is the device-preference helpers in
+   `src/data/local/localStore.ts`.
 2. **Every row is family-scoped.** `Base` carries `familyId`, every store is
    built for one family, and the target SQL enforces the same rule with RLS.
    There is no code path that returns another family's rows.
-3. **Backends swap in one place and must pass the same contract.** The only
-   place that decides which backend exists is `createStore()` in
-   `src/data/index.ts`; a backend qualifies once it passes
-   `runDataStoreContract()` unchanged.
+3. **The backend is chosen in one place and must pass the same contract.**
+   `SessionProvider` in `src/auth/session.tsx` picks by `VITE_BACKEND`: the demo
+   session builds its store with `createStore()` in `src/data/index.ts`, and the
+   Supabase session builds a cached `createSupabaseStore()` for the signed-in
+   family. A backend qualifies once it passes `runDataStoreContract()`
+   unchanged.
 4. **Domain types mirror the SQL schema.** `src/domain/types.ts` and
    `supabase/schema.sql` are the same shapes — camelCase in TypeScript,
    snake_case in Postgres. Change one, change the other.
@@ -65,21 +76,23 @@ src/
     supabaseSession.tsx      Supabase Auth: one account per person.
     membership.ts            Which family a signed-in user is in, in one request.
     invite.ts                Invite links: /join/<code>, kept until the join screen uses it.
+    useInviteFamily.ts       Names the family behind an invite code, signed out.
     screens/                 SignIn, JoinOrCreate, SetNewPassword.
     auth.css                 Styles for those screens (global class names).
   data/
     types.ts                 Collection and DataStore interfaces.
-    index.ts                 THE swap point: createStore().
+    index.ts                 createStore(): a cached backend by VITE_BACKEND
+                             (the demo session's store).
     cache.ts                 Shared rows per collection, over any backend:
                              one read for every screen, writes shown at once.
     useCollection.ts         Hook: live rows from a Collection, via the cache.
     collection.contract.ts   runDataStoreContract() — the backend contract.
-    local/                   localStorage backend, IndexedDB photos, device
-                             preferences. The only localStorage user.
+    local/                   localStorage backend, IndexedDB photos, and the
+                             preference helpers (per family and per device).
     supabase/                Supabase client, backend, and its test suites.
   domain/
     types.ts                 Entities and Base/NewRow. Mirrors the SQL schema.
-    position.ts              Sparse ordering for board rows.
+    position.ts              Sparse ordering for board rows and list sections.
     kitchen/                 Pure kitchen logic, unit-tested: catalog, parser,
                              pantry fit and rows, store sections, diet,
                              scaling, durations, calories, shopping list, search.
@@ -88,26 +101,34 @@ src/
                              controls, Sheet, …) behind an index barrel.
     theme/                   ThemeProvider and ThemeToggle.
     Brand, PageHeader, ErrorBoundary
-  hooks/                     useMediaQuery, useIsNarrow, useWakeLock.
+  hooks/                     useMediaQuery, useIsNarrow, useDirection, useWakeLock,
+                             and pointerDrag.ts (shared by the two drags).
+  i18n/                      i18next, LocaleProvider (lang and dir), Intl
+                             formatting; locales/en.json bundled, he.json lazy.
   features/
-    board/                   The kanban board, its actions, default columns,
-                             and board.css (global class names).
-    family/                  The Family page: invite link, join code and members.
-    lists/                   The shopping list: page, rows, item and section forms.
+    board/                   The kanban board: drag and drop, filter, repeating
+                             chores, actions, default columns, board.css (global).
+    family/                  The Family page: invite link, join code, members,
+                             theme and language.
+    lists/                   The shopping list: page, rows, item and section
+                             forms, section drag.
     larder/
       KitchenContext.tsx     The kitchen's rows, read once for every screen.
       actions.ts             Writes that span collections (list and pantry).
       setup.ts               ensureKitchen(): a new family's profile and staples.
+      labels.ts              Translated words for the domain's fixed ids.
       recipe/                Recipe presentation the screens share: card, photo,
                              badges, stars, match bar, status marker, step
                              text, servings, the view model.
       library/ search/ detail/ add/ import/ pantry/ profile/ cook/
                              One folder per screen.
       timers/                Cook-mode timer engine and host.
-      seed/                  Demo data only: recipes, pantry, list, web index.
+      seed/                  The demo family's kitchen, and the offline web index
+                             that every build uses for search and import.
   styles/
     tokens.css               The palette and type for the whole app.
     global.css               Un-scoped rules shared across features.
+    fonts.css                Arabic and Hebrew fallback faces.
 server/import/               Recipe import: guard (SSRF), fetchPage, parse,
                              handler; index.ts is the public surface.
 functions/api/import.ts      The same handler as a Cloudflare Pages Function.
@@ -126,11 +147,14 @@ supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 [seed](../src/features/larder/seed/README.md), [timers](../src/features/larder/timers/README.md) ·
 [server/import](../server/import/README.md) · [supabase](../supabase/README.md).
 
-Dependencies point one way: `features` use `components`, `hooks`, `data` and
-`domain`; `domain` imports nothing but its own types. A screen does not reach
+Dependencies point one way: `features` use `components`, `hooks`, `i18n`, `data`
+and `domain`; `domain` imports nothing outside `domain/`. A screen does not reach
 into another screen's file: what two screens share lives in a shared folder
-(`larder/recipe/`) or in `domain/`. The shopping list borrows `larder/recipe/`
-and `KitchenContext` because recipes write to the list.
+(`larder/recipe/`) or in `domain/`. The shopping list borrows `larder/recipe/`,
+`KitchenContext` and `larder/actions.ts` because recipes write to the list, and
+`insertionBefore()` from `board/dragDrop.ts` for its section drag. The one
+screen-to-screen import is the import screen's hand-off to `add/`: the
+`ImportHandoff` type and `UNITS`.
 
 **Styles.** Components use CSS modules. The board and the sign-in screens still
 use global class names; their sheets live with them but are imported in
@@ -148,17 +172,28 @@ midpoint, so one move rewrites one row rather than renumbering a column. Ties,
 which two clients can produce under last-write-wins, break on `createdAt` then
 `id` so every device shows the same order. See `src/domain/position.ts`.
 
-`BoardColumn.isDone` and `Task.done` are deliberately redundant: the column is
-the source of truth and `moveTaskToColumn()` in `features/board/actions.ts` is
-the only thing that writes either, so they cannot drift. Worth revisiting if
-`done` never earns its keep independently.
+`BoardColumn.isDone` and `Task.done` are deliberately redundant, and the column
+is the source of truth. `placeTask()` in `features/board/actions.ts` sets `done`
+from the destination column on every move, a new task takes its column's
+`isDone` (`TaskComposer.tsx`), and `reviveRecurring()` only moves tasks into a
+column that is not done, so the two cannot drift. Worth revisiting if `done`
+never earns its keep independently.
 
 Deleting a column with tasks in it is blocked rather than cascading. The target
 schema agrees: `tasks.column_id` is `on delete restrict`.
 
-There is no drag and drop. Cards move by an explicit column picker and up/down
-buttons, which works on touch, works with a keyboard, and needs no dependency.
-A drag layer can be added later without touching any stored data.
+Cards move by dragging, within a column or to another (`useTaskDrag.ts`). It is
+built on pointer events rather than HTML5 drag and drop, which does nothing on
+phones: a mouse lifts a card once it moves 5px, a finger after resting on it for
+350ms, since a finger that moves at once is scrolling. `dropPosition()` in
+`dragDrop.ts` works out where a card lands without the DOM, and a card put back
+where it was writes nothing. Cards have no keyboard way to move at present;
+columns still move with their arrow buttons (`Column.tsx`).
+
+A repeating chore is one row that comes back round (`recurrence.ts`): completing
+it moves `dueDate` to the next date on its schedule, counted from `recurFrom` so
+a chore on the 31st returns to the 31st, and `reviveRecurring()` brings it back
+out of the done column when the board next opens. There is no server job.
 
 Below 768px the columns stop sitting side by side and stack into collapsible
 sections, with Done folded by default. A horizontally scrolling board on a phone
@@ -180,7 +215,7 @@ though the list itself is for anything and its screen is `features/lists/`:
 | `pantry`        | `pantry_items`  | "Have now" (`kind = 'have'`) and staples (`'staple'`)     |
 | `dietProfiles`  | `diet_profiles` | One row per family (unique `family_id`)                    |
 | `listItems`     | `list_items`    | Shopping list rows; `parts` records which recipe needs what |
-| `listGroups`    | `list_groups`   | Sections the family added; Supermarket and General are built in |
+| `listGroups`    | `list_groups`   | Sections the family added, in the family's order; built-in Supermarket and General get a row (`builtin`) only once moved |
 | `photos`        | Storage bucket  | `recipe-photos/<family_id>/<uuid>.jpg`, private            |
 
 Nested structures are jsonb and keep their camelCase keys inside: they are
@@ -201,15 +236,15 @@ never throws: a kitchen that cannot be set up must not keep anyone off the
 board. The demo family gets the full seed instead (`seedDemoKitchen()`).
 
 **Pure logic lives in `src/domain/kitchen/`**, with no React and no storage:
-the ingredient catalog (about 250 items with store section, diet flags, calories,
+the ingredient catalog (about 280 items with store section, diet flags, calories,
 carbs and unit weights), the ingredient-line parser, pantry fit, the diet engine,
 scaling and formatting, timer detection in step text, calorie estimates, the
 shopping-list merge and search. All of it is unit-tested, including the numbers
 the design shows, computed from the seed rather than typed in.
 
 **Cook-mode timers are per device**, in `features/larder/timers/store.ts`, kept
-through `readPreference`/`writePreference` so this module is still the only
-localStorage user. A running timer stores when it ends, never time left, so it
+through `readPreference`/`writePreference` under the scope `device`, never in
+the `DataStore`. A running timer stores when it ends, never time left, so it
 stays right in a background tab and after a reload. `TimerHost` in the shell
 ticks them and raises the alert on whatever screen is open.
 
@@ -247,10 +282,12 @@ Guarantees every backend owes:
   rejects for an unknown id. `id` and `familyId` are never patchable. Postgres
   returns success with no rows for an update that matches nothing, so a SQL
   backend has to detect that and throw rather than pass it off as a success.
+- A patch value of `undefined` clears that field; a key left out of the patch
+  is left alone.
 - `subscribe` fires after any change to that collection **including changes
   made by another tab or another client**, and stops firing after its
   unsubscribe is called. The local backend gets this from the window `storage`
-  event; Supabase will get it from the realtime publication.
+  event, Supabase from a realtime channel filtered by `family_id`.
 - A store built for family A never returns, updates or deletes family B's rows.
 
 `make(familyId)` must hand back a store that is genuinely *authorised* for that
@@ -261,71 +298,84 @@ signs in as a user who belongs to that family, and `make` may be async for it.
 
 `runDataStoreContract(name, make, reset?)` in
 [collection.contract.ts](../src/data/collection.contract.ts) is the executable
-form of that list: seven Vitest cases, run today by
-[localStore.test.ts](../src/data/local/localStore.test.ts).
+form of that list: nine Vitest cases, run against the local backend by
+[localStore.test.ts](../src/data/local/localStore.test.ts), against the same
+backend through the cache by [cache.test.ts](../src/data/cache.test.ts), and
+against a live project by
+[supabaseStore.test.ts](../src/data/supabase/supabaseStore.test.ts). The
+cross-client half of `subscribe` is checked separately, for Supabase, by
+[supabaseRealtime.test.ts](../src/data/supabase/supabaseRealtime.test.ts).
 
 ### `useSession()`
 
-Returns `{ store, me, members, setMe }`. This shape is fixed: real auth replaces
-the internals of `session.tsx` only.
+Returns a `Session` (`src/auth/session.tsx`): `store`, `me`, `members` and
+`signOut` always; `setMe` in demo mode only; `family`, `rotateJoinCode` and
+`refreshFamily` with Supabase only. Screens depend on this shape, never on which
+session provides it.
 
-## Adding Supabase
+## The Supabase backend
 
-Each step is separately shippable; the app keeps working on the local backend
-throughout.
+Production runs on Supabase; the local backend stays for development with no
+project and no network.
 
-1. **Apply the schema.** `supabase/schema.sql` is complete: tables, RLS and
+1. **Schema.** `supabase/schema.sql` builds a fresh project: tables, RLS and
    policies, `updated_at` triggers, `create_family()` / `join_family(code)` /
-   `rotate_join_code()` / `invite_family_name(code)`, and the realtime
-   publication. Apply it in one run,
-   since a table that exists before its policy is briefly world-readable. Then
-   confirm RLS is on for every table and that a second account sees nothing of
-   the first family.
-2. **Add config.** Put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in
-   `.env.local` (see `.env.example`). Only the anon key may ever be a `VITE_*`
-   value — every `VITE_*` is inlined into the public bundle. A service-role key
-   must never appear in this repo or in any client config.
-3. **Write the backend.** Add `src/data/supabase/supabaseStore.ts` exporting
-   `createSupabaseStore(familyId)`. Map camelCase to snake_case at this
-   boundary and nowhere else. Back `subscribe` with a realtime channel filtered
-   by `family_id`.
-4. **Make it pass the contract.** Add `src/data/supabase/supabaseStore.test.ts` calling
-   `runDataStoreContract('supabase', createSupabaseStore, reset)` against a test
-   project. The contract does not change — if a case fails, the backend is
-   wrong, not the contract.
-5. **Add the case in `src/data/index.ts`.** One `case 'supabase':` in
-   `createStore()`. This is the only file in `src/` that learns a second backend
-   exists.
-6. **Replace the session internals.** Keep `SessionProvider` / `useSession` and
-   their `{ store, me, members, setMe }` shape. Inside:
-   - sign in with Supabase Auth, **one account per person** — email/magic link.
-     Not a shared family password: a shared secret cannot be revoked for one
-     person, gives no per-person attribution, and makes `members.id =
-     auth.users.id` meaningless;
-   - on first sign-in, `create_family()` or `join_family(code)` decides which
-     family the person belongs to. An invite link, `/join/<code>`, opens
-     sign-up naming the family (`invite_family_name()`, callable signed out)
-     and fills in the code. Add `<site>/join/**` to Supabase Auth's
-     redirect URLs so the confirmation email returns to the invite; without
-     it the email goes to the Site URL, and only the device that opened the
-     link still has the code;
-   - `familyId` comes from the signed-in member's row, not from a constant;
-   - `me` is the signed-in member; `setMe` becomes sign-out/switch-account, or
-     goes away — that change is visible to screens, so do it deliberately.
-7. **Delete the demo seed** once real families exist.
+   `rotate_join_code()` / `invite_family_name(code)`, the realtime publication
+   and the photo bucket's policies. Apply it in one run, since a table that
+   exists before its policy is briefly world-readable. An existing project takes
+   the files in `supabase/migrations/` instead; each is already folded into
+   `schema.sql`.
+2. **Config.** `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` go in
+   `.env.local` (see `.env.example`); the deploy workflow takes them from
+   repository variables. Only the publishable key may ever be a `VITE_*` value:
+   every `VITE_*` is inlined into the public bundle, and the workflow refuses a
+   key that looks secret.
+3. **Backend.** `createSupabaseStore(familyId, client)` in
+   `src/data/supabase/supabaseStore.ts` maps camelCase to snake_case at this
+   boundary and nowhere else, top-level keys only. `subscribe` is a realtime
+   channel filtered by `family_id`; photos go to the private `recipe-photos`
+   bucket.
+4. **Contract.** `supabaseStore.test.ts` runs `runDataStoreContract()` against a
+   test project as two users in two families, with credentials from the
+   gitignored `.env.test` (see `.env.test.example`); without it the suite skips.
+   The contract does not change: if a case fails, the backend is wrong, not the
+   contract. Between cases the suite deletes every task, column and kitchen row
+   in both test families, so use throwaway accounts.
+5. **Session.** `SupabaseSession` (`src/auth/supabaseSession.tsx`) signs in with
+   email and password, **one account per person**. Not a shared family
+   password: a shared secret cannot be revoked for one person, gives no
+   attribution, and would make `members.id = auth.users.id` meaningless
+   (`src/auth/screens/SignIn.tsx`).
+   - Signed in but in no family, a person runs `create_family()` or
+     `join_family(code)` (`JoinOrCreate.tsx`). An invite link, `/join/<code>`,
+     opens sign-up naming the family (`invite_family_name()`, callable signed
+     out) with the code filled in.
+   - `<site>/join/**` must be in Supabase Auth's redirect URLs
+     (`supabase/config.toml`) so the confirmation email returns to the invite;
+     without it the email goes to the Site URL, and only the device that opened
+     the link still has the code.
+   - Once in a family, `SupabaseSession` builds the cached store for the
+     member's `family_id`; `me` is the signed-in member and there is no `setMe`.
+6. **The demo.** `DemoSession` and its seed stay for local development. A
+   Supabase build leaves them out of the bundle (`src/auth/session.tsx`), and
+   `npm run build` refuses to build without `VITE_BACKEND=supabase`
+   (`vite.config.ts`).
 
 ## Known limits
 
-- **Auth is fake.** Anyone who opens the app is in the demo family and can be
-  anyone in it. There is no access control of any kind until step 7 above.
-- **Storage is ~5 MB.** `localStorage` is capped at roughly 5 MB per origin.
-  Ample for a board of text, but writes fail once it is full and the local
-  backend evicts nothing.
-- **Last write wins.** There is no merge or conflict detection. Two tabs editing
-  the same row: the later `update` overwrites the earlier one wholesale. The
-  same will be true of the first Supabase backend.
-- **Sync is same-browser only.** The `storage` event reaches other tabs on the
-  same device, not other devices. Real sharing between two people starts at
-  step 3.
+- **Demo mode has no auth.** With the local backend, anyone who opens the app is
+  in the demo family and can be anyone in it. Production builds cannot use it.
+- **Demo storage is ~5 MB.** `localStorage` is capped at roughly 5 MB per
+  origin. Ample for text, but writes fail once it is full and the local backend
+  evicts nothing. Photos are in IndexedDB instead.
+- **Last write wins, per field.** There is no merge or conflict detection. A
+  patch replaces the fields it names, and nested structures (ingredient lines,
+  list parts) are replaced whole, so two people changing the same field at once
+  keep only the later change. Both backends behave the same.
+- **Demo sync is same-browser only.** The `storage` event reaches other tabs on
+  the same device, not other devices. With Supabase, realtime reaches every
+  signed-in member.
+- **No offline use.** There is no service worker: the app installs to a home
+  screen (`public/manifest.webmanifest`) but does not load offline.
 - **No prices.** Adding a table before the feature that uses it is a guess you
   later have to migrate, so costs wait for a feature that needs them.

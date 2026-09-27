@@ -1,11 +1,11 @@
 # data
-The only way screens reach stored rows: the `Collection` and `DataStore` contract, the backend swap point, a shared row cache, and two backends.
+The only way screens reach stored rows: the `Collection` and `DataStore` contract, a shared row cache, and two backends.
 
 ## Files
 | File | Responsibility |
 | --- | --- |
 | `types.ts` | `Collection<T>`, `PhotoStore`, and `DataStore` (every collection one family owns). |
-| `index.ts` | `createStore(familyId)`: the swap point. Picks the backend by `VITE_BACKEND` and wraps it in `withCache`. |
+| `index.ts` | `createStore(familyId)`: a backend picked by `VITE_BACKEND`, wrapped in `withCache`. |
 | `cache.ts` (+ `cache.test.ts`) | `CachedCollection`, `withCache()`, `cacheOf()`, `preloadStore()`: one shared copy per collection, writes shown at once. |
 | `useCollection.ts` | `useCollectionState()` (`rows` and `loaded`) and `useCollection()` (rows only). |
 | `collection.contract.ts` | `runDataStoreContract(name, make, reset?)`: the nine cases every backend must pass. |
@@ -18,7 +18,7 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 | `supabase/joinCode.test.ts` | `rotate_join_code()` against the live project. |
 
 ## How it works
-- `createStore()` compares `import.meta.env.VITE_BACKEND` literally so the build drops the unused backend; unset means `local`, anything else throws (`index.ts`).
+- `createStore()` picks by `VITE_BACKEND` (unset means `local`, anything else throws), but only `../auth/demoSession.tsx` calls it; `../auth/supabaseSession.tsx` builds `withCache(createSupabaseStore(...))` itself (`index.ts`).
 - `CachedCollection` runs at most one read at a time, queues one more for changes that arrive mid-read, applies `update` and `remove` at once and undoes them if the backend refuses (`cache.ts`).
 - A collection nobody watches stays subscribed for `LINGER_MS` (30 s); `preload()` opens one before its screen mounts (`cache.ts`).
 - `loaded` is false until the first read, so a screen can tell "no rows" from "not read yet" (`useCollection.ts`).
