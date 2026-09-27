@@ -444,12 +444,22 @@ create table list_items (
 );
 
 -- The family's own shopping-list groups, beside Supermarket and General.
+-- Supermarket and General are not rows, but each gets one the first time it
+-- is moved, marked by builtin, only to hold its position.
 create table list_groups (
   id           uuid primary key default gen_random_uuid(),
   family_id    uuid        not null references families (id) on delete cascade,
   name         text        not null,
+  -- Order among all the sections, built-in ones included. Nullable: rows
+  -- without one stand where they always did (src/domain/kitchen/list.ts
+  -- orderGroups()), which also covers an app still on an older version.
+  position     double precision,
+  builtin      text        check (builtin is null or builtin in ('supermarket', 'general')),
   created_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now()
+  updated_at   timestamptz not null default now(),
+  -- One position row per built-in section; nulls are distinct, so the
+  -- family's own sections are not limited.
+  constraint list_groups_one_builtin unique (family_id, builtin)
 );
 
 create index recipes_family_id_idx      on recipes (family_id);

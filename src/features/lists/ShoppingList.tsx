@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { Check, ChevronDown, Ellipsis, Milk, Plus, ShoppingBag, X } from 'lucide-react';
+import { Check, ChevronDown, Ellipsis, GripVertical, Milk, Plus, ShoppingBag, X } from 'lucide-react';
 import { useSession } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
 import { readPreference, writePreference } from '../../data/local/localStore';
@@ -9,16 +10,20 @@ import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { Button, ButtonLink, EmptyState, IconButton, Sheet, cx } from '../../components/ui';
 import type { ListItem } from '../../domain/types';
 import {
-  BUILT_IN_GROUPS,
   GENERAL,
   SUPERMARKET,
+  groupDropPosition,
+  groupEndPosition,
   groupOf,
+  groupStepPosition,
   isGrocery,
   leftOffList,
+  orderGroups,
   recipesOnList,
 } from '../../domain/kitchen/list';
 import { pantryFit } from '../../domain/kitchen/fit';
-import { addOwnToList, moveToPantry, removeRecipeFromList } from '../larder/actions';
+import type { Box } from '../../hooks/pointerDrag';
+import { addOwnToList, moveToPantry, placeListGroup, removeRecipeFromList } from '../larder/actions';
 import { useKitchen } from '../larder/KitchenContext';
 import { groupBySection } from '../../domain/kitchen/sections';
 import { formatList, formatNumber } from '../../i18n';
@@ -32,6 +37,7 @@ import { AddItem, ItemRow } from './ListRows';
 import type { Group } from './ListRows';
 import s from './ShoppingList.module.css';
 import { useJustAdded } from './useJustAdded';
+import { useSectionDrag } from './useSectionDrag';
 
 /**
  * The family's shopping list, for everything, not only food. It is split by
@@ -63,10 +69,42 @@ export function ShoppingList(): JSX.Element {
   };
 
   const items = kitchen.listItems;
-  const groups: Group[] = [
-    ...BUILT_IN_GROUPS.map((group) => ({ id: group.id, name: groupName(t, group) })),
-    ...kitchen.listGroups.map((row) => ({ id: row.id, name: row.name, row })),
-  ];
+  // In the family's order. Only groups the family made keep their row, for renaming.
+  const slots = orderGroups(kitchen.listGroups);
+  const groups: Group[] = slots.map((slot) =>
+    slot.row === undefined || slot.row.builtin !== undefined
+      ? { id: slot.id, name: groupName(t, { id: slot.id, name: '' }) }
+      : { id: slot.id, name: slot.row.name, row: slot.row },
+  );
+
+  // Moving a section, by dragging its grip or by the grip's arrow keys.
+  const sectionsRef = useRef<HTMLDivElement>(null);
+  const moveGroup = (id: string, position: number | null): void => {
+    const slot = slots.find((candidate) => candidate.id === id);
+    if (slot !== undefined && position !== null) void placeListGroup(store, slot, position);
+  };
+  const { drag, startDrag } = useSectionDrag(sectionsRef, (id, beforeId) => moveGroup(id, groupDropPosition(slots, id, beforeId)));
+  // Moving a focused node in the DOM drops its focus. Just after an arrow-key
+  // move, put it back on the grip, unless focus has gone somewhere on purpose.
+  const refocus = useRef<{ id: string; until: number } | null>(null);
+  useEffect(() => {
+    const pending = refocus.current;
+    if (pending === null) return;
+    if (Date.now() > pending.until) {
+      refocus.current = null;
+      return;
+    }
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    const grip = sectionsRef.current?.querySelector<HTMLElement>(`[data-section-id="${pending.id}"] [data-grip]`);
+    if (lost && grip != null) grip.focus();
+  });
+  const stepKey = (event: KeyboardEvent, id: string): void => {
+    const direction = event.key === 'ArrowUp' ? 'up' : event.key === 'ArrowDown' ? 'down' : null;
+    if (direction === null) return;
+    event.preventDefault();
+    refocus.current = { id, until: Date.now() + 2000 };
+    moveGroup(id, groupStepPosition(slots, id, direction));
+  };
   // A section deleted on another device before its items moved: show them in General.
   const known = new Set(groups.map((group) => group.id));
   const placeOf = (item: ListItem): string => (known.has(groupOf(item)) ? groupOf(item) : GENERAL);
@@ -81,7 +119,7 @@ export function ShoppingList(): JSX.Element {
   );
   const leftOffCount = leftOff.pantry.length + leftOff.staples.length;
   const editing = items.find((item) => item.id === editingId);
-  const editingGroup = kitchen.listGroups.find((group) => group.id === groupSheet) ?? null;
+  const editingGroup = groups.find((group) => group.id === groupSheet)?.row ?? null;
 
   // A recipe just added to a folded section: open it so the new items show.
   const unfold = collapsed.filter((id) => items.some((item) => justAdded.has(item.id) && placeOf(item) === id));
@@ -178,7 +216,12 @@ export function ShoppingList(): JSX.Element {
     const bodyId = `list-group-body-${group.id}`;
     const open = isOpen(group.id);
     return (
-      <section key={group.id} className={s.card} aria-labelledby={titleId}>
+      <section
+        key={group.id}
+        className={cx(s.card, drag?.id === group.id && s.cardDragging)}
+        aria-labelledby={titleId}
+        data-section-id={group.id}
+      >
         <header className={s.groupHead}>
           <h2 id={titleId} className={s.cardTitle}>
             <button
@@ -192,9 +235,23 @@ export function ShoppingList(): JSX.Element {
               <bdi>{group.name}</bdi> {rows.length > 0 && <span className={s.groupCount}>{formatNumber(rows.length)}</span>}
             </button>
           </h2>
-          {group.row !== undefined && (
-            <IconButton label={t('lists.renameGroup', { name: group.name })} icon={Ellipsis} onClick={() => setGroupSheet(group.id)} />
-          )}
+          <span className={s.groupTools}>
+            {group.row !== undefined && (
+              <IconButton label={t('lists.renameGroup', { name: group.name })} icon={Ellipsis} onClick={() => setGroupSheet(group.id)} />
+            )}
+            {groups.length > 1 && (
+              <button
+                type="button"
+                className={s.grip}
+                aria-label={t('lists.moveSection', { name: group.name })}
+                data-grip
+                onPointerDown={(event) => startDrag(event, group.id)}
+                onKeyDown={(event) => stepKey(event, group.id)}
+              >
+                <GripVertical size={20} strokeWidth={2} aria-hidden />
+              </button>
+            )}
+          </span>
         </header>
         {open && (
           <div id={bodyId} className={s.groupBody}>
@@ -226,12 +283,28 @@ export function ShoppingList(): JSX.Element {
     </button>
   );
 
+  const dragged = drag === null ? undefined : groups.find((group) => group.id === drag.id);
+  const dragLayer = drag !== null && (
+    <div aria-hidden>
+      {dragged !== undefined && (
+        <div className={cx(s.dragGhost, s.cardTitle)} style={boxStyle(drag.ghost)}>
+          <bdi>{dragged.name}</bdi>
+          <GripVertical size={20} strokeWidth={2} className={s.dragGhostGrip} />
+        </div>
+      )}
+      {drag.line !== null && <div className={s.dragLine} style={boxStyle(drag.line)} />}
+    </div>
+  );
+
   const list = (
     <div className={s.groups}>
       {progress}
       {actionBar}
-      {sections}
+      <div ref={sectionsRef} className={s.groups}>
+        {sections}
+      </div>
       {newSection}
+      {dragLayer}
     </div>
   );
 
@@ -357,7 +430,7 @@ export function ShoppingList(): JSX.Element {
         {editing !== undefined && <ItemForm key={editing.id} item={editing} groups={groups} onDone={() => setEditingId(null)} />}
       </Sheet>
       <Sheet open={groupSheet !== null} onClose={() => setGroupSheet(null)} title={editingGroup === null ? t('lists.newSection') : t('lists.editSection')}>
-        {groupSheet !== null && <GroupForm key={groupSheet} group={editingGroup} items={items} onDone={() => setGroupSheet(null)} />}
+        {groupSheet !== null && <GroupForm key={groupSheet} group={editingGroup} items={items} endPosition={groupEndPosition(slots)} onDone={() => setGroupSheet(null)} />}
       </Sheet>
     </>
   );
@@ -438,4 +511,8 @@ export function ShoppingList(): JSX.Element {
       {sheets}
     </div>
   );
+}
+
+function boxStyle(box: Box): CSSProperties {
+  return { top: box.top, left: box.left, width: box.width, height: box.height };
 }

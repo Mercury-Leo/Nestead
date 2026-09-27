@@ -892,6 +892,7 @@
     "clearCount": "ניקוי המסומנים ({{count, number}})",
     "moveToPantry": "העברת {{count, number}} למזווה",
     "renameGroup": "שינוי שם או מחיקה של {{name}}",
+    "moveSection": "הזזת {{name}}: גררו, או השתמשו במקשי החצים למעלה ולמטה",
     "supermarketEmpty": "אפשר לפתוח מתכון ולגעת ב<strong>יצירת רשימת קניות</strong> — רק מה שחסר במזווה עובר לכאן, ממוין לפי מחלקות.",
     "newSection": "מחלקה חדשה",
     "editSection": "עריכת מחלקה",

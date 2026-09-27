@@ -1,9 +1,9 @@
 import type { DataStore } from '../../data/types';
-import type { AnyRecipe, ListItem, NewRow, PantryItem, Recipe } from '../../domain/types';
+import type { AnyRecipe, ListGroup, ListItem, NewRow, PantryItem, Recipe } from '../../domain/types';
 import { keyForText } from '../../domain/kitchen/fit';
 import type { PantryIndex } from '../../domain/kitchen/fit';
-import { planAddOwn, planAddRecipe, planRemoveGroup, planRemoveRecipe } from '../../domain/kitchen/list';
-import type { ListPlan } from '../../domain/kitchen/list';
+import { BUILT_IN_GROUPS, planAddOwn, planAddRecipe, planRemoveGroup, planRemoveRecipe } from '../../domain/kitchen/list';
+import type { GroupSlot, ListPlan } from '../../domain/kitchen/list';
 import { pantryRow } from '../../domain/kitchen/pantry';
 
 /**
@@ -51,6 +51,28 @@ export async function addOwnToList(store: DataStore, items: readonly ListItem[],
 export async function removeListGroup(store: DataStore, items: readonly ListItem[], groupId: string): Promise<void> {
   await applyPlan(store, planRemoveGroup(items, groupId));
   await store.listGroups.remove(groupId);
+}
+
+/**
+ * Moves a group to a new position. A built-in group has no row until it is
+ * first moved; if another device made that row a moment ago, the unique
+ * constraint turns this insert away and the row it made is moved instead.
+ */
+export async function placeListGroup(store: DataStore, slot: GroupSlot, position: number): Promise<void> {
+  if (slot.row !== undefined) {
+    await store.listGroups.update(slot.row.id, { position });
+    return;
+  }
+  const builtin = BUILT_IN_GROUPS.find((group) => group.id === slot.id);
+  if (builtin === undefined) return;
+  const id = builtin.id as NonNullable<ListGroup['builtin']>;
+  try {
+    await store.listGroups.create({ name: builtin.name, builtin: id, position });
+  } catch (error) {
+    const existing = (await store.listGroups.list()).find((row) => row.builtin === id);
+    if (existing === undefined) throw error;
+    await store.listGroups.update(existing.id, { position });
+  }
 }
 
 /** Keeps a web recipe in the library. Returns the new row. */

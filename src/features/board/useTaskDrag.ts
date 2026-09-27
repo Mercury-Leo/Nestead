@@ -1,7 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react';
 import type { Task } from '../../domain/types';
+import { edgeSpeed, swallowNextClick, type Box } from '../../hooks/pointerDrag';
 import { insertionBefore, type DropTarget } from './dragDrop';
+
+export type { Box };
 
 /**
  * Dragging task cards between and within columns.
@@ -24,16 +27,6 @@ const MOUSE_SLOP = 5;
 const LONG_PRESS_MS = 350;
 /** A finger that moves this far before then is scrolling. */
 const TOUCH_SLOP = 8;
-/** Near an edge the view scrolls, faster the closer the pointer gets. */
-const EDGE = 56;
-const MAX_SPEED = 16;
-
-export interface Box {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
 
 export interface ActiveDrag {
   task: Task;
@@ -308,28 +301,9 @@ function toBox(rect: DOMRect | undefined): Box | null {
   return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
 }
 
-/** Scroll speed for a pointer this far inside an edge; nothing outside the zone. */
-function edgeSpeed(distance: number): number {
-  if (distance >= EDGE || distance < 0) return 0;
-  return Math.ceil(((EDGE - distance) / EDGE) * MAX_SPEED);
-}
-
 function nudge(element: HTMLElement, dx: number, dy: number): boolean {
   if (dx === 0 && dy === 0) return false;
   const { scrollLeft, scrollTop } = element;
   element.scrollBy(dx, dy);
   return element.scrollLeft !== scrollLeft || element.scrollTop !== scrollTop;
-}
-
-/**
- * Releasing a drag over the card it started on would click it open. The click
- * comes straight after pointerup, so the flag only has to last one tick.
- */
-function swallowNextClick(): void {
-  const swallow = (click: MouseEvent): void => {
-    click.preventDefault();
-    click.stopPropagation();
-  };
-  window.addEventListener('click', swallow, { capture: true, once: true });
-  window.setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
 }

@@ -849,6 +849,7 @@
     "clearCount": "Clear {{count, number}} checked",
     "moveToPantry": "Move {{count, number}} to pantry",
     "renameGroup": "Rename or delete {{name}}",
+    "moveSection": "Move {{name}}: drag, or use the up and down arrow keys",
     "supermarketEmpty": "Open a recipe and tap <strong>Make shopping list</strong> — only what’s missing from your pantry comes across, sorted by aisle.",
     "newSection": "New section",
     "editSection": "Edit section",

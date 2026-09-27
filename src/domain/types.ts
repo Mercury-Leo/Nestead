@@ -259,9 +259,19 @@ export interface ListItem extends Base {
 }
 
 /**
- * A group on the shopping list that the family made, e.g. "Chemist". The two
- * built-in groups, Supermarket and General, are not rows.
+ * A group on the shopping list that the family made, e.g. "Chemist".
+ *
+ * The two built-in groups, Supermarket and General, are not groups the family
+ * made, but each gets a row the first time it is moved, only to hold its
+ * position. Those rows carry `builtin` and are never renamed or deleted.
  */
 export interface ListGroup extends Base {
   name: string;
+  /**
+   * Order among all the groups, built-in ones included. Absent on rows written
+   * before groups could be reordered: see orderGroups() in kitchen/list.ts.
+   */
+  position?: number;
+  /** Set on the row that holds Supermarket's or General's position. */
+  builtin?: 'supermarket' | 'general';
 }

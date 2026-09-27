@@ -13,8 +13,18 @@ import { removeListGroup } from '../larder/actions';
 import { groupName } from '../larder/labels';
 import s from './ShoppingList.module.css';
 
-/** A new section, or renaming or deleting one the family made. */
-export function GroupForm({ group, items, onDone }: { group: ListGroup | null; items: readonly ListItem[]; onDone: () => void }): JSX.Element {
+/** A new section, or renaming or deleting one the family made. A new one goes last, at endPosition. */
+export function GroupForm({
+  group,
+  items,
+  endPosition,
+  onDone,
+}: {
+  group: ListGroup | null;
+  items: readonly ListItem[];
+  endPosition: number;
+  onDone: () => void;
+}): JSX.Element {
   const { t } = useTranslation();
   const { store } = useSession();
   const [name, setName] = useState(group?.name ?? '');
@@ -44,7 +54,7 @@ export function GroupForm({ group, items, onDone }: { group: ListGroup | null; i
     event.preventDefault();
     const trimmed = name.trim();
     if (trimmed === '') return;
-    void run(() => (group === null ? store.listGroups.create({ name: trimmed }) : store.listGroups.update(group.id, { name: trimmed })));
+    void run(() => (group === null ? store.listGroups.create({ name: trimmed, position: endPosition }) : store.listGroups.update(group.id, { name: trimmed })));
   };
 
   return (

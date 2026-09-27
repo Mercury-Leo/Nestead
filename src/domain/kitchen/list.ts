@@ -1,4 +1,5 @@
-import type { AnyRecipe, IngredientLine, ListItem, ListPart, NewRow, StoreSection, Unit } from '../types';
+import { POSITION_STEP, positionBetween } from '../position';
+import type { AnyRecipe, IngredientLine, ListGroup, ListItem, ListPart, NewRow, StoreSection, Unit } from '../types';
 import { catalogFor } from './calories';
 import { catalogItem } from './catalog';
 import { lineKey, lineStatus } from './fit';
@@ -30,6 +31,67 @@ export const BUILT_IN_GROUPS: readonly { id: string; name: string }[] = [
 
 export function groupOf(item: Pick<ListItem, 'groupId'>): string {
   return item.groupId ?? SUPERMARKET;
+}
+
+/** One group in the order the family arranged them. */
+export interface GroupSlot {
+  /** 'supermarket', 'general' or a ListGroup id. */
+  id: string;
+  position: number;
+  /** The row behind it: the family's group, or the one holding a built-in's position. */
+  row?: ListGroup;
+}
+
+/**
+ * Every group, built-in ones included, in the family's order.
+ *
+ * Rows without a position (from before groups could be reordered, or a group
+ * that has never been moved on the local backend) stand where they always
+ * did: Supermarket at 1000, General at 2000, then the family's groups in the
+ * order they were made, 3000 onwards. The migration that added positions
+ * wrote the same numbers, so both agree.
+ */
+export function orderGroups(rows: readonly ListGroup[]): GroupSlot[] {
+  const made = [...rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+  const slots: GroupSlot[] = [
+    ...BUILT_IN_GROUPS.map((group, index) => {
+      const row = made.find((candidate) => candidate.builtin === group.id);
+      return { id: group.id, position: row?.position ?? POSITION_STEP * (index + 1), row };
+    }),
+    ...made
+      .filter((row) => row.builtin === undefined)
+      .map((row, index) => ({ id: row.id, position: row.position ?? POSITION_STEP * (index + 3), row })),
+  ];
+  // Stable, so equal positions keep the order above on every device.
+  return slots.sort((a, b) => a.position - b.position);
+}
+
+/**
+ * The position for a group moved to sit directly above `beforeId`, or last.
+ * Null when that leaves it where it is, so a group put back writes nothing.
+ */
+export function groupDropPosition(slots: readonly GroupSlot[], id: string, beforeId?: string): number | null {
+  const from = slots.findIndex((slot) => slot.id === id);
+  const rest = slots.filter((slot) => slot.id !== id);
+  const before = beforeId === undefined ? -1 : rest.findIndex((slot) => slot.id === beforeId);
+  const to = before === -1 ? rest.length : before;
+  if (from === -1 || from === to) return null;
+  return positionBetween(rest[to - 1]?.position, rest[to]?.position);
+}
+
+/**
+ * The position for a group moved one step up or down, or null at either end.
+ */
+export function groupStepPosition(slots: readonly GroupSlot[], id: string, direction: 'up' | 'down'): number | null {
+  const index = slots.findIndex((slot) => slot.id === id);
+  if (index === -1) return null;
+  if (direction === 'up') return index === 0 ? null : groupDropPosition(slots, id, slots[index - 1]?.id);
+  return index === slots.length - 1 ? null : groupDropPosition(slots, id, slots[index + 2]?.id);
+}
+
+/** A position after every group, for a new one. */
+export function groupEndPosition(slots: readonly GroupSlot[]): number {
+  return positionBetween(slots[slots.length - 1]?.position);
 }
 
 /**
