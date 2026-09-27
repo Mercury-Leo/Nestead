@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
 import { useIsNarrow } from '../../hooks/useIsNarrow';
@@ -6,8 +8,10 @@ import { readPreference, writePreference } from '../../data/local/localStore';
 import { useCollection } from '../../data/useCollection';
 import { comparePosition } from '../../domain/position';
 import type { Task } from '../../domain/types';
-import { endPosition, reviveRecurring } from './actions';
+import { endPosition, placeTask, reviveRecurring } from './actions';
 import { Column } from './Column';
+import { dropPosition, type DropTarget } from './dragDrop';
+import { TaskDragContext, useTaskDrag, type Box } from './useTaskDrag';
 import {
   NO_FILTER,
   UNASSIGNED,
@@ -88,6 +92,21 @@ export function Board(): JSX.Element {
     });
   };
 
+  const dropTask = async (task: Task, target: DropTarget): Promise<void> => {
+    const column = ordered.find((row) => row.id === target.columnId);
+    if (column === undefined) return;
+    const position = dropPosition(tasksInColumn(column.id), task, target.beforeId);
+    if (position === null) return;
+    await placeTask(store, task, column, position);
+  };
+
+  const boardRef = useRef<HTMLDivElement>(null);
+  const { drag, startDrag } = useTaskDrag(boardRef, (task, target) => void dropTask(task, target));
+  // Picked up and held over its own place, the card would not move: no line.
+  const dropMoves =
+    drag?.target != null &&
+    dropPosition(tasksInColumn(drag.target.columnId), drag.task, drag.target.beforeId) !== null;
+
   const addColumn = async (): Promise<void> => {
     const name = newColumn.trim();
     if (name === '') return;
@@ -100,7 +119,7 @@ export function Board(): JSX.Element {
   };
 
   return (
-    <>
+    <TaskDragContext.Provider value={{ startDrag, draggingId: drag?.task.id }}>
       <div className="board-filter" role="search">
         <input
           type="search"
@@ -143,21 +162,22 @@ export function Board(): JSX.Element {
         )}
       </div>
 
-      <div className={`board ${narrow ? 'board-stacked' : ''}`}>
+      <div ref={boardRef} className={`board ${narrow ? 'board-stacked' : ''}`}>
         {ordered.map((column) => (
-          <Column
-            key={column.id}
-            column={column}
-            columns={ordered}
-            tasks={tasksInColumn(column.id)}
-            visibleTasks={visibleInColumn(column.id)}
-            filtering={filtering}
-            tasksInColumn={tasksInColumn}
-            collapsible={narrow}
-            // A search should show its hits, so folded columns open while filtering.
-            collapsed={!filtering && collapsed.has(column.id)}
-            onToggleCollapsed={() => toggle(column.id)}
-          />
+          // display: contents, so the columns still lay out as children of the board.
+          <div key={column.id} className="drop-column" data-drop-column={column.id}>
+            <Column
+              column={column}
+              columns={ordered}
+              tasks={tasksInColumn(column.id)}
+              visibleTasks={visibleInColumn(column.id)}
+              filtering={filtering}
+              collapsible={narrow}
+              // A search should show its hits, so folded columns open while filtering.
+              collapsed={!filtering && collapsed.has(column.id)}
+              onToggleCollapsed={() => toggle(column.id)}
+            />
+          </div>
         ))}
 
         <form
@@ -179,6 +199,30 @@ export function Board(): JSX.Element {
           </button>
         </form>
       </div>
-    </>
+
+      {drag !== null &&
+        // On <body>, so nothing on the page can clip or offset it.
+        createPortal(
+          <div className="drag-layer" aria-hidden="true">
+            {drag.column !== null && <div className="drag-column" style={place(drag.column)} />}
+            {dropMoves && drag.line !== null && <div className="drag-line" style={place(drag.line)} />}
+            <div className="card drag-ghost" style={place(drag.ghost)}>
+              <div className="card-head">
+                <span className="card-toggle">
+                  <span className="card-icon">{drag.task.icon ?? '•'}</span>
+                  <span className="card-title" dir="auto">
+                    {drag.task.title}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </TaskDragContext.Provider>
   );
+}
+
+function place(box: Box): CSSProperties {
+  return { top: box.top, left: box.left, width: box.width, height: box.height };
 }

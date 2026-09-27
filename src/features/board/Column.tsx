@@ -4,20 +4,19 @@ import { useSession } from '../../auth/session';
 import { useDirection } from '../../hooks/useDirection';
 import { formatNumber } from '../../i18n';
 import type { BoardColumn, Task } from '../../domain/types';
-import { endPosition, moveColumn } from './actions';
-import { DEFAULT_TASK_ICON } from './icons';
+import { moveColumn } from './actions';
 import { TaskCard } from './TaskCard';
+import { TaskComposer } from './TaskComposer';
 
 interface ColumnProps {
   column: BoardColumn;
-  /** Every column, already sorted, for the move menu and the arrows. */
+  /** Every column, already sorted, for the arrows. */
   columns: BoardColumn[];
   /** This column's tasks, already sorted. */
   tasks: Task[];
   /** The subset of tasks that pass the board's search and assignee filter. */
   visibleTasks: Task[];
   filtering: boolean;
-  tasksInColumn: (columnId: string) => Task[];
   /** Narrow screens stack columns and let them fold away. */
   collapsible: boolean;
   collapsed: boolean;
@@ -30,19 +29,14 @@ export function Column({
   tasks,
   visibleTasks,
   filtering,
-  tasksInColumn,
   collapsible,
   collapsed,
   onToggleCollapsed,
 }: ColumnProps): JSX.Element {
   const { t } = useTranslation();
-  const { store, me } = useSession();
+  const { store } = useSession();
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(column.name);
-  const [title, setTitle] = useState('');
-  // The task this person just added here, so its card opens ready to fill in.
-  // Local state, so it opens only for the creator, not for everyone watching.
-  const [createdId, setCreatedId] = useState<string>();
 
   const index = columns.findIndex((row) => row.id === column.id);
   const folded = collapsible && collapsed;
@@ -52,21 +46,6 @@ export function Column({
   const toRight = { label: t('board.column.moveRight', { name: column.name }), arrow: '▶' };
   const earlier = rtl ? toRight : toLeft;
   const later = rtl ? toLeft : toRight;
-
-  const addTask = async (): Promise<void> => {
-    const trimmed = title.trim();
-    if (trimmed === '') return;
-    setTitle('');
-    const created = await store.tasks.create({
-      title: trimmed,
-      icon: DEFAULT_TASK_ICON,
-      columnId: column.id,
-      position: endPosition(tasks),
-      done: column.isDone,
-      createdBy: me.id,
-    });
-    setCreatedId(created.id);
-  };
 
   const rename = async (): Promise<void> => {
     const trimmed = name.trim();
@@ -158,36 +137,11 @@ export function Column({
         <>
           <ul className="cards">
             {visibleTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                columns={columns}
-                // Up/down steps past the next visible card, not a hidden one.
-                siblings={visibleTasks}
-                tasksInColumn={tasksInColumn}
-                justCreated={task.id === createdId}
-              />
+              <TaskCard key={task.id} task={task} />
             ))}
           </ul>
 
-          <form
-            className="composer"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void addTask();
-            }}
-          >
-            <input
-              dir="auto"
-              value={title}
-              placeholder={t('board.column.addTask')}
-              aria-label={t('board.column.addTaskTo', { name: column.name })}
-              onChange={(event) => setTitle(event.target.value)}
-            />
-            <button type="submit" disabled={title.trim() === ''}>
-              +
-            </button>
-          </form>
+          <TaskComposer column={column} tasks={tasks} />
         </>
       )}
     </section>

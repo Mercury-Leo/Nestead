@@ -133,21 +133,24 @@
       "addTask": "Add a task",
       "addTaskTo": "Add a task to {{name}}"
     },
+    "composer": {
+      "more": "More options",
+      "fewer": "Fewer options",
+      "add": "Add task"
+    },
     "card": {
       "repeats": "Repeats",
       "overdue": "Overdue",
       "description": "Description",
       "descriptionPlaceholder": "Add a description…",
-      "column": "Column",
       "assigned": "Assigned",
       "nobody": "Nobody",
-      "due": "Due {{date}}",
+      "dueDate": "Due date",
+      "repeatNoDate": "With no due date, it repeats from the day it’s done.",
       "comesBack": "Comes back {{date}}",
       "icon": "Icon",
       "confirmDelete": "Confirm delete",
-      "deleteQuestion": "Delete this task?",
-      "up": "↑ Up",
-      "down": "↓ Down"
+      "deleteQuestion": "Delete this task?"
     },
     "repeat": {
       "never": "Never",

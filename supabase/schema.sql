@@ -106,16 +106,23 @@ create table tasks (
   assignee_id uuid        references members (id) on delete set null,
   -- When the task next comes round, or just a deadline for a one-off.
   due_date    date,
-  -- Days between occurrences; null means it does not repeat. A repeating task
-  -- is one row that comes back, not a new row per occurrence, so there is no
-  -- way for two clients to create the same chore twice.
-  recur_every_days integer check (recur_every_days is null or recur_every_days > 0),
+  -- Days or calendar months between occurrences; both null means it does not
+  -- repeat. A repeating task is one row that comes back, not a new row per
+  -- occurrence, so there is no way for two clients to create the same chore
+  -- twice.
+  recur_every_days   integer check (recur_every_days is null or recur_every_days > 0),
+  recur_every_months integer check (recur_every_months is null or recur_every_months > 0),
+  -- The date the schedule counts from: monthly from 5 July is the 5th of
+  -- every month. Apart from due_date so the 31st survives February.
+  recur_from  date,
   done        boolean     not null default false,
   -- Attribution is nullable on purpose: it must not block deleting a member.
   -- NOT NULL plus ON DELETE SET NULL contradict, and the delete fails.
   created_by  uuid        references members (id) on delete set null,
   created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  updated_at  timestamptz not null default now(),
+  constraint tasks_one_recur_unit
+    check (recur_every_days is null or recur_every_months is null)
 );
 
 create index board_columns_family_id_idx on board_columns (family_id);

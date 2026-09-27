@@ -30,7 +30,7 @@ export interface BoardColumn extends Base, Positioned {
   name: string;
   /**
    * Tasks in this column count as complete. Kept in sync with Task.done by
-   * moveTaskToColumn(), which is the only thing that writes either field.
+   * placeTask(), which is the only thing that writes either field on a move.
    */
   isDone: boolean;
 }
@@ -51,12 +51,20 @@ export interface Task extends Base, Positioned {
    */
   dueDate?: string;
   /**
-   * Days between occurrences. Absent means the task does not repeat.
-   * Completing a repeating task sets dueDate to this many days from now, and
-   * it becomes outstanding again when that date arrives. The same row recurs,
-   * so a chore can never be duplicated.
+   * Days between occurrences. At most one of this and recurEveryMonths is set;
+   * neither means the task does not repeat. Completing a repeating task moves
+   * dueDate to the next date on its schedule, and it becomes outstanding again
+   * when that date arrives. The same row recurs, so a chore can never be
+   * duplicated. See src/features/board/recurrence.ts.
    */
   recurEveryDays?: number;
+  /** Calendar months between occurrences: the 5th stays the 5th. */
+  recurEveryMonths?: number;
+  /**
+   * ISO date the schedule counts from: the due date the family set. Kept apart
+   * from dueDate so a chore on the 31st returns to the 31st after February.
+   */
+  recurFrom?: string;
   /** Mirrors the column's isDone. Never written on its own. */
   done: boolean;
   /** Member id. Cleared when that member is deleted. */

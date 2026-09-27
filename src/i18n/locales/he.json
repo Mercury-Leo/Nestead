@@ -137,21 +137,24 @@
       "addTask": "הוספת משימה",
       "addTaskTo": "הוספת משימה לעמודה {{name}}"
     },
+    "composer": {
+      "more": "אפשרויות נוספות",
+      "fewer": "פחות אפשרויות",
+      "add": "הוספת משימה"
+    },
     "card": {
       "repeats": "חוזרת",
       "overdue": "באיחור",
       "description": "תיאור",
       "descriptionPlaceholder": "הוספת תיאור…",
-      "column": "עמודה",
       "assigned": "שיוך",
       "nobody": "אף אחד",
-      "due": "עד {{date}}",
+      "dueDate": "תאריך יעד",
+      "repeatNoDate": "בלי תאריך יעד, היא חוזרת מהיום שבו בוצעה.",
       "comesBack": "חוזרת ב-{{date}}",
       "icon": "סמל",
       "confirmDelete": "אישור מחיקה",
-      "deleteQuestion": "למחוק את המשימה?",
-      "up": "↑ למעלה",
-      "down": "↓ למטה"
+      "deleteQuestion": "למחוק את המשימה?"
     },
     "repeat": {
       "never": "לא חוזרת",

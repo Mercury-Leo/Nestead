@@ -143,11 +143,18 @@
   text-decoration: line-through;
 }
 
+/* The toggle that opens the card, then the assignee circle beside it. */
 .card-head {
   display: flex;
+  align-items: center;
+}
+
+.card-toggle {
+  display: flex;
+  flex: 1;
   gap: 0.5rem;
   align-items: center;
-  width: 100%;
+  min-width: 0;
   padding: 0.5rem;
   border: 0;
   background: none;
@@ -169,14 +176,43 @@
 }
 
 .card-who {
+  position: relative;
   flex: 0 0 auto;
+  box-sizing: border-box;
   width: 1.3rem;
   height: 1.3rem;
+  margin-inline-end: 0.5rem;
   border-radius: 999px;
   color: #fff;
   font-size: 0.7rem;
   line-height: 1.3rem;
   text-align: center;
+  cursor: pointer;
+}
+
+/* Nobody yet: a hollow circle to click and pick someone. */
+.card-who-empty {
+  border: 1.5px solid var(--muted);
+  opacity: 0.6;
+}
+
+.card-who-empty:hover {
+  opacity: 1;
+}
+
+.card-who:has(select:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The select covers the circle, invisible, so the circle is what gets clicked. */
+.card-who select {
+  position: absolute;
+  inset: -0.35rem;
+  width: calc(100% + 0.7rem);
+  height: calc(100% + 0.7rem);
+  opacity: 0;
+  cursor: pointer;
 }
 
 .card-options {
@@ -289,10 +325,34 @@ button.danger:hover:not(:disabled) {
 
 .composer {
   display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.composer-row {
+  display: flex;
   gap: 0.3rem;
 }
 
-.composer input,
+.composer-more-toggle {
+  display: inline-flex;
+  align-items: center;
+}
+
+.composer-more-toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.composer-more-toggle svg.is-open {
+  transform: rotate(180deg);
+}
+
+/* Shares the open card's look, but sits flush in the column. */
+.composer .composer-more {
+  padding: 0.5rem 0 0;
+}
+
+.composer-row input,
 .column-new input {
   flex: 1;
   min-width: 0;
@@ -305,7 +365,7 @@ button.danger:hover:not(:disabled) {
   font-size: 0.85rem;
 }
 
-.composer button,
+.composer-row button,
 .column-new button {
   padding: 0.35rem 0.6rem;
   border: 1px solid var(--border);
@@ -317,7 +377,7 @@ button.danger:hover:not(:disabled) {
   cursor: pointer;
 }
 
-.composer button:disabled,
+.composer-row button:disabled,
 .column-new button:disabled {
   opacity: 0.35;
   cursor: default;
@@ -378,8 +438,15 @@ button.danger:hover:not(:disabled) {
     padding: 0.35rem 0.5rem;
   }
 
-  .card-head {
+  .card-toggle {
     padding: 0.65rem 0.5rem;
+  }
+
+  /* A bigger invisible target for a finger than the circle itself. */
+  .card-who select {
+    inset: -0.6rem;
+    width: calc(100% + 1.2rem);
+    height: calc(100% + 1.2rem);
   }
 }
 
@@ -438,14 +505,30 @@ button.danger:hover:not(:disabled) {
   vertical-align: 0.05em;
 }
 
-.card-due {
+.card-date {
+  margin-inline-start: 0.4rem;
+  color: var(--muted);
+  font-size: 0.75em;
+  white-space: nowrap;
+}
+
+.card-due,
+.card-hint {
   margin: 0;
   color: var(--muted);
   font-size: 0.75rem;
 }
 
-.card-due.is-overdue {
-  color: var(--danger);
+.due-date-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.2rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
 }
 
 /* --------------------------------------------------------- board filter -- */
@@ -498,4 +581,66 @@ button.danger:hover:not(:disabled) {
 /* .link carries a top margin for forms; here it has to sit on the row. */
 .board-filter .link {
   margin-top: 0;
+}
+
+/* ------------------------------------------------------- drag and drop -- */
+
+/* The wrapper that marks a column as a drop target has no box of its own. */
+.drop-column {
+  display: contents;
+}
+
+/*
+ * A long press lifts a card on a phone, so it must not select the title or
+ * open the system menu. Scrolling still works: the drag code only blocks it
+ * once a card is lifted.
+ */
+.card-head {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.card-dragging {
+  opacity: 0.35;
+}
+
+.is-dragging-task,
+.is-dragging-task * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.drag-layer > * {
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.drag-ghost {
+  overflow: hidden;
+  box-shadow: var(--shadow-drop);
+  transform: rotate(-1.5deg);
+}
+
+[dir='rtl'] .drag-ghost {
+  transform: rotate(1.5deg);
+}
+
+.drag-column {
+  border: 2px dashed var(--accent-soft);
+  border-radius: 0.75rem;
+}
+
+.drag-line {
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drag-ghost,
+  [dir='rtl'] .drag-ghost {
+    transform: none;
+  }
 }

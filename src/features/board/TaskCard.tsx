@@ -1,52 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
-import type { BoardColumn, Task } from '../../domain/types';
+import type { Task } from '../../domain/types';
 import { formatDate } from '../../i18n';
-import { moveTaskToColumn, reorderTask } from './actions';
 import { TASK_ICONS } from './icons';
-import { REPEAT_OPTIONS, isOverdue } from './recurrence';
+import { DueDateInput } from './DueDateInput';
+import { REPEAT_OPTIONS, isOverdue, repeatOf, repeats, schedulePatch } from './recurrence';
+import { useTaskDragContext } from './useTaskDrag';
 
-interface TaskCardProps {
-  task: Task;
-  columns: BoardColumn[];
-  /** Tasks in this task's own column, for up/down moves. */
-  siblings: Task[];
-  /** Tasks in any column, so a move can append to the destination. */
-  tasksInColumn: (columnId: string) => Task[];
-  /** This person just added the task, so it starts open. */
-  justCreated?: boolean;
-}
-
-export function TaskCard({
-  task,
-  columns,
-  siblings,
-  tasksInColumn,
-  justCreated = false,
-}: TaskCardProps): JSX.Element {
+/** Moving a task, within its column or to another, is done by dragging it. */
+export function TaskCard({ task }: { task: Task }): JSX.Element {
   const { t } = useTranslation();
   const { store, members } = useSession();
-  const [open, setOpen] = useState(justCreated);
-
-  const descriptionRef = useRef<HTMLTextAreaElement>(null);
-  // Focus once, on creation. Reopening the card later should not steal focus.
-  const focusPending = useRef(false);
-
-  // The card can mount before create() resolves, so react to the flag arriving
-  // rather than reading it only once.
-  useEffect(() => {
-    if (!justCreated) return;
-    focusPending.current = true;
-    setOpen(true);
-  }, [justCreated]);
-
-  // Separate from the effect above: the textarea exists only once open renders.
-  useEffect(() => {
-    if (!open || !focusPending.current) return;
-    focusPending.current = false;
-    descriptionRef.current?.focus();
-  }, [open]);
+  const drag = useTaskDragContext();
+  const [open, setOpen] = useState(false);
   // Edited locally and saved on blur, so typing does not write every keystroke.
   const [description, setDescription] = useState(task.description ?? '');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -58,55 +25,81 @@ export function TaskCard({
   };
 
   const assignee = members.find((member) => member.id === task.assigneeId);
-  const index = siblings.findIndex((row) => row.id === task.id);
   const overdue = isOverdue(task, new Date());
-  const repeat = REPEAT_OPTIONS.find((option) => option.days === task.recurEveryDays);
+  const repeating = repeats(task);
+  const repeat = repeatOf(task);
 
-  const moveTo = async (columnId: string): Promise<void> => {
-    const column = columns.find((row) => row.id === columnId);
-    if (column === undefined) return;
-    await moveTaskToColumn(store, task, column, tasksInColumn(columnId));
+  const setDueDate = (dueDate: string | undefined): void => {
+    // A new due date is a new day for the schedule to count from.
+    void store.tasks.update(task.id, { dueDate, recurFrom: repeating ? dueDate : undefined });
   };
 
   return (
-    <li className={`card ${task.done ? 'card-done' : ''}`}>
-      <button
-        type="button"
-        className="card-head"
-        aria-expanded={open}
-        onClick={() => {
-          if (!open) setDescription(task.description ?? '');
-          setConfirmingDelete(false);
-          setOpen(!open);
-        }}
-      >
-        <span className="card-icon" aria-hidden="true">
-          {task.icon ?? '•'}
-        </span>
-        <span className="card-title" dir="auto">
-          {task.title}
-          {task.recurEveryDays !== undefined && (
-            <span className="card-repeat" title={repeat !== undefined ? t(`board.repeat.${repeat.key}`) : t('board.card.repeats')}>
-              ⟳
-            </span>
-          )}
-          {overdue && <span className="card-overdue">{t('board.card.overdue')}</span>}
-        </span>
-        {assignee !== undefined && (
-          <span
-            className="card-who"
-            style={{ background: assignee.color }}
-            title={assignee.name}
-          >
-            {assignee.name.slice(0, 1)}
+    <li
+      className={`card ${task.done ? 'card-done' : ''} ${drag.draggingId === task.id ? 'card-dragging' : ''}`}
+      data-task-id={task.id}
+    >
+      <div className="card-head">
+        <button
+          type="button"
+          className="card-toggle"
+          aria-expanded={open}
+          onPointerDown={(event) => drag.startDrag(event, task)}
+          onClick={() => {
+            if (!open) setDescription(task.description ?? '');
+            setConfirmingDelete(false);
+            setOpen(!open);
+          }}
+        >
+          <span className="card-icon" aria-hidden="true">
+            {task.icon ?? '•'}
           </span>
-        )}
-      </button>
+          <span className="card-title" dir="auto">
+            {task.title}
+            {repeating && (
+              <span className="card-repeat" title={repeat !== undefined ? t(`board.repeat.${repeat.key}`) : t('board.card.repeats')}>
+                ⟳
+              </span>
+            )}
+            {overdue && <span className="card-overdue">{t('board.card.overdue')}</span>}
+            {!overdue && !task.done && task.dueDate !== undefined && (
+              <span className="card-date">{formatDate(task.dueDate, { day: 'numeric', month: 'short' })}</span>
+            )}
+          </span>
+        </button>
+
+        {/* A native select laid over the avatar: clicking the circle opens the
+            member list, and keyboards, screen readers and phones get their own
+            picker for free. Outside the toggle, since a control can't sit in a
+            button. */}
+        <span
+          className={`card-who ${assignee === undefined ? 'card-who-empty' : ''}`}
+          style={assignee !== undefined ? { background: assignee.color } : undefined}
+          title={assignee?.name ?? t('board.card.nobody')}
+        >
+          <span aria-hidden="true">{assignee?.name.slice(0, 1)}</span>
+          <select
+            aria-label={t('board.card.assigned')}
+            value={task.assigneeId ?? ''}
+            onChange={(event) =>
+              void store.tasks.update(task.id, {
+                assigneeId: event.target.value === '' ? undefined : event.target.value,
+              })
+            }
+          >
+            <option value="">{t('board.card.nobody')}</option>
+            {members.map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.name}
+              </option>
+            ))}
+          </select>
+        </span>
+      </div>
 
       {open && (
         <div className="card-options">
           <textarea
-            ref={descriptionRef}
             className="card-description"
             aria-label={t('board.card.description')}
             placeholder={t('board.card.descriptionPlaceholder')}
@@ -118,56 +111,30 @@ export function TaskCard({
           />
 
           <label>
-            {t('board.card.column')}
-            <select value={task.columnId} onChange={(event) => void moveTo(event.target.value)}>
-              {columns.map((column) => (
-                <option key={column.id} value={column.id}>
-                  {column.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            {t('board.card.assigned')}
-            <select
-              value={task.assigneeId ?? ''}
-              onChange={(event) =>
-                void store.tasks.update(task.id, {
-                  assigneeId: event.target.value === '' ? undefined : event.target.value,
-                })
-              }
-            >
-              <option value="">{t('board.card.nobody')}</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </select>
+            {t('board.card.dueDate')}
+            <DueDateInput value={task.dueDate} onChange={setDueDate} />
           </label>
 
           <label>
             {t('board.card.repeats')}
             <select
-              value={task.recurEveryDays ?? ''}
+              value={repeat?.key ?? 'never'}
               onChange={(event) => {
-                const days = event.target.value === '' ? undefined : Number(event.target.value);
-                void store.tasks.update(task.id, { recurEveryDays: days });
+                const option = REPEAT_OPTIONS.find((row) => row.key === event.target.value);
+                void store.tasks.update(task.id, schedulePatch(option, task.dueDate));
               }}
             >
               {REPEAT_OPTIONS.map((option) => (
-                <option key={option.key} value={option.days ?? ''}>
+                <option key={option.key} value={option.key}>
                   {t(`board.repeat.${option.key}`)}
                 </option>
               ))}
             </select>
           </label>
+          {repeating && task.dueDate === undefined && <p className="card-hint">{t('board.card.repeatNoDate')}</p>}
 
-          {task.dueDate !== undefined && (
-            <p className={`card-due ${overdue ? 'is-overdue' : ''}`}>
-              {t(task.done ? 'board.card.comesBack' : 'board.card.due', { date: formatDate(task.dueDate) })}
-            </p>
+          {task.done && repeating && task.dueDate !== undefined && (
+            <p className="card-due">{t('board.card.comesBack', { date: formatDate(task.dueDate) })}</p>
           )}
 
           <div className="icon-picker" role="group" aria-label={t('board.card.icon')}>
@@ -200,20 +167,6 @@ export function TaskCard({
             </div>
           ) : (
             <div className="card-actions">
-              <button
-                type="button"
-                disabled={index <= 0}
-                onClick={() => void reorderTask(store, task, siblings, 'up')}
-              >
-                {t('board.card.up')}
-              </button>
-              <button
-                type="button"
-                disabled={index >= siblings.length - 1}
-                onClick={() => void reorderTask(store, task, siblings, 'down')}
-              >
-                {t('board.card.down')}
-              </button>
               <button type="button" className="danger" onClick={() => setConfirmingDelete(true)}>
                 {t('common.delete')}
               </button>

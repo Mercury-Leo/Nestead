@@ -1,7 +1,7 @@
 import type { DataStore } from '../../data/types';
 import { POSITION_STEP, comparePosition, positionBetween } from '../../domain/position';
 import type { BoardColumn, NewRow, Task } from '../../domain/types';
-import { isDueAgain, nextDueDate, reviveColumn } from './recurrence';
+import { isDueAgain, nextOccurrence, reviveColumn } from './recurrence';
 
 /** Which way a row moves within its list. */
 export type Direction = 'up' | 'down';
@@ -12,32 +12,34 @@ export function endPosition(rows: ReadonlyArray<{ position: number }>): number {
 }
 
 /**
- * Move a task to another column, appending it at the bottom.
+ * Put a task at a position in a column, its own or another. Dragging a card
+ * comes through here.
  *
- * This is the only place that writes Task.done: it is always taken from the
- * destination column's isDone, so the two can never drift apart.
+ * This is the only place that writes Task.done on a move: it is always taken
+ * from the destination column's isDone, so the two can never drift apart.
  */
-export async function moveTaskToColumn(
+export async function placeTask(
   store: DataStore,
   task: Task,
   column: BoardColumn,
-  tasksInColumn: readonly Task[],
+  position: number,
   now: Date = new Date(),
 ): Promise<void> {
-  if (task.columnId === column.id) return;
+  const patch: Partial<NewRow<Task>> = { position };
+  if (task.columnId !== column.id) {
+    patch.columnId = column.id;
+    patch.done = column.isDone;
+  }
 
-  const patch: Partial<NewRow<Task>> = {
-    columnId: column.id,
-    position: endPosition(tasksInColumn),
-    done: column.isDone,
-  };
-
-  // Finishing a repeating chore is what schedules the next one. Measured from
-  // now rather than from the old due date, so doing it late does not make it
+  // Finishing a repeating chore is what schedules the next one: the next date
+  // on its schedule that is still ahead, so doing it late does not make it
   // come straight back overdue.
   if (column.isDone && !task.done) {
-    const due = nextDueDate(task, now);
-    if (due !== undefined) patch.dueDate = due;
+    const next = nextOccurrence(task, now);
+    if (next !== undefined) {
+      patch.dueDate = next.dueDate;
+      patch.recurFrom = next.recurFrom;
+    }
   }
 
   await store.tasks.update(task.id, patch);
@@ -83,20 +85,6 @@ function positionPastNeighbour<T extends { position: number }>(
   }
   if (index >= sorted.length - 1) return null;
   return positionBetween(sorted[index + 1]?.position, sorted[index + 2]?.position);
-}
-
-/** Move a task up or down inside its own column. */
-export async function reorderTask(
-  store: DataStore,
-  task: Task,
-  siblings: readonly Task[],
-  direction: Direction,
-): Promise<void> {
-  const sorted = [...siblings].sort(comparePosition);
-  const index = sorted.findIndex((row) => row.id === task.id);
-  const position = positionPastNeighbour(sorted, index, direction);
-  if (position === null) return;
-  await store.tasks.update(task.id, { position });
 }
 
 /** Move a column left or right. */
