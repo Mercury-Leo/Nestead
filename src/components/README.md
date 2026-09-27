@@ -1,0 +1,38 @@
+# components
+App-wide UI: the generic kit in `ui/`, the light and dark theme in `theme/`, and three shell pieces.
+
+## Files
+| File | Responsibility |
+| --- | --- |
+| `Brand.tsx` | `BrandMark` jar SVG and the "Nestead" link home. |
+| `ErrorBoundary.tsx` | Catches a screen that failed to render and offers Reload; `resetKey` clears it. |
+| `PageHeader.tsx` (+ `PageHeader.module.css`) | Serif page title, subtitle and actions. |
+| `theme/theme.tsx` (+ `theme.test.ts`) | `ThemeProvider`, `useTheme()`, `readThemeChoice()`, `resolveTheme()`. |
+| `theme/ThemeToggle.tsx` (+ `ThemeToggle.module.css`) | System, Light or Dark as a `Segmented`; `compact` shows icons only. |
+| `ui/index.ts` | The barrel every consumer imports the kit from. |
+| `ui/Button.tsx` (+ `Button.module.css`) | `Button`, `ButtonLink`, `IconButton`; sizes from 44px to 58px. |
+| `ui/Chip.tsx` (+ `Chip.module.css`) | `Chip`, `RemovableChip`, `Tag`. |
+| `ui/controls.tsx` (+ `controls.module.css`) | `Segmented`, `Switch`, `Checkbox`, `RadioList`, `TextField`, `Stepper` over native inputs. |
+| `ui/EmptyState.tsx` (+ `EmptyState.module.css`) | Icon, title, body and actions for an empty screen. |
+| `ui/SelectButton.tsx` (+ `SelectButton.module.css`) | A native `<select>` dressed as a button. |
+| `ui/Sheet.tsx` (+ `Sheet.module.css`) | Modal on `<dialog>`: a bottom sheet on phones, a dialog on desktop. |
+| `ui/icons.tsx` | `BackArrow`, `ForwardArrow`, `ForwardChevron`, `SignOutIcon`, mirrored in RTL. |
+| `ui/cx.ts` | Joins truthy class names. |
+
+## How it works
+- `ThemeProvider` sets `data-theme` on `<html>`, which switches the tokens in `../styles/tokens.css`; the choice is a device preference (`theme/theme.tsx`).
+- `index.html` applies the stored theme before first paint from `nestead:device:pref:theme`, the key `theme/theme.tsx` writes.
+- Mirrored icons carry `flipRtl`, which `../styles/global.css` flips under `[dir='rtl']` (`ui/icons.tsx`).
+- `../app/Shell.tsx` wraps the routes in `ErrorBoundary`; the usual failure is a lazy chunk gone after a deploy (`ErrorBoundary.tsx`).
+
+## Connections
+- `ui/` uses only React, lucide-react, react-router-dom (`ButtonLink`) and react-i18next (`Sheet`); `theme/` uses `../data/local/localStore.ts` and `../hooks/useMediaQuery.ts`.
+- Used by `../app/`, every folder in `../features/`, and `../features/larder/recipe/`, which imports `ui/cx.ts` directly.
+
+## Rules & gotchas
+- Only generic pieces go in `ui/`; anything that knows about recipes lives in `features/larder/recipe/` (`ui/index.ts`).
+- Real `<button>`, `<a>` and `<input>` throughout, with touch targets of at least 44px (`ui/index.ts`).
+- Colours differ between themes only through tokens; components never branch on the theme (`../styles/tokens.css` header).
+
+## Tests
+`theme/theme.test.ts`: follows the system until a choice, keeps an explicit choice, ignores unknown stored values, uses the key `index.html` reads.

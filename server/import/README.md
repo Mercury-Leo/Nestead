@@ -1,0 +1,33 @@
+# server/import
+Recipe import: fetch a web page and read the recipe from its schema.org data. One dependency-free `(Request) => Promise<Response>` handler.
+
+## Files
+| File | Responsibility |
+| --- | --- |
+| `index.ts` | The public surface: re-exports the handler, guard, parser and types. |
+| `handler.ts` | `createImportHandler(options)` and `handleImport`: GET `?url=` or POST `{ url }`, JSON out. |
+| `guard.ts` | The SSRF guard: `checkUrl()` and `isPrivateAddress()`. |
+| `fetchPage.ts` | `fetchPage()`: follows up to 5 redirects by hand, re-checking each; time and size caps. |
+| `parse.ts` | `parseRecipeHtml()`: JSON-LD first, microdata as fallback; `isoMinutes()`, `detectEquipment()`, `decodeEntities()`. |
+| `types.ts` | `ImportedRecipe`, `ImportReport`, `ImportError`, `ImportOptions`. |
+| `import.test.ts` | Parser, guard and handler cases. |
+
+## How it works
+- Production: `../../functions/api/import.ts` exports `onRequest`, which calls `handleImport`, as the Cloudflare Pages Function at `/api/import`.
+- Development: `../../vite.config.ts` mounts `createImportHandler({ resolveHost })` at `/api/import`, with Node DNS so names that resolve to private addresses are refused too.
+- Limits: 10 s and 5 MB (`handler.ts`); http(s) only, no credentials in the URL, no `localhost`, `.local` or `.internal`, no private, loopback or link-local addresses (`guard.ts`).
+- Error codes map to statuses: `invalid-url` and `blocked` 400, `fetch-failed` 502, `too-large` 413, `not-found` 422, `timeout` 504; other methods get 405 (`handler.ts`).
+- Ingredient lines come back as text; the app parses them with `src/domain/kitchen/parse.ts` (`src/features/larder/import/imported.ts`).
+
+## Connections
+- Uses: nothing but web standards (`fetch`, `URL`, `Response`).
+- Used by: `../../functions/api/import.ts`, `../../vite.config.ts`, and, for types only, `../../src/features/larder/import/`.
+
+## Rules & gotchas
+- The browser code imports only types from here (`import type` in `ImportRecipe.tsx` and `imported.ts`); a value import would put server code in the app bundle.
+- The Pages Function has no DNS API, so there `checkUrl()` judges the URL alone (`../../functions/api/import.ts`).
+- `vite.config.ts` mounts the handler in `configureServer` only, so `/api/import` does not exist under `vite preview`.
+- `tsconfig.json` includes `server/` and `functions/`, so `npm run build` type-checks them.
+
+## Tests
+`import.test.ts`, with `../../tests/fixtures/gnocchi.html`: JSON-LD in an `@graph`, microdata fallback, no recipe, ISO durations and equipment, the SSRF guard including DNS, redirects re-checked, the size cap, the timeout.

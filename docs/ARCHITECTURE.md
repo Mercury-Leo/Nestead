@@ -114,6 +114,18 @@ functions/api/import.ts      The same handler as a Cloudflare Pages Function.
 supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 ```
 
+**Folder guides:** [src/app](../src/app/README.md) ·
+[src/auth](../src/auth/README.md) · [src/components](../src/components/README.md) ·
+[src/data](../src/data/README.md) · [src/domain](../src/domain/README.md) ·
+[src/i18n](../src/i18n/README.md) · [features/board](../src/features/board/README.md) ·
+[features/family](../src/features/family/README.md) · [features/lists](../src/features/lists/README.md) ·
+[features/larder](../src/features/larder/README.md) and its
+[add](../src/features/larder/add/README.md), [cook](../src/features/larder/cook/README.md),
+[import](../src/features/larder/import/README.md), [pantry](../src/features/larder/pantry/README.md),
+[recipe](../src/features/larder/recipe/README.md), [search](../src/features/larder/search/README.md),
+[seed](../src/features/larder/seed/README.md), [timers](../src/features/larder/timers/README.md) ·
+[server/import](../server/import/README.md) · [supabase](../supabase/README.md).
+
 Dependencies point one way: `features` use `components`, `hooks`, `data` and
 `domain`; `domain` imports nothing but its own types. A screen does not reach
 into another screen's file: what two screens share lives in a shared folder
