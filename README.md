@@ -100,7 +100,7 @@ Nothing else: timers, drag handles, sheets and the import parser are hand-writte
 src/
   app/                       Shell, navigation (sidebar and tab bar), routes.
   auth/                      SessionProvider / useSession; screens/ for sign-in.
-  data/                      Collection/DataStore, the swap point, useCollection,
+  data/                      Collection/DataStore, the swap point, the row cache, useCollection,
                              the contract; local/ and supabase/ backends.
   domain/                    Entities, Base, NewRow, board ordering.
   domain/kitchen/            Pure kitchen logic: ingredient catalog and parser,
@@ -139,7 +139,9 @@ export function MyTasks() {
 }
 ```
 
-`tasks` re-renders on every change, including changes from another tab. Nothing
+`tasks` re-renders on every change, including changes from another tab. Every
+screen watching a collection shares one copy of its rows, and `update` and
+`remove` show on screen before the backend confirms them (see `src/data/cache.ts`). Nothing
 in a feature knows or cares where the rows live.
 
 ## Adding Supabase later

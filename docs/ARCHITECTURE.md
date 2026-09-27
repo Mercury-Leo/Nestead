@@ -63,13 +63,16 @@ src/
     session.tsx              SessionProvider / useSession: the Session shape.
     demoSession.tsx          Local backend: pick a member per tab.
     supabaseSession.tsx      Supabase Auth: one account per person.
+    membership.ts            Which family a signed-in user is in, in one request.
     invite.ts                Invite links: /join/<code>, kept until the join screen uses it.
     screens/                 SignIn, JoinOrCreate, SetNewPassword.
     auth.css                 Styles for those screens (global class names).
   data/
     types.ts                 Collection and DataStore interfaces.
     index.ts                 THE swap point: createStore().
-    useCollection.ts         Hook: live rows from a Collection.
+    cache.ts                 Shared rows per collection, over any backend:
+                             one read for every screen, writes shown at once.
+    useCollection.ts         Hook: live rows from a Collection, via the cache.
     collection.contract.ts   runDataStoreContract() — the backend contract.
     local/                   localStorage backend, IndexedDB photos, device
                              preferences. The only localStorage user.

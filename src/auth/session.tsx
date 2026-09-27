@@ -55,9 +55,9 @@ export function useSession(): Session {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }): JSX.Element {
-  const backend = import.meta.env.VITE_BACKEND ?? 'local';
-
-  return backend === 'supabase' ? (
+  // Compared directly so a Supabase build leaves the demo session, and the
+  // demo kitchen it seeds, out of the bundle.
+  return import.meta.env.VITE_BACKEND === 'supabase' ? (
     <SupabaseSession>{children}</SupabaseSession>
   ) : (
     <DemoSession>{children}</DemoSession>

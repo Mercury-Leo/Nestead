@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Trans } from 'react-i18next';
+import { preloadStore, withCache } from '../data/cache';
 import { getSupabaseClient, takeRecoveryLink } from '../data/supabase/supabaseClient';
 import { createSupabaseStore } from '../data/supabase/supabaseStore';
 import type { DataStore } from '../data/types';
@@ -9,6 +10,7 @@ import { useCollection } from '../data/useCollection';
 import { ensureKitchen } from '../features/larder/setup';
 import { seedDefaultColumns } from '../features/board/defaultColumns';
 import { clearInvite, pendingInvite } from './invite';
+import { readFamily, readMembership } from './membership';
 import { JoinOrCreate } from './screens/JoinOrCreate';
 import type { Family } from './session';
 import { SessionContext } from './session';
@@ -30,16 +32,6 @@ type Phase =
   | { kind: 'noFamily'; userId: string }
   | { kind: 'ready'; userId: string; store: DataStore; family: Family };
 
-async function readFamily(client: SupabaseClient, familyId: string): Promise<Family> {
-  const row = await client.from('families').select('id, name, join_code').eq('id', familyId).single();
-  if (row.error !== null) throw new Error(row.error.message);
-  return {
-    id: row.data.id as string,
-    name: row.data.name as string,
-    joinCode: row.data.join_code as string,
-  };
-}
-
 export function SupabaseSession({ children }: { children: ReactNode }): JSX.Element {
   const client = getSupabaseClient();
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
@@ -53,18 +45,8 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
   /** Works out which of the three states a signed-in user is actually in. */
   const resolve = useCallback(
     async (userId: string): Promise<void> => {
-      // Filter by id explicitly. RLS returns every member of your family, not
-      // just you, so relying on it to yield one row works only while you are
-      // alone: the second person to join would make this return two.
-      const membership = await client
-        .from('members')
-        .select('family_id')
-        .eq('id', userId)
-        .maybeSingle();
-      if (membership.error !== null) throw new Error(membership.error.message);
-
-      const familyId = membership.data?.family_id as string | undefined;
-      if (familyId === undefined) {
+      const family = await readMembership(client, userId);
+      if (family === null) {
         setPhase({ kind: 'noFamily', userId });
         return;
       }
@@ -72,16 +54,23 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
       // Already in a family (one per person), so an invite opened on this
       // device has nothing left to do.
       clearInvite();
-      const family = await readFamily(client, familyId);
 
-      const store = createSupabaseStore(familyId, client);
-      await seedDefaultColumns(store);
-      await ensureKitchen(store);
+      // Every table starts loading now, alongside the setup below, so the
+      // board and the kitchen have their rows by the time they mount.
+      const store = withCache(createSupabaseStore(family.id, client));
+      preloadStore(store);
+      await Promise.all([seedDefaultColumns(store), ensureKitchen(store)]);
 
       setPhase({ kind: 'ready', userId, store, family });
     },
     [client],
   );
+
+  // Which user the auth events last resolved. Startup reports the same session
+  // twice (getSession and INITIAL_SESSION) and a token refresh reports it again
+  // every hour; none of that changes the family, so the store is kept rather
+  // than rebuilt, which would drop every cached row and realtime channel.
+  const resolvedFor = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -89,15 +78,23 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
     const apply = (userId: string | undefined): void => {
       if (!active) return;
       if (userId === undefined) {
+        resolvedFor.current = null;
         recovering.current = false;
         setPhase({ kind: 'signedOut' });
         return;
       }
       if (recovering.current === true) {
+        resolvedFor.current = null;
         setPhase({ kind: 'recovering', userId });
         return;
       }
-      void resolve(userId);
+      if (resolvedFor.current === userId) return;
+      resolvedFor.current = userId;
+      void resolve(userId).catch((error: unknown) => {
+        // Let the next auth event try again.
+        resolvedFor.current = null;
+        throw error;
+      });
     };
 
     void client.auth.getSession().then(({ data }) => apply(data.session?.user.id));

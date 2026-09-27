@@ -2,12 +2,13 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { readDevicePreference } from '../data/local/localStore';
 import en from './locales/en.json';
-import he from './locales/he.json';
 
 /**
- * The i18next instance. Translations are bundled, not fetched: adding a
- * language means adding locales/<code>.json and a line in LOCALES. There is no
- * language detector; the locale is the person's choice, stored per device.
+ * The i18next instance. English is bundled; other languages are split out and
+ * fetched the first time they are used, so nobody downloads a language they
+ * do not read. Adding one means adding locales/<code>.json, a line in LOCALES
+ * and a line in LOADERS. There is no language detector; the locale is the
+ * person's choice, stored per device.
  */
 
 export type Direction = 'ltr' | 'rtl';
@@ -53,14 +54,16 @@ export function readLocale(): string {
  */
 type Translation = Record<string, unknown>;
 
-const resources: Record<string, { translation: Translation }> = {
-  en: { translation: en },
-  he: { translation: he },
+/** Every locale but English, as a separate chunk. */
+const LOADERS: Record<string, () => Promise<{ default: Translation }>> = {
+  he: () => import('./locales/he.json'),
 };
 
+const initialLocale = readLocale();
+
 void i18next.use(initReactI18next).init({
-  resources,
-  lng: readLocale(),
+  resources: { en: { translation: en } },
+  lng: initialLocale,
   fallbackLng: DEFAULT_LOCALE,
   // Resources are in memory, so the first render already has its strings.
   initAsync: false,
@@ -71,3 +74,20 @@ void i18next.use(initReactI18next).init({
 });
 
 export const i18n = i18next;
+
+/** Puts a locale's strings in memory, fetching them the first time. */
+export async function loadLocale(code: string): Promise<void> {
+  const load = LOADERS[code];
+  if (load === undefined || i18next.hasResourceBundle(code, 'translation')) return;
+  const { default: translation } = await load();
+  i18next.addResourceBundle(code, 'translation', translation);
+}
+
+/**
+ * Settles once the stored locale's strings are in memory. main.tsx renders
+ * after it, so a Hebrew page never shows English first. If they cannot be
+ * fetched the page renders anyway, in English.
+ */
+export const localeReady: Promise<void> = loadLocale(initialLocale).catch((error: unknown) => {
+  console.warn('Could not load the chosen language:', error);
+});

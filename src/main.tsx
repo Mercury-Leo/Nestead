@@ -10,7 +10,7 @@ import './styles/fonts.css';
 import { App } from './app/App';
 import { captureInvite } from './auth/invite';
 import { SessionProvider } from './auth/session';
-import { LocaleProvider } from './i18n';
+import { LocaleProvider, localeReady } from './i18n';
 import { ThemeProvider } from './components/theme/theme';
 // Global sheets load after the CSS modules pulled in above, as they always
 // have: tokens.css's base rules win ties with a module's class.
@@ -26,14 +26,17 @@ captureInvite();
 const container = document.getElementById('root');
 if (container === null) throw new Error('#root is missing from index.html');
 
-createRoot(container).render(
-  <LocaleProvider>
-    <ThemeProvider>
-      <BrowserRouter>
-        <SessionProvider>
-          <App />
-        </SessionProvider>
-      </BrowserRouter>
-    </ThemeProvider>
-  </LocaleProvider>,
-);
+// Only waits when the chosen language is not English and not yet fetched.
+void localeReady.then(() => {
+  createRoot(container).render(
+    <LocaleProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+          <SessionProvider>
+            <App />
+          </SessionProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </LocaleProvider>,
+  );
+});

@@ -3,7 +3,7 @@ import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import en from './locales/en.json';
 import { formatList, isolateNumber } from './format';
-import { LOCALES, i18n, localeInfo } from './i18n';
+import { LOCALES, i18n, loadLocale, localeInfo } from './i18n';
 
 const SRC = join(__dirname, '..');
 
@@ -86,7 +86,8 @@ describe('translations', () => {
     expect(i18n.t('common.recipes', { count: 1200 })).toBe('1,200 recipes');
   });
 
-  it('uses the plural categories of the language it is in', () => {
+  it('uses the plural categories of the language it is in', async () => {
+    await loadLocale('he');
     const he = i18n.getFixedT('he');
     expect(he('kitchen.duration.hours', { count: 1 })).toBe('שעה');
     expect(he('kitchen.duration.hours', { count: 2 })).toBe('שעתיים');
@@ -131,8 +132,10 @@ function markers(value: string): { placeholders: string[]; tags: string[] } {
 }
 
 describe.each(OTHER_LOCALES)('locale file $code', ({ code, values, categories }) => {
-  it('is wired up in i18n.ts', () => {
+  it('is wired up in i18n.ts', async () => {
     expect(LOCALES.map((locale) => locale.code)).toContain(code);
+    await loadLocale(code);
+    expect(i18n.hasResourceBundle(code, 'translation')).toBe(true);
   });
 
   it('has every key en.json has', () => {
@@ -208,6 +211,7 @@ describe('right-to-left formatting', () => {
   });
 
   it('isolates each list item and starts the list right to left', async () => {
+    await loadLocale('he');
     await i18n.changeLanguage('he');
     const list = formatList(['Soup', 'Bread']);
     expect(list.startsWith('\u200f')).toBe(true);

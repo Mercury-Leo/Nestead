@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { writeDevicePreference } from '../data/local/localStore';
-import { LOCALE_PREFERENCE, i18n, localeInfo, readLocale } from './i18n';
+import { DEFAULT_LOCALE, LOCALE_PREFERENCE, i18n, loadLocale, localeInfo, readLocale } from './i18n';
 import type { Direction, LocaleInfo } from './i18n';
 
 interface LocaleValue {
@@ -19,7 +19,12 @@ const LocaleContext = createContext<LocaleValue | null>(null);
  * this keeps them, and i18next's language, matched to the choice.
  */
 export function LocaleProvider({ children }: { children: ReactNode }): JSX.Element {
-  const [locale, setLocaleState] = useState(readLocale);
+  // English if the stored choice's strings could not be fetched (main.tsx
+  // waited for them), rather than right to left with English words.
+  const [locale, setLocaleState] = useState(() => {
+    const stored = readLocale();
+    return i18n.hasResourceBundle(stored, 'translation') ? stored : DEFAULT_LOCALE;
+  });
   const info = localeInfo(locale);
 
   useEffect(() => {
@@ -28,10 +33,17 @@ export function LocaleProvider({ children }: { children: ReactNode }): JSX.Eleme
     if (i18n.language !== info.code) void i18n.changeLanguage(info.code);
   }, [info]);
 
+  // The strings arrive before the switch, so the page never shows the new
+  // direction with the old language.
   const setLocale = useCallback((code: string) => {
     const next = localeInfo(code).code;
-    setLocaleState(next);
-    writeDevicePreference(LOCALE_PREFERENCE, next);
+    loadLocale(next).then(
+      () => {
+        setLocaleState(next);
+        writeDevicePreference(LOCALE_PREFERENCE, next);
+      },
+      (error: unknown) => console.warn('Could not load the chosen language:', error),
+    );
   }, []);
 
   const value = useMemo(() => ({ locale: info.code, dir: info.dir, info, setLocale }), [info, setLocale]);

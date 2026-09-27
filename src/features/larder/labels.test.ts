@@ -4,7 +4,7 @@ import { PRESETS, checkDiet, fitsProfileLine, parseCustomRule } from '../../doma
 import { detectDurations } from '../../domain/kitchen/durations';
 import { formatListQty } from '../../domain/kitchen/list';
 import { formatAmount, formatClock, formatDuration, scaleQty } from '../../domain/kitchen/quantity';
-import { i18n } from '../../i18n';
+import { i18n, loadLocale } from '../../i18n';
 import { UNITS } from './add/draft';
 import { SEED_CUSTOM_RULES, SEED_PRESETS } from './seed/kitchen';
 import { SEED_LIBRARY } from './seed/recipes';
@@ -139,6 +139,7 @@ describe('in Hebrew', () => {
   });
 
   it('says one and two hours in a word', async () => {
+    await loadLocale('he');
     await i18n.changeLanguage('he');
     expect([60, 120, 180, 80, 140, 200].map((minutes) => formatMinutes(t, minutes))).toEqual([
       'שעה',
@@ -152,6 +153,7 @@ describe('in Hebrew', () => {
   });
 
   it('keeps a shaped number left to right, so "1½" does not read "½1"', async () => {
+    await loadLocale('he');
     await i18n.changeLanguage('he');
     expect(formatAmountT(t, 1.5, 'tsp')).toBe('\u20661½\u2069 כפיות');
     expect(formatAmountT(t, 1, 'tbsp')).toBe('\u20661\u2069 כף');
