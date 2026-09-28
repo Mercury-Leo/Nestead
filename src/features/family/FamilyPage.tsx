@@ -75,7 +75,7 @@ export function FamilyPage(): JSX.Element {
 
   return (
     <div>
-      <PageHeader title={t('family.title')} subtitle={family !== undefined ? <bdi>{family.name}</bdi> : t('family.subtitle')} />
+      <PageHeader title={t('family.title')} subtitle={family !== undefined ? <bdi>{family.name}</bdi> : undefined} />
 
       <div className={s.layout}>
         <section className={s.card} aria-labelledby="invite-title">
@@ -122,7 +122,7 @@ export function FamilyPage(): JSX.Element {
 
               {rotateJoinCode !== undefined && (
                 <div className={s.rotate}>
-                  <p className={s.muted}>{t('family.invite.rotateHint')}</p>
+                  {/* What a new code does is said once, in the confirmation. */}
                   <Button
                     variant="ghost"
                     icon={RefreshCw}
@@ -156,31 +156,28 @@ export function FamilyPage(): JSX.Element {
           </ul>
         </section>
 
-        <section className={s.card} aria-labelledby="theme-title">
-          <h2 id="theme-title" className={s.cardTitle}>
-            {t('theme.label')}
+        {/* Theme and language belong to this device, which the heading says for both. */}
+        <section className={s.card} aria-labelledby="device-title">
+          <h2 id="device-title" className={s.cardTitle}>
+            {t('family.device')}
           </h2>
-          <p className={s.muted}>{t('family.themeNote')}</p>
-          <ThemeToggle className={s.theme} />
+          <div className={s.setting}>
+            <span className={s.settingLabel}>{t('theme.label')}</span>
+            <ThemeToggle />
+          </div>
+          {/* A build with a single language has nothing to choose. */}
+          {LOCALES.length > 1 && (
+            <div className={s.setting}>
+              <span className={s.settingLabel}>{t('locale.title')}</span>
+              <SelectButton
+                label={t('locale.label')}
+                value={locale}
+                onChange={setLocale}
+                options={LOCALES.map((option) => ({ value: option.code, label: option.name }))}
+              />
+            </div>
+          )}
         </section>
-
-        {/* A build with a single language has nothing to choose. */}
-        {LOCALES.length > 1 && (
-          <section className={s.card} aria-labelledby="locale-title">
-            <h2 id="locale-title" className={s.cardTitle}>
-              {t('locale.title')}
-            </h2>
-            <p className={s.muted}>{t('locale.note')}</p>
-            <SelectButton
-              label={t('locale.label')}
-              shape="field"
-              className={s.theme}
-              value={locale}
-              onChange={setLocale}
-              options={LOCALES.map((option) => ({ value: option.code, label: option.name }))}
-            />
-          </section>
-        )}
       </div>
 
       <Sheet

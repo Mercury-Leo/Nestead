@@ -37,4 +37,4 @@ The kanban board and home page: the family's columns and task cards, with drag a
 - `board.css` is global, not a module, so its class names (`.card`, `.column`) are shared app-wide (`../../main.tsx`).
 
 ## Tests
-`dragDrop.test.ts` (drop positions, hidden cards, insertion point), `filter.test.ts` (matching, stored filters, deleted assignees), `recurrence.test.ts` (dates, month clamping, next occurrence, due again, overdue).
+`dragDrop.test.ts` (drop positions, hidden cards, insertion point), `filter.test.ts` (matching, stored filters, deleted assignees), `recurrence.test.ts` (dates, month clamping, next occurrence, due again, overdue). The invite line on `BoardPage.tsx` is rendered in `../family/FamilyPage.test.tsx`.

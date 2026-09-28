@@ -43,8 +43,7 @@
   },
   "locale": {
     "title": "Language",
-    "label": "Language",
-    "note": "Just for this device. Everyone in the family picks their own."
+    "label": "Language"
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -161,27 +160,25 @@
   },
   "family": {
     "title": "Family",
-    "subtitle": "Who shares this board and kitchen.",
     "invite": {
       "title": "Invite someone",
-      "demo": "Join codes come with real accounts. In demo mode everyone is already here.",
-      "howTo": "Send them the invite link: it opens Nestead with the code filled in, so they only need an account and their name. The code lets them in; it is not a password.",
+      "demo": "Demo mode: everyone’s already here.",
+      "howTo": "The link fills in the code, so they only need an account and a name. The code isn’t a password.",
       "linkLabel": "Invite link",
       "share": "Share invite link",
       "copyLink": "Copy invite link",
       "linkCopied": "Link copied",
       "shareTitle": "Join {{family}} on Nestead",
       "shareText": "Join {{family}} on Nestead, our family board and kitchen.",
-      "orCode": "Or they sign up, choose “I have a join code” and type this:",
+      "orCode": "Or type this code at sign-up:",
       "codeLabel": "Join code {{spelled}}",
       "copy": "Copy",
       "copied": "Copied",
-      "rotateHint": "Shared it somewhere you shouldn’t have? Swap it for a new one; the old link stops working too.",
       "newCode": "New code"
     },
     "members": "Members",
     "you": "You",
-    "themeNote": "Just for this device. System follows its light or dark setting.",
+    "device": "On this device",
     "confirm": {
       "title": "Get a new join code?",
       "keep": "Keep this one",
