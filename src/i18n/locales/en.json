@@ -368,10 +368,8 @@
       "toBuy": "To buy"
     },
     "match": {
-      "have": "You have <strong>{{have, number}}/{{total, number}}</strong> ingredients",
       "haveCompact": "You have <strong>{{have, number}}/{{total, number}}</strong>",
-      "need": "Need: <strong>{{names}}</strong>",
-      "needMore": "{{names}} + {{count, number}} more"
+      "need": "Need: <strong>{{names}}</strong>"
     },
     "stars": "{{value}} out of 5 stars",
     "rate_one": "Rate {{count, number}} star",
@@ -379,7 +377,10 @@
     "sourceWeb": "Web · {{site}}",
     "sourceMine": "Mine",
     "kcal": "{{kcal, number}} kcal",
-    "kcalPer": "{{kcal, number}} kcal/{{unit}}"
+    "kcalPer": "{{kcal, number}} kcal/{{unit}}",
+    "card": {
+      "more": "More about {{title}}"
+    }
   },
   "library": {
     "title": "Library",

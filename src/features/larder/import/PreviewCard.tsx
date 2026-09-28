@@ -5,8 +5,8 @@ import { AlertTriangle, Check, Clock, Flame, Globe, Leaf, Pencil, Plus, Timer } 
 import { useSession } from '../../../auth/session';
 import { Button, Chip, SelectButton, cx } from '../../../components/ui';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
-import { EstTag, SourceBadge } from '../recipe/badges';
-import { MatchBlock } from '../recipe/MatchBlock';
+import { BuyPill, EstTag, SourceBadge } from '../recipe/badges';
+import { MatchBar } from '../recipe/MatchBlock';
 import { Stars } from '../recipe/Rating';
 import type { AnyRecipe, Unit } from '../../../domain/types';
 import { checkDiet } from '../../../domain/kitchen/diet';
@@ -121,7 +121,11 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
             </div>
           </div>
           <div className={s.divider} />
-          <MatchBlock have={fit.have + fit.staple} total={fit.total} missing={fit.missing} need={view.need} />
+          {/* The ingredient list marks what to buy, so the fit is the bar and a count. */}
+          <div className={s.match}>
+            <BuyPill missing={fit.missing} />
+            <MatchBar have={fit.have + fit.staple} total={fit.total} />
+          </div>
 
           {diet.ok ? (
             <div className={s.dietOk}>

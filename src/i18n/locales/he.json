@@ -385,10 +385,8 @@
       "toBuy": "לקנייה"
     },
     "match": {
-      "have": "יש לכם <strong>{{have, number}}/{{total, number}}</strong> מצרכים",
       "haveCompact": "יש לכם <strong>{{have, number}}/{{total, number}}</strong>",
-      "need": "חסרים: <strong>{{names}}</strong>",
-      "needMore": "{{names}} ועוד {{count, number}}"
+      "need": "חסרים: <strong>{{names}}</strong>"
     },
     "stars": "{{value}} מתוך 5 כוכבים",
     "rate_one": "דירוג בכוכב אחד",
@@ -397,7 +395,10 @@
     "sourceWeb": "מהרשת · {{site}}",
     "sourceMine": "שלי",
     "kcal": "{{kcal, number}} קק״ל",
-    "kcalPer": "{{kcal, number}} קק״ל/{{unit}}"
+    "kcalPer": "{{kcal, number}} קק״ל/{{unit}}",
+    "card": {
+      "more": "עוד על {{title}}"
+    }
   },
   "library": {
     "title": "ספרייה",

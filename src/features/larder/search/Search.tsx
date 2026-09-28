@@ -184,13 +184,13 @@ export function Search(): JSX.Element {
   const results = desktop ? (
     <RecipeGrid dense>
       {views(outcome.results).map((view) => (
-        <RecipeCard key={view.recipe.id} view={view} showNeed />
+        <RecipeCard key={view.recipe.id} view={view} />
       ))}
     </RecipeGrid>
   ) : (
     <RecipeList>
       {views(outcome.results).map((view) => (
-        <RecipeRow key={view.recipe.id} view={view} showNeed />
+        <RecipeRow key={view.recipe.id} view={view} />
       ))}
     </RecipeList>
   );

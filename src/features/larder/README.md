@@ -8,6 +8,7 @@ The family kitchen: state and writes shared by the kitchen screens, one folder p
 | `actions.ts` | Writes that span collections: recipes on and off the list, typed items, sections, save to library, pantry adds, move to pantry. |
 | `setup.ts` | `ensureKitchen()`: a new family's empty diet profile and `DEFAULT_STAPLES`. Never throws. |
 | `labels.ts` (+ `labels.test.ts`) | Translated words for the domain's fixed ids: sections, presets, units, amounts, timers, diet warnings. |
+| `hints.ts` (+ `hints.test.ts`) | `useHint()` and `markHintUsed()`: helper copy that shows until its action has been done once on this device. |
 
 Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [import/](import/README.md), [pantry/](pantry/README.md), [search/](search/README.md). Shared: [recipe/](recipe/README.md), [seed/](seed/README.md), [timers/](timers/README.md). One-file screens are below.
 
@@ -16,6 +17,7 @@ Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [
 - `profile` is the oldest diet-profile row, in case two devices raced to create one (`KitchenContext.tsx`).
 - `findRecipe()` finds library rows (marked `inLibrary`) and offline web recipes from `seed/webIndex.ts` (`KitchenContext.tsx`).
 - Screens decide what to do; `actions.ts` writes it, applying the plans from `../../domain/kitchen/list.ts`.
+- Learn-once copy (the timers line, cook mode's key and swipe lines, pantry's swipe and Enter lines) reads `useHint()`; the screen that sees the action calls `markHintUsed()`, and the list lives at `nestead:device:pref:hintsUsed` (`hints.ts`).
 - Screen map and design decisions: [LARDER.md](../../../docs/LARDER.md); data: [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md#the-kitchen-larder).
 
 ## Connections
@@ -25,10 +27,11 @@ Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [
 ## Rules & gotchas
 - `seed/webIndex.ts` ships in every build, because `KitchenContext.tsx` imports `offlineProvider`; only the demo seed is left out of Supabase builds (`../../auth/session.tsx`).
 - Stored names stay English (sections, staples); show them through `labels.ts`.
+- Hints are device state: read and write them through `hints.ts`, which uses the device preference helpers, never the `DataStore`.
 - Screens share through `recipe/` or this folder, with two exceptions: `import/PreviewCard.tsx` imports the `ImportHandoff` type from `add/AddRecipe.tsx` and `UNITS` from `add/draft.ts`.
 
 ## Tests
-`labels.test.ts`: the English wording matches the domain's for every seed recipe and profile, and Hebrew says numbers and plurals correctly.
+`labels.test.ts`: the English wording matches the domain's for every seed recipe and profile, and Hebrew says numbers and plurals correctly. `hints.test.ts`: a used hint is stored once, and a stored value that is not a list starts over.
 
 ## Single-file screens
 | Folder | Route | What it does |
