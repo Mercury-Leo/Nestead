@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { BookmarkPlus, Check, Clock, CookingPot, ExternalLink, Info, Pencil, Play, ShoppingBag, Soup, Timer } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { BookmarkPlus, Check, ChevronDown, Clock, ExternalLink, Flame, Pencil, Play, ShoppingBag, Soup, Timer } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { BackArrow, Button, ButtonLink, EmptyState, Stepper, cx } from '../../../components/ui';
 import { RatingInput, Stars } from '../recipe/Rating';
-import { SourceBadge, WarningBadge } from '../recipe/badges';
+import { EstTag, SourceBadge, WarningBadge } from '../recipe/badges';
 import type { AnyRecipe, IngredientLine } from '../../../domain/types';
 import { checkDiet } from '../../../domain/kitchen/diet';
 import { detectDurations } from '../../../domain/kitchen/durations';
@@ -17,6 +17,7 @@ import { totalMinutes } from '../../../domain/kitchen/search';
 import type { ListHandoff } from '../../lists/useJustAdded';
 import { addRecipeToList, saveToLibrary } from '../actions';
 import { dietLabel, formatMinutes } from '../labels';
+import { useHint } from '../hints';
 import { useKitchen } from '../KitchenContext';
 import { RecipePhoto } from '../recipe/RecipePhoto';
 import { recipePath } from '../recipe/recipeView';
@@ -25,23 +26,6 @@ import { equipmentIcon } from '../recipe/equipment';
 import { StatusMarker } from '../recipe/StatusMarker';
 import { StepText } from '../recipe/StepText';
 import s from './RecipeDetail.module.css';
-
-function Legend({ have, staple, missing }: { have: number; staple: number; missing: number }): JSX.Element {
-  const { t } = useTranslation();
-  return (
-    <p className={s.legend}>
-      <span>
-        <StatusMarker status="have" className={s.legendMarker} /> {t('detail.legend.have', { count: have })}
-      </span>
-      <span>
-        <StatusMarker status="staple" className={s.legendMarker} /> {t('detail.legend.staple', { count: staple })}
-      </span>
-      <span>
-        <StatusMarker status="missing" className={s.legendMarker} /> {t('detail.legend.toBuy', { count: missing })}
-      </span>
-    </p>
-  );
-}
 
 function IngredientRow({ line, status, amount }: { line: IngredientLine; status: LineStatus; amount: string }): JSX.Element {
   const { t } = useTranslation();
@@ -111,6 +95,9 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
   const navigate = useNavigate();
   const [servings, setServings] = useServings(recipe);
   const [busy, setBusy] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
+  const statsId = useId();
+  const timersHint = useHint('timers');
 
   const inLibrary = recipe.inLibrary === true;
   const fit = pantryFit(recipe, kitchen.pantry);
@@ -119,7 +106,6 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
   const site = recipe.source.kind === 'web' ? recipe.source.site : null;
   const total = totalMinutes(recipe);
   const timed = recipe.steps.filter((step, i) => detectDurations(step.text, i + 1).length > 0).length;
-  const have = fit.have + fit.staple;
 
   const makeList = async (): Promise<void> => {
     setBusy(true);
@@ -154,23 +140,30 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
         : t('detail.list.short', { count: fit.missing });
   const rating = (value: number): string => formatNumber(value);
 
+  // Tags get their own line, so a wrap never starts a line with a separator.
   const sourceLine = (
-    <p className={s.sourceLine}>
-      <SourceBadge kind={recipe.source.kind} className={s.sourceBadge} />
-      {recipe.source.kind === 'web' && (
-        <a href={recipe.source.url} target="_blank" rel="noreferrer" className={s.siteLink}>
-          {site} <ExternalLink size={13} strokeWidth={2.2} aria-hidden />
-          <span className="visually-hidden">{t('detail.newTab')}</span>
-        </a>
+    <>
+      <p className={s.sourceLine}>
+        <SourceBadge kind={recipe.source.kind} className={s.sourceBadge} />
+        {recipe.source.kind === 'web' && (
+          <a href={recipe.source.url} target="_blank" rel="noreferrer" className={s.siteLink}>
+            {site} <ExternalLink size={13} strokeWidth={2.2} aria-hidden />
+            <span className="visually-hidden">{t('detail.newTab')}</span>
+          </a>
+        )}
+      </p>
+      {recipe.tags.length > 0 && (
+        <p className={s.tags} dir="auto">
+          {recipe.tags.join(' · ')}
+        </p>
       )}
-      {recipe.tags.length > 0 && <span className={s.sourceTags} dir="auto">· {recipe.tags.join(' · ')}</span>}
-    </p>
+    </>
   );
 
+  // The stars say the rating; their group keeps the "Your rating" name for screen readers.
   const ratingRow = (
     <div className={s.ratingRow}>
-      <div className={s.ratingTop}>
-        <span className={s.eyebrow}>{t('detail.rating.yours')}</span>
+      <span role="group" aria-label={t('detail.rating.yours')} className={s.stars}>
         {inLibrary ? (
           <RatingInput value={recipe.userRating} onChange={rate} />
         ) : (
@@ -178,64 +171,72 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
             <Stars value={recipe.sourceRating ?? 0} size={22} />
           </span>
         )}
-      </div>
-      <p className={s.ratingNote}>
-        {recipe.userRating !== undefined ? (
-          <strong>{t('detail.rating.ofFive', { rating: rating(recipe.userRating) })}</strong>
-        ) : inLibrary ? (
-          t('detail.rating.notRated')
-        ) : (
-          t('detail.rating.saveToRate')
-        )}
-        {recipe.sourceRating !== undefined && site !== null && t('detail.rating.onSite', { rating: rating(recipe.sourceRating), site })}
-      </p>
+      </span>
+      {!inLibrary && <span className={s.ratingNote}>{t('detail.rating.saveToRate')}</span>}
+      {recipe.sourceRating !== undefined && site !== null && (
+        <span className={s.ratingNote}>{t('detail.rating.onSite', { rating: rating(recipe.sourceRating), site })}</span>
+      )}
     </div>
   );
 
-  const kcalCell = (
-    <>
-      <span className={s.statLabel}>{desktop ? t('detail.stats.calories') : t('detail.stats.perServing')}</span>
-      <span className={s.statValue}>
-        {recipe.kcalPerServing === undefined
-          ? '—'
-          : desktop
-            ? t('detail.stats.kcalValue', { kcal: recipe.kcalPerServing })
-            : formatNumber(recipe.kcalPerServing)}
-      </span>
-      <span className={s.statSub}>
-        {recipe.kcalPerServing === undefined
-          ? t('detail.stats.notEnough')
-          : desktop
-            ? t('detail.stats.per', { unit: recipe.servingUnit ?? t('detail.stats.serving') })
-            : t('detail.stats.kcal')}
-      </span>
-      {recipe.kcalEstimated && recipe.kcalPerServing !== undefined && (
-        <span className={s.estimated} title={t('detail.stats.estimatedWhy')} tabIndex={0}>
-          <Info size={12} strokeWidth={2.4} aria-hidden /> {t('detail.stats.estimated')}
-          <span className="visually-hidden">{t('detail.stats.estimatedWhySr')}</span>
-        </span>
-      )}
-    </>
-  );
-
+  // Time, calories and what to buy on one line; how each was worked out behind the toggle.
+  const kcal = recipe.kcalPerServing;
+  const unit = recipe.servingUnit ?? t('detail.stats.serving');
   const stats = (
     <div className={s.stats}>
-      <div className={s.stat}>
-        <span className={s.statLabel}>{desktop ? t('detail.stats.totalTime') : t('detail.stats.total')}</span>
-        <span className={s.statValue} dir="auto">
-          {/* The phone drops the last " min" from "1 h 20 min" to fit. */}
-          {formatMinutes(t, total, !desktop)}
-        </span>
-        <span className={s.statSub}>{t('detail.stats.prepCook', { prep: recipe.prepMin, cook: recipe.cookMin })}</span>
+      <div className={s.statLine}>
+        <p className={s.statItems}>
+          <span className={s.statItem}>
+            <Clock size={18} strokeWidth={2} aria-hidden />
+            <span className="visually-hidden">{t('detail.stats.totalTime')}</span>
+            <span dir="auto">{formatMinutes(t, total)}</span>
+          </span>
+          <span className={s.statItem}>
+            <Flame size={18} strokeWidth={2} aria-hidden />
+            <span className="visually-hidden">{t('detail.stats.calories')}</span>
+            <span className="tabular" dir="auto">
+              {kcal === undefined ? '—' : t('detail.stats.kcalValue', { kcal })}
+            </span>
+            {recipe.kcalEstimated && kcal !== undefined && <EstTag />}
+          </span>
+          <span className={cx(s.statItem, fit.missing > 0 ? s.statAccent : s.statSage)}>
+            {fit.missing > 0 ? <ShoppingBag size={18} strokeWidth={2} aria-hidden /> : <Check size={18} strokeWidth={2.4} aria-hidden />}
+            <span className="tabular">{fit.missing > 0 ? t('recipe.badge.toBuy', { count: fit.missing }) : t('recipe.badge.nothingToBuy')}</span>
+          </span>
+        </p>
+        <button
+          type="button"
+          className={cx(s.statsToggle, statsOpen && s.statsToggleOpen)}
+          aria-expanded={statsOpen}
+          aria-controls={statsId}
+          aria-label={t('detail.stats.more')}
+          onClick={() => setStatsOpen(!statsOpen)}
+        >
+          <ChevronDown size={20} strokeWidth={2.2} aria-hidden />
+        </button>
       </div>
-      <div className={s.stat}>{kcalCell}</div>
-      <div className={s.stat}>
-        <span className={s.statLabel}>{t('detail.stats.toBuy')}</span>
-        <span className={cx(s.statValue, fit.missing > 0 && s.statAccent)}>
-          {desktop ? t('detail.stats.items', { count: fit.missing }) : formatNumber(fit.missing)}
-        </span>
-        <span className={s.statSub}>{t(desktop ? 'detail.stats.youHave' : 'detail.stats.have', { have, total: fit.total })}</span>
-      </div>
+      <ul id={statsId} className={s.statDetails} hidden={!statsOpen}>
+        <li>
+          <Clock size={15} strokeWidth={2} aria-hidden />
+          {t('detail.stats.prepCook', { prep: recipe.prepMin, cook: recipe.cookMin })}
+        </li>
+        <li>
+          <Flame size={15} strokeWidth={2} aria-hidden />
+          {kcal === undefined
+            ? t('detail.stats.notEnough')
+            : t(recipe.kcalEstimated ? 'detail.stats.perEstimated' : 'detail.stats.per', { unit })}
+        </li>
+        <li>
+          <ShoppingBag size={15} strokeWidth={2} aria-hidden />
+          <span>
+            <Trans
+              i18nKey="recipe.match.haveCompact"
+              values={{ have: fit.have + fit.staple, total: fit.total }}
+              components={{ strong: <strong className="tabular" /> }}
+            />
+          </span>
+        </li>
+      </ul>
     </div>
   );
 
@@ -260,9 +261,9 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
   const ingredients = (
     <section className={s.card} aria-labelledby="ingredients-title">
       <header className={s.cardHead}>
-        <h3 id="ingredients-title" className={s.cardTitle}>
+        <h2 id="ingredients-title" className={s.cardTitle}>
           {t('detail.ingredients')}
-        </h3>
+        </h2>
         <Stepper
           label={t('detail.servings')}
           fewerLabel={t('detail.fewerServings')}
@@ -274,26 +275,20 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
           onChange={setServings}
         />
       </header>
-      <Legend have={fit.have} staple={fit.staple} missing={fit.missing} />
       <ul className={s.ingredients}>
         {recipe.ingredients.map((line) => (
           <IngredientRow key={line.id} line={line} status={fit.status[line.id] ?? 'missing'} amount={scaledAmount(line, factor)} />
         ))}
       </ul>
-      {fit.missing > 0 && desktop && (
-        <Button variant="secondary" size="lg" block icon={ShoppingBag} disabled={busy} onClick={() => void makeList()}>
-          {t('detail.addMissing', { count: fit.missing })}
-        </Button>
-      )}
     </section>
   );
 
   const equipment =
     recipe.equipment.length > 0 ? (
       <section className={cx(s.card, s.equipmentCard)} aria-labelledby="equipment-title">
-        <h3 id="equipment-title" className={s.cardTitle}>
+        <h2 id="equipment-title" className={s.cardTitle}>
           {t('detail.equipment')}
-        </h3>
+        </h2>
         <ul className={s.equipment}>
           {recipe.equipment.map((name) => {
             const Icon = equipmentIcon(name);
@@ -312,19 +307,10 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
 
   const steps = (
     <section className={s.steps} aria-labelledby="steps-title">
-      <header className={s.stepsHead}>
-        <h2 id="steps-title" className={s.sectionTitle}>
-          {t('detail.steps')}
-        </h2>
-        <span className={s.stepsMeta}>
-          {desktop
-            ? t('detail.stepsMeta', { steps: t('detail.stepCount', { count: recipe.steps.length }), timers: timed })
-            : t('detail.stepsMetaCompact', {
-                steps: t('detail.stepCount', { count: recipe.steps.length }),
-                timers: t('detail.timerCount', { count: timed }),
-              })}
-        </span>
-      </header>
+      {/* Steps are numbered and timers are chips, so the heading needs no count. */}
+      <h2 id="steps-title" className={cx(s.sectionTitle, s.stepsTitle)}>
+        {t('detail.steps')}
+      </h2>
       <ol className={s.stepList}>
         {recipe.steps.map((step, index) => (
           <li key={step.id} className={s.step}>
@@ -337,7 +323,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
           </li>
         ))}
       </ol>
-      {timed > 0 && desktop && (
+      {timed > 0 && timersHint && (
         <p className={s.footnote}>
           <Timer size={16} strokeWidth={2} aria-hidden /> {t('detail.footnote')}
         </p>
@@ -378,7 +364,6 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
           {!diet.ok && <WarningBadge className={s.dietWarn}>{dietLabel(t, diet)}</WarningBadge>}
           {ratingRow}
           {stats}
-          <h2 className={s.sectionTitle}>{t('detail.requires')}</h2>
           {ingredients}
           {equipment}
           {steps}
@@ -420,36 +405,6 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
 
       <div className={s.below}>
         <div className={s.requires}>
-          <h2 className={s.sectionTitle}>{t('detail.requires')}</h2>
-          <div className={s.summary}>
-            <span className={s.summaryItem}>
-              <span className={s.summaryIcon} aria-hidden>
-                <Clock size={18} strokeWidth={2} />
-              </span>
-              <span>
-                <strong dir="auto">{formatMinutes(t, total)}</strong>
-                <span className={s.summarySub}>{t('detail.summary.totalTime')}</span>
-              </span>
-            </span>
-            <span className={s.summaryItem}>
-              <span className={s.summaryIcon} aria-hidden>
-                <ShoppingBag size={18} strokeWidth={2} />
-              </span>
-              <span>
-                <strong>{t('common.ingredients', { count: fit.total })}</strong>
-                <span className={s.summarySub}>{t('detail.summary.toBuy', { count: fit.missing })}</span>
-              </span>
-            </span>
-            <span className={s.summaryItem}>
-              <span className={s.summaryIcon} aria-hidden>
-                <CookingPot size={18} strokeWidth={2} />
-              </span>
-              <span>
-                <strong>{t('detail.summary.tools', { count: recipe.equipment.length })}</strong>
-                <span className={s.summarySub}>{t('detail.summary.equipment')}</span>
-              </span>
-            </span>
-          </div>
           {ingredients}
           {equipment}
         </div>

@@ -70,8 +70,10 @@
   text-decoration: underline;
 }
 
-.sourceTags {
+.tags {
+  margin: -8px 0 0;
   color: var(--ink-3);
+  font-size: 14px;
 }
 
 .title {
@@ -98,24 +100,14 @@
 
 .ratingRow {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ratingTop {
-  display: flex;
   flex-wrap: wrap;
-  gap: 0 8px;
+  gap: 0 12px;
   align-items: center;
 }
 
-.eyebrow {
-  margin-inline-end: 4px;
-  color: var(--ink-2);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+.stars {
+  display: inline-flex;
+  margin-inline-start: -8px;
 }
 
 .readOnlyStars {
@@ -125,73 +117,119 @@
 }
 
 .ratingNote {
-  margin: 0;
   color: var(--ink-2);
   font-size: 14px;
 }
 
-.ratingNote strong {
-  color: var(--ink);
-}
-
+/* One line of numbers; the toggle opens how each was worked out. */
 .stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-block: 10px;
+  padding-inline: 16px 6px;
   border: 1px solid var(--line);
   border-radius: var(--radius-card-sm);
   background: var(--card);
 }
 
-.stat {
+.statLine {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.statItems {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: center;
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.statItem {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.statItem > svg {
+  flex-shrink: 0;
+  color: var(--ink-2);
+}
+
+.statAccent,
+.statAccent > svg {
+  color: var(--accent-ink);
+}
+
+.statSage,
+.statSage > svg {
+  color: var(--sage);
+}
+
+.statsToggle {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.statsToggle:hover {
+  background: var(--sunk);
+  color: var(--ink);
+}
+
+.statsToggle > svg {
+  transition: transform 0.15s ease;
+}
+
+.statsToggleOpen > svg {
+  transform: rotate(180deg);
+}
+
+.statDetails {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 18px 20px;
-}
-
-.stat + .stat {
-  border-inline-start: 1px solid var(--line);
-}
-
-.statLabel {
+  gap: 6px;
+  margin: 0;
+  padding-block: 10px 4px;
+  padding-inline: 0 10px;
+  border-top: 1px solid var(--line);
   color: var(--ink-2);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  font-size: 14px;
+  list-style: none;
 }
 
-.statValue {
-  margin-top: 4px;
-  font-family: var(--serif);
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
+.statDetails[hidden] {
+  display: none;
 }
 
-.statAccent {
-  color: var(--accent);
-}
-
-.statSub {
-  color: var(--ink-2);
-  font-size: 13px;
-}
-
-.estimated {
-  display: inline-flex;
-  gap: 4px;
+.statDetails li {
+  display: flex;
+  gap: 8px;
   align-items: center;
-  margin-top: 6px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: var(--sunk);
-  color: var(--ink-2);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: help;
+}
+
+.statDetails svg {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+
+.statDetails strong {
+  color: var(--ink);
 }
 
 .actions {
@@ -229,47 +267,6 @@
   letter-spacing: -0.01em;
 }
 
-.summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 16px;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-radius: 16px;
-  background: var(--sunk);
-}
-
-.summaryItem {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-size: 14px;
-  line-height: 1.25;
-}
-
-.summaryItem strong {
-  display: block;
-  font-weight: 700;
-}
-
-.summaryIcon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--card);
-  color: var(--accent);
-}
-
-.summarySub {
-  display: block;
-  color: var(--ink-2);
-  font-size: 13px;
-}
-
 .card {
   display: flex;
   flex-direction: column;
@@ -292,31 +289,6 @@
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  margin: 0;
-  color: var(--ink-2);
-  font-size: 13.5px;
-}
-
-.legend > span {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.legend .legendMarker {
-  width: 18px;
-  height: 18px;
-}
-
-.legend .legendMarker svg {
-  width: 11px;
-  height: 11px;
 }
 
 .ingredients {
@@ -408,18 +380,8 @@
   min-width: 0;
 }
 
-.stepsHead {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: baseline;
-  justify-content: space-between;
+.stepsTitle {
   margin-bottom: 12px;
-}
-
-.stepsMeta {
-  color: var(--ink-2);
-  font-size: 14px;
 }
 
 .stepList {
@@ -571,27 +533,6 @@
 
 .sheet .description {
   font-size: 17px;
-}
-
-.sheet .stats {
-  gap: 10px;
-  border: 0;
-  background: none;
-}
-
-.sheet .stat {
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--card);
-}
-
-.sheet .stat + .stat {
-  border-inline-start: 1px solid var(--line);
-}
-
-.sheet .statValue {
-  font-size: 24px;
 }
 
 .sheet .sectionTitle {

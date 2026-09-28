@@ -516,11 +516,6 @@
     }
   },
   "detail": {
-    "legend": {
-      "have": "יש · {{count, number}}",
-      "staple": "מצרכי יסוד · {{count, number}}",
-      "toBuy": "לקנייה · {{count, number}}"
-    },
     "notFound": {
       "title": "המתכון לא נמצא",
       "body": "ייתכן שהוא הוסר מהספרייה."
@@ -533,31 +528,20 @@
     "newTab": "(נפתח בכרטיסייה חדשה)",
     "rating": {
       "yours": "הדירוג שלכם",
-      "ofFive": "{{rating}} מתוך 5",
-      "notRated": "עדיין לא דורג",
-      "saveToRate": "צריך לשמור כדי לדרג",
-      "onSite": " · {{rating}} באתר {{site}}"
+      "saveToRate": "שמרו כדי לדרג",
+      "onSite": "{{rating}} באתר {{site}}"
     },
     "stats": {
       "calories": "קלוריות",
-      "perServing": "למנה",
       "kcalValue": "{{kcal, number}} קק״ל",
-      "kcal": "קק״ל",
       "notEnough": "אין מספיק נתונים",
       "per": "לכל {{unit}}",
+      "perEstimated": "לכל {{unit}}, הערכה לפי המצרכים",
       "serving": "מנה",
-      "estimated": "הערכה",
-      "estimatedWhy": "המקור לא ציין — הערכה לפי המצרכים",
-      "estimatedWhySr": ": המקור לא ציין — הערכה לפי המצרכים",
       "totalTime": "זמן כולל",
-      "total": "סה״כ",
       "prepCook": "הכנה {{prep, number}} · בישול {{cook, number}}",
       "toBuy": "לקנייה",
-      "items_one": "פריט אחד",
-      "items_two": "{{count, number}} פריטים",
-      "items_other": "{{count, number}} פריטים",
-      "youHave": "יש לכם {{have, number}} מתוך {{total, number}}",
-      "have": "יש {{have, number}} מתוך {{total, number}}"
+      "more": "פרטים נוספים"
     },
     "startCooking": "התחלת בישול",
     "ingredients": "מצרכים",
@@ -566,32 +550,12 @@
     "servingsCaptionUnit": "{{unit}}",
     "fewerServings": "פחות מנות",
     "moreServings": "יותר מנות",
-    "addMissing_one": "הוספת הפריט החסר לרשימת הקניות",
-    "addMissing_two": "הוספת {{count, number}} הפריטים החסרים לרשימת הקניות",
-    "addMissing_other": "הוספת {{count, number}} הפריטים החסרים לרשימת הקניות",
     "equipment": "ציוד",
     "steps": "שלבים",
-    "stepCount_one": "שלב אחד",
-    "stepCount_two": "{{count, number}} שלבים",
-    "stepCount_other": "{{count, number}} שלבים",
-    "timerCount_one": "טיימר אחד",
-    "timerCount_two": "{{count, number}} טיימרים",
-    "timerCount_other": "{{count, number}} טיימרים",
-    "stepsMeta": "{{steps}} · טיימרים ב-{{timers, number}} מהם",
-    "stepsMetaCompact": "{{steps}} · {{timers}}",
     "footnote": "זמנים שכתובים בשלבים הופכים במצב בישול לטיימרים שמופעלים בנגיעה.",
     "edit": "עריכה",
     "saveToLibrary": "שמירה בספרייה",
-    "back": "חזרה",
-    "requires": "מה צריך",
-    "summary": {
-      "totalTime": "זמן כולל",
-      "toBuy": "{{count, number}} לקנייה",
-      "tools_one": "כלי אחד",
-      "tools_two": "{{count, number}} כלים",
-      "tools_other": "{{count, number}} כלים",
-      "equipment": "ציוד"
-    }
+    "back": "חזרה"
   },
   "cook": {
     "missing": "המתכון הזה כבר לא כאן.",

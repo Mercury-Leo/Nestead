@@ -36,6 +36,6 @@ Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [
 ## Single-file screens
 | Folder | Route | What it does |
 | --- | --- | --- |
-| `detail/` (`RecipeDetail.tsx` + css) | `/recipe/:id` | Servings via `useServings()`, have/staple/to-buy, steps; "Make shopping list" hands the added ids to `/lists`; web recipes can be saved; library recipes take a family rating. |
+| `detail/` (`RecipeDetail.tsx` + css) | `/recipe/:id` | Time, calories and what to buy on one line, with prep/cook, per-serving, estimate and "You have 6/9" behind a toggle; servings via `useServings()`, have/staple/to-buy per ingredient, steps; "Make shopping list" hands the added ids to `/lists`; web recipes can be saved; library recipes take a family rating. The timers footnote shows until a timer has been started (`hints.ts`). |
 | `library/` (`Library.tsx` + css) | `/library` | Library recipes with local search, source filter with counts (all, mine, web) and five sorts; a one-line banner counts recipes that need nothing from the shop; links to `/add` and `/import`. No subtitle: the filter carries the counts. |
 | `profile/` (`DietProfile.tsx` + css) | `/profile` | Toggles `PRESETS`, adds rules via `parseCustomRule()`, sets hide or warn; creates the profile row if missing. |

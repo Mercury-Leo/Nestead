@@ -492,11 +492,6 @@
     }
   },
   "detail": {
-    "legend": {
-      "have": "Have · {{count, number}}",
-      "staple": "Staple · {{count, number}}",
-      "toBuy": "To buy · {{count, number}}"
-    },
     "notFound": {
       "title": "Recipe not found",
       "body": "It may have been removed from the library."
@@ -509,30 +504,20 @@
     "newTab": "(opens in a new tab)",
     "rating": {
       "yours": "Your rating",
-      "ofFive": "{{rating}} of 5",
-      "notRated": "Not rated yet",
-      "saveToRate": "Save it to rate it",
-      "onSite": " · {{rating}} on {{site}}"
+      "saveToRate": "Save to rate",
+      "onSite": "{{rating}} on {{site}}"
     },
     "stats": {
       "calories": "Calories",
-      "perServing": "Per serving",
       "kcalValue": "{{kcal, number}} kcal",
-      "kcal": "kcal",
       "notEnough": "Not enough data",
-      "per": "per {{unit}}",
+      "per": "Per {{unit}}",
+      "perEstimated": "Per {{unit}}, estimated from ingredients",
       "serving": "serving",
-      "estimated": "Estimated",
-      "estimatedWhy": "Not provided by the source — estimated from ingredients",
-      "estimatedWhySr": ": not provided by the source — estimated from ingredients",
       "totalTime": "Total time",
-      "total": "Total",
       "prepCook": "{{prep, number}} prep · {{cook, number}} cook",
       "toBuy": "To buy",
-      "items_one": "{{count, number}} item",
-      "items_other": "{{count, number}} items",
-      "youHave": "you have {{have, number}} of {{total, number}}",
-      "have": "have {{have, number}} of {{total, number}}"
+      "more": "More details"
     },
     "startCooking": "Start cooking",
     "ingredients": "Ingredients",
@@ -541,28 +526,12 @@
     "servingsCaptionUnit": "{{unit}}s",
     "fewerServings": "Fewer servings",
     "moreServings": "More servings",
-    "addMissing_one": "Add {{count, number}} missing item to shopping list",
-    "addMissing_other": "Add {{count, number}} missing items to shopping list",
     "equipment": "Equipment",
     "steps": "Steps",
-    "stepCount_one": "{{count, number}} step",
-    "stepCount_other": "{{count, number}} steps",
-    "timerCount_one": "{{count, number}} timer",
-    "timerCount_other": "{{count, number}} timers",
-    "stepsMeta": "{{steps}} · timers found in {{timers, number}}",
-    "stepsMetaCompact": "{{steps}} · {{timers}}",
     "footnote": "Times in the steps become tap-to-start timers in Cook mode.",
     "edit": "Edit",
     "saveToLibrary": "Save to library",
-    "back": "Back",
-    "requires": "What it requires",
-    "summary": {
-      "totalTime": "total time",
-      "toBuy": "{{count, number}} to buy",
-      "tools_one": "{{count, number}} tool",
-      "tools_other": "{{count, number}} tools",
-      "equipment": "equipment"
-    }
+    "back": "Back"
   },
   "cook": {
     "missing": "That recipe isn’t here any more.",
