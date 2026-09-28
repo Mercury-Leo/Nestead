@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { List, Milk, Plus, X } from 'lucide-react';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
 import { useDirection } from '../../../hooks/useDirection';
@@ -9,6 +9,7 @@ import { Button, Chip, EmptyState, RemovableChip, Segmented, TextField, cx } fro
 import type { PantryItem } from '../../../domain/types';
 import { pantryFit } from '../../../domain/kitchen/fit';
 import { addToPantry } from '../actions';
+import { useHint } from '../hints';
 import { useKitchen } from '../KitchenContext';
 import { groupBySection } from '../../../domain/kitchen/sections';
 import { formatNumber } from '../../../i18n';
@@ -28,6 +29,7 @@ export function Pantry(): JSX.Element {
   const kitchen = useKitchen();
   const desktop = useIsDesktop();
   const rtl = useDirection() === 'rtl';
+  const swipeHint = useHint('pantrySwipe');
   const [tab, setTab] = useState<'have' | 'staple'>('have');
   const [bulk, setBulk] = useState(false);
   const [staple, setStaple] = useState('');
@@ -98,9 +100,8 @@ export function Pantry(): JSX.Element {
           <h2 id="have-title" className={s.cardTitle}>
             {t('pantry.haveNow')}
           </h2>
-          <span className={s.cardMeta}>
-            <Trans i18nKey="pantry.meta" count={kitchen.have.length} />
-          </span>
+          {/* The aisle headings below show the grouping; the count is enough here. */}
+          <span className={cx(s.cardMeta, 'tabular')}>{formatNumber(kitchen.have.length)}</span>
         </header>
       )}
       <PantryAdd onAdd={addHave} existingKeys={haveKeys} neededFor={neededFor} inline={!desktop} />
@@ -121,7 +122,7 @@ export function Pantry(): JSX.Element {
         ))
       ) : (
         <>
-          <p className={s.swipeHint}>{rtl ? t('pantry.swipeHintRtl') : t('pantry.swipeHintLtr')}</p>
+          {swipeHint && <p className={s.swipeHint}>{rtl ? t('pantry.swipeHintRtl') : t('pantry.swipeHintLtr')}</p>}
           {groups.map(([section, rows]) => (
             <div key={section} className={s.group}>
               <h3 className={s.groupEyebrow}>
@@ -146,7 +147,7 @@ export function Pantry(): JSX.Element {
           <h2 id="staples-title" className={s.cardTitle}>
             {t('pantry.alwaysHave')}
           </h2>
-          <span className={s.cardMeta}>{t('common.staples', { count: kitchen.staples.length })}</span>
+          <span className={cx(s.cardMeta, 'tabular')}>{formatNumber(kitchen.staples.length)}</span>
         </header>
       )}
       <p className={s.staplesNote}>{t('pantry.staplesNote')}</p>
@@ -180,9 +181,9 @@ export function Pantry(): JSX.Element {
 
   return (
     <div>
+      {/* "Have now" and "Always have" say what the page holds. */}
       <PageHeader
         title={t('pantry.title')}
-        subtitle={t('pantry.subtitle')}
         actions={
           desktop && !empty ? (
             <Button variant="secondary" size="lg" icon={List} onClick={() => setBulk(true)}>

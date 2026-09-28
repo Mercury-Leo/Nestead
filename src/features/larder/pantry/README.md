@@ -14,9 +14,10 @@ The pantry (`/pantry`): what the family has now, and the staples assumed always 
 - Every add goes through `addToPantry()`, which capitalises the name, files it under its catalog section (`pantryRow()`) and skips duplicates by `keyForText()` (`../actions.ts`).
 - Have-now is grouped by `groupBySection()` in supermarket order (`Pantry.tsx`).
 - "Needed for" hints come from list items first, then the five recipes closest to cookable (`Pantry.tsx`).
+- The Enter-and-commas line under the suggestions shows until something has been added with Enter, and the phone's swipe line until a row has been swiped open (`pantryAdd`, `pantrySwipe` in `../hints.ts`). The card headings carry bare counts; no subtitle.
 
 ## Connections
-- Uses: `../actions.ts`, `../KitchenContext.tsx`, `../labels.ts`, `../recipe/StatusMarker.tsx`, `../../../domain/kitchen/` (catalog, fit, normalize, pantry, sections), `../../../hooks/`, `../../../components/`.
+- Uses: `../actions.ts`, `../hints.ts`, `../KitchenContext.tsx`, `../labels.ts`, `../recipe/StatusMarker.tsx`, `../../../domain/kitchen/` (catalog, fit, normalize, pantry, sections), `../../../hooks/`, `../../../components/`.
 - Used by: `../../../app/AppRoutes.tsx`.
 
 ## Rules & gotchas

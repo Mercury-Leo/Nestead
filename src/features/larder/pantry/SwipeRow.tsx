@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { cx } from '../../../components/ui';
 import type { PantryItem } from '../../../domain/types';
 import { useDirection } from '../../../hooks/useDirection';
+import { markHintUsed } from '../hints';
 import s from './Pantry.module.css';
 
 /**
@@ -33,6 +34,7 @@ export function SwipeRow({ item, onRemove }: { item: PantryItem; onRemove: () =>
   };
   const up = (): void => {
     start.current = null;
+    if (dx < -REVEAL / 2) markHintUsed('pantrySwipe');
     setDx((value) => (value < -REVEAL / 2 ? -REVEAL : 0));
   };
 

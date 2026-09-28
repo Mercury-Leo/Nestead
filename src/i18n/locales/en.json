@@ -707,22 +707,19 @@
   },
   "pantry": {
     "title": "Pantry",
-    "subtitle": "What you have now, plus the staples Larder assumes are always in your kitchen.",
     "haveNow": "Have now",
     "empty": {
       "title": "Your pantry is empty",
-      "body": "Add what’s in your kitchen and Larder will show what you can cook tonight — and leave those items off your shopping lists.",
+      "body": "Add what’s in your kitchen to see what you can cook without shopping.",
       "placeholder": "Type an item — e.g. eggs"
     },
     "paste": "Paste a list to bulk add",
     "quickAdd": "Quick add",
-    "meta_one": "<strong>{{count, number}} item</strong> · grouped by aisle",
-    "meta_other": "<strong>{{count, number}} items</strong> · grouped by aisle",
     "remove": "Remove {{name}}",
     "swipeHintLtr": "Swipe left to remove",
     "swipeHintRtl": "Swipe right to remove",
     "alwaysHave": "Always have",
-    "staplesNote": "Assumed present in every recipe. Staples never land on a shopping list.",
+    "staplesNote": "Never added to shopping lists.",
     "removeStaple": "Remove {{name}} from staples",
     "addStaple": "Add a staple",
     "bulkAdd": "Bulk add",
@@ -734,7 +731,7 @@
       "label": "Add to pantry",
       "suggestions": "Suggestions",
       "neededFor": "Needed for {{recipe}}",
-      "hint": "Enter adds the first match · separate with commas to add several"
+      "hint": "Enter adds · commas add several"
     },
     "bulk": {
       "title": "Bulk add",

@@ -6,6 +6,7 @@ import { cx } from '../../../components/ui';
 import { CATALOG } from '../../../domain/kitchen/catalog';
 import type { CatalogItem } from '../../../domain/kitchen/catalog';
 import { keyForText } from '../../../domain/kitchen/fit';
+import { markHintUsed, useHint } from '../hints';
 import { sectionLabel } from '../labels';
 import s from './Pantry.module.css';
 
@@ -70,6 +71,7 @@ export function PantryAdd({
   const [text, setText] = useState('');
   const [active, setActive] = useState(0);
   const listId = useId();
+  const hint = useHint('pantryAdd');
 
   // Only the part after the last comma is being typed; the rest is settled.
   const current = text.split(',').pop() ?? '';
@@ -93,6 +95,7 @@ export function PantryAdd({
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
     if (event.key === 'Enter') {
       event.preventDefault();
+      if (text.trim() !== '') markHintUsed('pantryAdd');
       commitAll();
     } else if (event.key === 'ArrowDown' && options.length > 0) {
       event.preventDefault();
@@ -164,7 +167,7 @@ export function PantryAdd({
               );
             })}
           </ul>
-          <p className={s.dropdownHint}>{t('pantry.add.hint')}</p>
+          {hint && <p className={s.dropdownHint}>{t('pantry.add.hint')}</p>}
         </div>
       )}
     </div>
