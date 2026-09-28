@@ -35,6 +35,7 @@ The kanban board and home page: the family's columns and task cards, with drag a
 - `recurFrom` stays apart from `dueDate` so a chore on the 31st returns to the 31st; setting a new due date resets it (`recurrence.ts`, `TaskCard.tsx`).
 - Cards move only by pointer drag: `useTaskDrag.ts` mentions a keyboard route, but `TaskCard.tsx` has no move control.
 - `board.css` is global, not a module, so its class names (`.card`, `.column`) are shared app-wide (`../../main.tsx`).
+- Only real columns are scroll-snap targets; the "New column" box is not. When the board paints before its columns arrive, that box is the only target, and the browser keeps it snapped as the columns land in front of it, which opened the board at its far end (`board.css`).
 
 ## Tests
 `dragDrop.test.ts` (drop positions, hidden cards, insertion point), `filter.test.ts` (matching, stored filters, deleted assignees), `recurrence.test.ts` (dates, month clamping, next occurrence, due again, overdue). The invite line on `BoardPage.tsx` is rendered in `../family/FamilyPage.test.tsx`.

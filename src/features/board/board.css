@@ -383,10 +383,18 @@ button.danger:hover:not(:disabled) {
   cursor: default;
 }
 
+/*
+ * Not a snap target. On a load where the board first paints before its
+ * columns arrive, this box is the only snap target, so the browser snaps to
+ * it; when the columns land in front of it the browser keeps it snapped and
+ * scrolls the board to its end, cutting off the first column. With no
+ * target, the columns snap from the start. Scrolling still reaches this box.
+ */
 .column-new {
   gap: 0.4rem;
   border-style: dashed;
   background: none;
+  scroll-snap-align: none;
 }
 
 /* ------------------------------------------------- phone: stacked -------- */
