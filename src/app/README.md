@@ -6,7 +6,7 @@ The signed-in app's frame: the shell around every screen, the sidebar and tab ba
 | --- | --- |
 | `App.tsx` | Wraps `Shell` in `KitchenProvider`, so kitchen rows are read once for every screen and the nav. |
 | `Shell.tsx` (+ `Shell.module.css`, also used by `Nav.tsx`) | Sidebar or tab bar, the routed page inside `ErrorBoundary`, and `TimerHost`. |
-| `Nav.tsx` | `Sidebar` and `TabBar` from one `useNavItems()` list, with counts and the diet-rules card. |
+| `Nav.tsx` | `Sidebar` and `TabBar` from one `useNavItems()` list, with counts and the diet-rules link. |
 | `AppRoutes.tsx` | Every route; kitchen screens and `FamilyPage` load as `lazy()` chunks. |
 
 ## How it works
@@ -14,6 +14,7 @@ The signed-in app's frame: the shell around every screen, the sidebar and tab ba
 - `AppRoutes.tsx` wraps kitchen routes in `page()`, which shows Loading until `useKitchen().loaded`; `/` (the board) and `/family` do not wait. Unknown paths redirect to `/`.
 - `Shell.tsx` drops the sidebar in cook mode (`/^\/recipe\/[^/]+\/cook/`) and the tab bar on every `/recipe/` path; `ErrorBoundary` resets when `pathname` changes.
 - `Nav.tsx` counts open tasks, unchecked list items, recipes and have-now items; `isActive()` lights Library for `/library`, `/recipe`, `/add` and `/import`.
+- The sidebar's diet rules are one link to `/profile`: a leaf, the rule chips and a chevron. "Filtering every search" and "Edit diet profile" are visually hidden, so the link still says what it is (`Nav.tsx`).
 - Routes and screens are listed in the [root README](../../README.md#the-kitchen-larder); why screens load lazily is in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#the-kitchen-larder).
 
 ## Connections

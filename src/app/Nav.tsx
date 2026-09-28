@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSession } from '../auth/session';
 import { Brand } from '../components/Brand';
 import { ThemeToggle } from '../components/theme/ThemeToggle';
-import { cx, Tag } from '../components/ui';
+import { cx, ForwardChevron, Tag } from '../components/ui';
 import { useCollection } from '../data/useCollection';
 import { useKitchen } from '../features/larder/KitchenContext';
 import { ruleLabels } from '../features/larder/labels';
@@ -74,23 +74,25 @@ export function Sidebar(): JSX.Element {
         </ul>
       </nav>
 
-      <div className={s.dietCard}>
-        <p className={s.eyebrow}>{t('nav.filtering')}</p>
+      {/* The rules that filter every search, as one link to the profile. The
+          words that named the block and the link stay for screen readers. */}
+      <NavLink to="/profile" className={s.dietCard}>
+        <Leaf size={18} strokeWidth={2} aria-hidden className={s.dietIcon} />
+        <span className="visually-hidden">{t('nav.filtering')}</span>
         {rules.length === 0 ? (
-          <p className={s.dietNone}>{t('nav.noRules')}</p>
+          <span className={s.dietNone}>{t('nav.noRules')}</span>
         ) : (
-          <div className={s.dietChips}>
+          <span className={s.dietChips}>
             {rules.map((rule) => (
               <Tag key={rule}>
                 <bdi>{rule}</bdi>
               </Tag>
             ))}
-          </div>
+          </span>
         )}
-        <NavLink to="/profile" className={s.dietLink}>
-          {t('nav.editDiet')}
-        </NavLink>
-      </div>
+        <span className="visually-hidden">{t('nav.editDiet')}</span>
+        <ForwardChevron size={18} strokeWidth={2} aria-hidden className={s.dietChevron} />
+      </NavLink>
 
       <ThemeToggle compact className={s.theme} />
     </aside>
