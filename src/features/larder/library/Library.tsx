@@ -6,7 +6,6 @@ import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { PageHeader } from '../../../components/PageHeader';
 import { ButtonLink, Chip, EmptyState, ForwardArrow, ForwardChevron, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
 import { totalMinutes } from '../../../domain/kitchen/search';
-import { formatList } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
 import { RecipeCard, RecipeGrid, RecipeList, RecipeRow } from '../recipe/RecipeCard';
 import { recipeView } from '../recipe/recipeView';
@@ -67,7 +66,6 @@ export function Library(): JSX.Element {
     sort,
   );
 
-  const subtitle = t(desktop ? 'library.subtitle' : 'library.subtitleCompact', { count: views.length, mine, web });
   const sortOptions = SORTS.map((value) => ({ value, label: t(`library.sort.${value}`) }));
 
   const actions = desktop ? (
@@ -89,7 +87,7 @@ export function Library(): JSX.Element {
   if (kitchen.loaded && views.length === 0) {
     return (
       <div>
-        <PageHeader title={t('library.title')} subtitle={t('library.subtitleEmpty')} actions={actions} />
+        <PageHeader title={t('library.title')} actions={actions} />
         <EmptyState
           icon={BookOpen}
           title={t('library.empty.title')}
@@ -112,7 +110,8 @@ export function Library(): JSX.Element {
 
   return (
     <div>
-      <PageHeader title={t('library.title')} subtitle={kitchen.loaded ? subtitle : ' '} actions={actions} />
+      {/* The counts are in the source filter right below, and in the nav. */}
+      <PageHeader title={t('library.title')} actions={actions} />
 
       <div className={s.toolbar} role="search">
         <TextField
@@ -121,7 +120,7 @@ export function Library(): JSX.Element {
           type="search"
           dir="auto"
           value={query}
-          placeholder={desktop ? t('library.searchPlaceholder') : t('library.searchPlaceholderCompact')}
+          placeholder={t('library.searchPlaceholderCompact')}
           onChange={(event) => setQuery(event.target.value)}
           wrapClassName={s.search}
         />
@@ -161,17 +160,13 @@ export function Library(): JSX.Element {
 
       {ready.length > 0 &&
         (desktop ? (
+          // One line: the count, and the way to those recipes. Their names are one tap away.
           <section className={s.banner} aria-label={t('library.ready.label')}>
             <span className={s.bannerIcon} aria-hidden>
-              <Milk size={24} strokeWidth={2} />
+              <Milk size={20} strokeWidth={2} />
             </span>
-            <div className={s.bannerText}>
-              <h2 className={s.bannerTitle}>{t('library.ready.title', { count: ready.length })}</h2>
-              <p className={s.bannerBody}>
-                <Trans i18nKey="library.ready.body" values={{ names: formatList(ready.map((view) => view.recipe.title)) }} />
-              </p>
-            </div>
-            <ButtonLink to="/search?pantry=1" variant="sage" size="lg" iconAfter={ForwardArrow}>
+            <h2 className={s.bannerTitle}>{t('library.ready.compact', { count: ready.length })}</h2>
+            <ButtonLink to="/search?pantry=1" variant="sage" iconAfter={ForwardArrow}>
               {t('library.ready.cook')}
             </ButtonLink>
           </section>

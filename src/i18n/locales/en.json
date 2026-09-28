@@ -379,19 +379,13 @@
   },
   "library": {
     "title": "Library",
-    "subtitleEmpty": "Your family’s recipes, all in one place.",
-    "subtitle_one": "{{count, number}} recipe — {{mine, number}} of your own, {{web, number}} saved from the web.",
-    "subtitle_other": "{{count, number}} recipes — {{mine, number}} of your own, {{web, number}} saved from the web.",
-    "subtitleCompact_one": "{{count, number}} recipe · {{mine, number}} yours, {{web, number}} from the web",
-    "subtitleCompact_other": "{{count, number}} recipes · {{mine, number}} yours, {{web, number}} from the web",
     "importFromWeb": "Import from web",
     "addRecipe": "Add recipe",
     "empty": {
       "title": "No recipes yet",
-      "body": "Write down a family favourite or bring one in from a recipe site. Everyone in the family sees the same library."
+      "body": "Add a family favourite or import one. The whole family sees them."
     },
     "searchLabel": "Search the library",
-    "searchPlaceholder": "Search by recipe name or ingredients — e.g. chicken, lemon, rice",
     "searchPlaceholderCompact": "Recipe or ingredients…",
     "source": "Source",
     "all": "All {{count, number}}",
@@ -414,9 +408,6 @@
     },
     "ready": {
       "label": "Ready without shopping",
-      "title_one": "You can cook {{count, number}} recipe tonight without shopping",
-      "title_other": "You can cook {{count, number}} recipes tonight without shopping",
-      "body": "<bdi>{{names}}</bdi> use only what’s in your pantry and staples.",
       "compact_one": "{{count, number}} recipe needs nothing from the shop",
       "compact_other": "{{count, number}} recipes need nothing from the shop",
       "cook": "Cook from my pantry"

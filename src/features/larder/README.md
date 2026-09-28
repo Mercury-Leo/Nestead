@@ -37,5 +37,5 @@ Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [
 | Folder | Route | What it does |
 | --- | --- | --- |
 | `detail/` (`RecipeDetail.tsx` + css) | `/recipe/:id` | Servings via `useServings()`, have/staple/to-buy, steps; "Make shopping list" hands the added ids to `/lists`; web recipes can be saved; library recipes take a family rating. |
-| `library/` (`Library.tsx` + css) | `/library` | Library recipes with local search, source filter (all, mine, web) and five sorts; links to `/add` and `/import`. |
+| `library/` (`Library.tsx` + css) | `/library` | Library recipes with local search, source filter with counts (all, mine, web) and five sorts; a one-line banner counts recipes that need nothing from the shop; links to `/add` and `/import`. No subtitle: the filter carries the counts. |
 | `profile/` (`DietProfile.tsx` + css) | `/profile` | Toggles `PRESETS`, adds rules via `parseCustomRule()`, sets hide or warn; creates the profile row if missing. |

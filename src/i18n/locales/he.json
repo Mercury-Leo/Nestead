@@ -397,21 +397,13 @@
   },
   "library": {
     "title": "ספרייה",
-    "subtitleEmpty": "המתכונים של המשפחה, כולם במקום אחד.",
-    "subtitle_one": "מתכון אחד — {{mine, number}} משלכם, {{web, number}} שנשמרו מהרשת.",
-    "subtitle_two": "{{count, number}} מתכונים — {{mine, number}} משלכם, {{web, number}} שנשמרו מהרשת.",
-    "subtitle_other": "{{count, number}} מתכונים — {{mine, number}} משלכם, {{web, number}} שנשמרו מהרשת.",
-    "subtitleCompact_one": "מתכון אחד · {{mine, number}} שלכם, {{web, number}} מהרשת",
-    "subtitleCompact_two": "{{count, number}} מתכונים · {{mine, number}} שלכם, {{web, number}} מהרשת",
-    "subtitleCompact_other": "{{count, number}} מתכונים · {{mine, number}} שלכם, {{web, number}} מהרשת",
     "importFromWeb": "ייבוא מהרשת",
     "addRecipe": "הוספת מתכון",
     "empty": {
       "title": "עדיין אין מתכונים",
-      "body": "אפשר לרשום מתכון משפחתי אהוב או להביא מתכון מאתר מתכונים. כל בני המשפחה רואים את אותה ספרייה."
+      "body": "אפשר להוסיף מתכון משפחתי אהוב או לייבא אחד. כל המשפחה רואה אותם."
     },
     "searchLabel": "חיפוש בספרייה",
-    "searchPlaceholder": "חיפוש לפי שם מתכון או מצרכים — למשל עוף, לימון, אורז",
     "searchPlaceholderCompact": "מתכון או מצרכים…",
     "source": "מקור",
     "all": "הכול {{count, number}}",
@@ -434,10 +426,6 @@
     },
     "ready": {
       "label": "אפשר לבשל בלי קניות",
-      "title_one": "אפשר לבשל הערב מתכון אחד בלי לצאת לקניות",
-      "title_two": "אפשר לבשל הערב {{count, number}} מתכונים בלי לצאת לקניות",
-      "title_other": "אפשר לבשל הערב {{count, number}} מתכונים בלי לצאת לקניות",
-      "body": "<bdi>{{names}}</bdi> — רק ממה שיש במזווה ובמצרכי היסוד.",
       "compact_one": "מתכון אחד לא צריך כלום מהחנות",
       "compact_two": "{{count, number}} מתכונים לא צריכים כלום מהחנות",
       "compact_other": "{{count, number}} מתכונים לא צריכים כלום מהחנות",
