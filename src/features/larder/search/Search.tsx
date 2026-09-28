@@ -1,19 +1,19 @@
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { ArrowUpDown, Eye, EyeOff, Globe, Milk, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
+import { ArrowUpDown, Eye, EyeOff, Milk, Plus, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import { PageHeader } from '../../../components/PageHeader';
-import { Button, ForwardArrow, RemovableChip, Segmented, SelectButton, Sheet, Switch, cx } from '../../../components/ui';
+import { Button, ButtonLink, ForwardArrow, RemovableChip, Segmented, SelectButton, Sheet, Switch, cx } from '../../../components/ui';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { activeFilters, defaultFilters, search, suggestions } from '../../../domain/kitchen/search';
 import type { SearchFilters, SearchHit, SearchQuery, SortKey } from '../../../domain/kitchen/search';
-import { formatList, formatListParts } from '../../../i18n';
+import { formatList } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
-import { dietThingWord, sortShort } from '../labels';
+import { dietThingWord, sortLabel, sortShort } from '../labels';
 import { RecipeCard, RecipeGrid, RecipeList, RecipeRow } from '../recipe/RecipeCard';
 import { recipeView } from '../recipe/recipeView';
 import { FilterControls } from './FilterControls';
-import { activeFilterLabel, filterPhrases, loosenLabel } from './filterLabels';
+import { activeFilterLabel, loosenLabel } from './filterLabels';
 import { NameBox, TokenBox } from './TokenBox';
 import s from './Search.module.css';
 
@@ -80,44 +80,28 @@ export function Search(): JSX.Element {
         : null;
   const thingWords = (hit: SearchHit): string[] => hit.diet.thingKeys.map((thing) => dietThingWord(t, thing));
   const hiddenThings = [...new Set(outcome.hidden.flatMap(thingWords))];
-  const phrases = filterPhrases(t, filters);
-  // Each phrase bold, the ", " and " and " between them plain. Fragments, not bare strings, so <Trans> keeps them.
-  const phraseNodes = formatListParts(phrases).map((part, i) =>
-    part.type === 'element' ? <strong key={i}>{part.value}</strong> : <Fragment key={i}>{part.value}</Fragment>,
-  );
 
   const pantryCard = (
     <div className={s.pantryCard}>
       <Milk size={22} strokeWidth={2} aria-hidden className={s.pantryIcon} />
-      <div className={s.pantryText}>
-        <span className={s.pantryTitle}>{t('search.pantry.title')}</span>
-        <span className={s.pantrySub}>
-          {desktop
-            ? t('search.pantry.sub', { have: kitchen.pantry.haveCount, staples: kitchen.pantry.stapleCount })
-            : t('search.pantry.subCompact')}
-        </span>
-      </div>
+      <span className={s.pantryTitle} aria-hidden>
+        {t('search.pantry.title')}
+      </span>
       <Switch label={t('search.pantry.title')} checked={pantry} onChange={setPantry} />
     </div>
   );
 
+  // How many the diet hid and why; their titles appear with Show anyway.
+  const hiddenLine = (
+    <Trans i18nKey="search.hiddenCompact" values={{ count: outcome.hidden.length, things: formatList(hiddenThings, 'unit') }} />
+  );
   const hiddenNotice =
     outcome.hidden.length > 0 &&
     !empty &&
     (desktop ? (
       <div className={s.hidden} role="status">
         <EyeOff size={22} strokeWidth={2} aria-hidden className={s.hiddenIcon} />
-        <p className={s.hiddenText}>
-          <Trans
-            i18nKey="search.hidden"
-            count={outcome.hidden.length}
-            values={{
-              list: formatList(
-                outcome.hidden.map((hit) => t('search.hiddenItem', { title: hit.recipe.title, things: formatList(thingWords(hit), 'unit') })),
-              ),
-            }}
-          />
-        </p>
+        <p className={s.hiddenText}>{hiddenLine}</p>
         <Button variant="secondary" icon={Eye} onClick={() => setConflict('warn')}>
           {t('search.showAnyway')}
         </Button>
@@ -125,7 +109,7 @@ export function Search(): JSX.Element {
     ) : (
       <div className={s.hiddenCompact} role="status">
         <EyeOff size={20} strokeWidth={2} aria-hidden />
-        <span className={s.hiddenCompactText}>{t('search.hiddenCompact', { count: outcome.hidden.length })}</span>
+        <span className={s.hiddenCompactText}>{hiddenLine}</span>
         <button type="button" className={s.linkButton} onClick={() => setConflict('warn')}>
           {t('search.showAnyway')}
         </button>
@@ -137,23 +121,8 @@ export function Search(): JSX.Element {
       <span className={s.noArt} aria-hidden>
         <SearchIcon size={40} strokeWidth={1.8} />
       </span>
+      {/* The query and the filters are on screen already; what is left to say is what to change. */}
       <h2 className={s.noTitle}>{t('search.noResults.title')}</h2>
-      <p className={s.noBody}>
-        <Trans
-          i18nKey={
-            described !== null
-              ? phrases.length > 0
-                ? 'search.noResults.queryFiltered'
-                : 'search.noResults.query'
-              : phrases.length > 0
-                ? 'search.noResults.anyFiltered'
-                : 'search.noResults.any'
-          }
-          values={{ query: described ?? '' }}
-          components={{ query: <strong />, filters: <>{phraseNodes}</> }}
-        />{' '}
-        {loosen.length > 0 ? t('search.noResults.loosen') : t('search.noResults.tryOther')}
-      </p>
       {loosen.length > 0 && (
         <ul className={s.loosen}>
           {loosen.map((option) => (
@@ -167,6 +136,11 @@ export function Search(): JSX.Element {
             </li>
           ))}
         </ul>
+      )}
+      {loosen.length === 0 && (
+        <ButtonLink to="/add" variant="secondary" icon={Plus} className={s.noAdd}>
+          {t('library.addRecipe')}
+        </ButtonLink>
       )}
       {outcome.hidden.length > 0 && (
         <p className={s.noHidden}>
@@ -222,11 +196,6 @@ export function Search(): JSX.Element {
           />
         )}
         {pantryCard}
-        {desktop && (
-          <p className={s.searching}>
-            <Globe size={16} strokeWidth={2} aria-hidden /> {t('search.searching')}
-          </p>
-        )}
         {!desktop && (
           <Segmented
             label={t('search.searchBy')}
@@ -244,7 +213,7 @@ export function Search(): JSX.Element {
 
       {desktop && empty && active.length > 0 && (
         <div className={s.active}>
-          <span className={s.activeLabel}>{t('search.active.label')}</span>
+          <span className="visually-hidden">{t('search.active.label')}</span>
           {active.map((filter) => {
             const label = activeFilterLabel(t, filter, filters);
             return (
@@ -287,9 +256,15 @@ export function Search(): JSX.Element {
                       t('common.recipes', { count: outcome.results.length })
                     )}
                   </h2>
-                  <p className={s.sortedBy}>
-                    <Trans i18nKey="search.sortedBy" values={{ sort: t(`search.sortedByKey.${filters.sort}`) }} />
-                  </p>
+                  {/* The sort, shown once, as the control that changes it. */}
+                  <SelectButton
+                    label={t('search.sortBy')}
+                    icon={ArrowUpDown}
+                    value={filters.sort}
+                    onChange={(sort) => setFilters({ ...filters, sort })}
+                    options={SORT_KEYS.map((key) => ({ value: key, label: sortLabel(t, key) }))}
+                    display={sortShort(t, filters.sort)}
+                  />
                 </header>
                 {hiddenNotice}
                 {results}

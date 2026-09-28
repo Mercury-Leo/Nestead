@@ -419,40 +419,16 @@
     "searchBy": "Search by",
     "byIngredients": "By ingredients",
     "byName": "By recipe name",
-    "searching": "Searching your library and the web",
     "quoted": "“{{text}}”",
     "pantry": {
-      "title": "Cook from my pantry",
-      "sub": "Ranking by fit with your {{have, number}} pantry items + {{staples, number}} staples",
-      "subCompact": "Ranked by what you already have"
+      "title": "Cook from my pantry"
     },
-    "hidden_one": "<strong>{{count, number}} recipe hidden</strong> by your diet profile — <bdi>{{list}}</bdi>.",
-    "hidden_other": "<strong>{{count, number}} recipes hidden</strong> by your diet profile — <bdi>{{list}}</bdi>.",
-    "hiddenItem": "{{title}} ({{things}})",
-    "hiddenCompact": "{{count, number}} hidden by your diet profile",
+    "hiddenCompact": "{{count, number}} hidden by your diet: <bdi>{{things}}</bdi>",
     "showAnyway": "Show anyway",
     "noResults": {
-      "title": "No recipes match yet",
-      "any": "Nothing matches this search.",
-      "anyFiltered": "Nothing matches this search with <filters></filters>.",
-      "query": "Nothing matches <query><bdi>{{query}}</bdi></query>.",
-      "queryFiltered": "Nothing matches <query><bdi>{{query}}</bdi></query> with <filters></filters>.",
-      "loosen": "Loosen a filter to see more:",
-      "tryOther": "Try other ingredients, or add a recipe of your own.",
-      "moreHidden_one": "{{count, number}} more recipe is hidden by your diet profile (contains <bdi>{{things}}</bdi>). <link>Review profile</link>",
-      "moreHidden_other": "{{count, number}} more recipes are hidden by your diet profile (contains <bdi>{{things}}</bdi>). <link>Review profile</link>"
-    },
-    "phrase": {
-      "zeroToBuy": "0 items to buy",
-      "atMostToBuy": "at most {{count, number}} to buy",
-      "under30": "under 30 min",
-      "30to60": "30–60 min",
-      "over60": "over 1 h",
-      "rating": "a rating of {{rating}}+",
-      "upToKcal": "up to {{kcal, number}} kcal",
-      "atLeastKcal": "at least {{kcal, number}} kcal",
-      "webOnly": "web recipes only",
-      "libraryOnly": "library recipes only"
+      "title": "No recipes match",
+      "moreHidden_one": "{{count, number}} more hidden by your diet (<bdi>{{things}}</bdi>). <link>Review profile</link>",
+      "moreHidden_other": "{{count, number}} more hidden by your diet (<bdi>{{things}}</bdi>). <link>Review profile</link>"
     },
     "active": {
       "label": "Active filters",
@@ -474,14 +450,6 @@
     "reset": "Reset",
     "resultsFor_one": "{{count, number}} recipe for <bdi>{{query}}</bdi>",
     "resultsFor_other": "{{count, number}} recipes for <bdi>{{query}}</bdi>",
-    "sortedBy": "Sorted by <strong>{{sort}}</strong>",
-    "sortedByKey": {
-      "fit": "best pantry fit",
-      "fewest": "fewest items to buy",
-      "rating": "star rating",
-      "kcal": "calories",
-      "time": "total time"
-    },
     "sortBy": "Sort by",
     "results_one": "{{count, number}} result",
     "results_other": "{{count, number}} results",
@@ -496,9 +464,7 @@
       "namePlaceholder": "Recipe name…"
     },
     "filter": {
-      "sortBy": "Sort by",
       "itemsToBuy": "Items to buy",
-      "atMost": "at most",
       "itemsToBuyLabel": "Items to buy, at most",
       "atMostOption": "≤ {{count, number}}",
       "any": "Any",
@@ -515,9 +481,11 @@
       "ratingOption": "{{rating}}+",
       "diet": "Diet match",
       "matchesProfile": "Matches my profile",
-      "conflicts": "Recipes that conflict",
+      "rules_one": "{{count, number}} rule",
+      "rules_other": "{{count, number}} rules",
+      "conflicts": "Conflicts",
       "hide": "Hide",
-      "warn": "Show with warning",
+      "warn": "Warn",
       "source": "Source",
       "library": "Library",
       "web": "Web"

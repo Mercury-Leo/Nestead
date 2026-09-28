@@ -39,21 +39,6 @@ export function loosenLabel(t: TFunction, option: Suggestion, query: SearchQuery
   return removed !== undefined ? t('search.loosen.remove', { label: activeFilterLabel(t, removed, filters) }) : option.label;
 }
 
-/** "0 items to buy", "under 30 min": the filters in "Nothing matches … with …". */
-export function filterPhrases(t: TFunction, filters: SearchFilters): string[] {
-  const phrases: string[] = [];
-  if (filters.maxBuy !== null) {
-    phrases.push(filters.maxBuy === 0 ? t('search.phrase.zeroToBuy') : t('search.phrase.atMostToBuy', { count: filters.maxBuy }));
-  }
-  for (const bucket of filters.time) phrases.push(t(`search.phrase.${bucket}`));
-  if (filters.minRating !== null) phrases.push(t('search.phrase.rating', { rating: formatNumber(filters.minRating) }));
-  if (filters.kcalMax < KCAL_MAX) phrases.push(t('search.phrase.upToKcal', { kcal: filters.kcalMax }));
-  if (filters.kcalMin > KCAL_MIN) phrases.push(t('search.phrase.atLeastKcal', { kcal: filters.kcalMin }));
-  if (!filters.library) phrases.push(t('search.phrase.webOnly'));
-  if (!filters.web) phrases.push(t('search.phrase.libraryOnly'));
-  return phrases;
-}
-
 /** The calorie group's aside: "300–600", "up to 600", "any". */
 export function calorieLabel(t: TFunction, filters: SearchFilters): string {
   if (filters.kcalMin > KCAL_MIN) return t('search.filter.kcalRange', { min: filters.kcalMin, max: filters.kcalMax });

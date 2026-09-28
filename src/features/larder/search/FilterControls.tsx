@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Checkbox, Chip, RadioList, Segmented, Tag, cx } from '../../../components/ui';
+import { Checkbox, Chip, Segmented, Tag, cx } from '../../../components/ui';
 import type { DietProfile } from '../../../domain/types';
 import { KCAL_MAX, KCAL_MIN } from '../../../domain/kitchen/search';
-import type { SearchFilters, SortKey, TimeBucket } from '../../../domain/kitchen/search';
+import type { SearchFilters, TimeBucket } from '../../../domain/kitchen/search';
 import { formatNumber } from '../../../i18n';
-import { ruleLabels, sortLabel, sortShort, timeLabel } from '../labels';
+import { ruleLabels, timeLabel } from '../labels';
 import { calorieLabel } from './filterLabels';
 import s from './Search.module.css';
 
@@ -17,7 +17,6 @@ import s from './Search.module.css';
 type Buy = 'any' | '0' | '1' | '2' | '3';
 type MinRating = 'any' | '3' | '4' | '4.5';
 
-const SORT_KEYS: SortKey[] = ['fit', 'fewest', 'rating', 'kcal', 'time'];
 const BUCKETS: TimeBucket[] = ['under30', '30to60', 'over60'];
 
 function Group({ title, aside, children, className }: { title: string; aside?: ReactNode; children: ReactNode; className?: string }): JSX.Element {
@@ -82,30 +81,8 @@ export function FilterControls({
   const set = (patch: Partial<SearchFilters>): void => onChange({ ...filters, ...patch });
   const rules = ruleLabels(t, profile);
 
-  const sort =
-    layout === 'panel' ? (
-      <Group title={t('search.filter.sortBy')} key="sort">
-        <RadioList
-          label={t('search.filter.sortBy')}
-          value={filters.sort}
-          onChange={(sort) => set({ sort })}
-          options={SORT_KEYS.map((key) => ({ value: key, label: sortLabel(t, key) }))}
-        />
-      </Group>
-    ) : (
-      <Group title={t('search.filter.sortBy')} key="sort">
-        <div className={s.chipWrap} role="radiogroup" aria-label={t('search.filter.sortBy')}>
-          {SORT_KEYS.map((key) => (
-            <Chip key={key} selected={filters.sort === key} onClick={() => set({ sort: key })}>
-              {key === 'fit' ? sortLabel(t, key) : sortShort(t, key)}
-            </Chip>
-          ))}
-        </div>
-      </Group>
-    );
-
   const buy = (
-    <Group title={t('search.filter.itemsToBuy')} aside={t('search.filter.atMost')} key="buy">
+    <Group title={t('search.filter.itemsToBuy')} key="buy">
       <Segmented<Buy>
         label={t('search.filter.itemsToBuyLabel')}
         className={s.full}
@@ -165,11 +142,16 @@ export function FilterControls({
   );
 
   const diet = (
-    <Group title={t('search.filter.diet')} key="diet">
+    <Group
+      title={t('search.filter.diet')}
+      aside={layout === 'panel' && rules.length > 0 ? t('search.filter.rules', { count: rules.length }) : undefined}
+      key="diet"
+    >
       <Checkbox size={26} checked={filters.matchProfile} onChange={(matchProfile) => set({ matchProfile })}>
         {t('search.filter.matchesProfile')}
       </Checkbox>
-      {rules.length > 0 && (
+      {/* The desktop sidebar lists the rules beside the panel, so the panel only counts them. */}
+      {layout === 'sheet' && rules.length > 0 && (
         <div className={s.ruleTags}>
           {rules.map((rule) => (
             <Tag key={rule} className={s.ruleTag}>
@@ -205,6 +187,6 @@ export function FilterControls({
     </Group>
   );
 
-  const order = layout === 'panel' ? [sort, buy, time, calories, rating, diet, source] : [sort, buy, diet, time, rating, calories, source];
+  const order = layout === 'panel' ? [buy, time, calories, rating, diet, source] : [buy, diet, time, rating, calories, source];
   return <div className={cx(s.filters, layout === 'sheet' && s.filtersSheet)}>{order}</div>;
 }

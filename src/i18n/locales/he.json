@@ -438,42 +438,17 @@
     "searchBy": "חיפוש לפי",
     "byIngredients": "לפי מצרכים",
     "byName": "לפי שם מתכון",
-    "searching": "חיפוש בספרייה שלכם וברשת",
     "quoted": "\"{{text}}\"",
     "pantry": {
-      "title": "בישול מהמזווה",
-      "sub": "דירוג לפי התאמה ל-{{have, number}} הפריטים במזווה ול-{{staples, number}} מצרכי היסוד",
-      "subCompact": "לפי מה שכבר יש לכם"
+      "title": "בישול מהמזווה"
     },
-    "hidden_one": "<strong>מתכון אחד הוסתר</strong> בגלל פרופיל התזונה שלכם — <bdi>{{list}}</bdi>.",
-    "hidden_two": "<strong>{{count, number}} מתכונים הוסתרו</strong> בגלל פרופיל התזונה שלכם — <bdi>{{list}}</bdi>.",
-    "hidden_other": "<strong>{{count, number}} מתכונים הוסתרו</strong> בגלל פרופיל התזונה שלכם — <bdi>{{list}}</bdi>.",
-    "hiddenItem": "{{title}} ({{things}})",
-    "hiddenCompact": "הוסתרו בגלל התזונה: {{count, number}}",
+    "hiddenCompact": "{{count, number}} הוסתרו בגלל התזונה: <bdi>{{things}}</bdi>",
     "showAnyway": "להציג בכל זאת",
     "noResults": {
-      "title": "עדיין אין מתכונים מתאימים",
-      "any": "אין תוצאות לחיפוש הזה.",
-      "anyFiltered": "אין תוצאות לחיפוש הזה עם <filters></filters>.",
-      "query": "אין תוצאות עבור <query><bdi>{{query}}</bdi></query>.",
-      "queryFiltered": "אין תוצאות עבור <query><bdi>{{query}}</bdi></query> עם <filters></filters>.",
-      "loosen": "כדי לראות עוד, אפשר להסיר מסנן:",
-      "tryOther": "אפשר לנסות מצרכים אחרים, או להוסיף מתכון משלכם.",
-      "moreHidden_one": "עוד מתכון אחד מוסתר בגלל פרופיל התזונה שלכם (מכיל <bdi>{{things}}</bdi>). <link>לבדיקת הפרופיל</link>",
-      "moreHidden_two": "עוד {{count, number}} מתכונים מוסתרים בגלל פרופיל התזונה שלכם (מכילים <bdi>{{things}}</bdi>). <link>לבדיקת הפרופיל</link>",
-      "moreHidden_other": "עוד {{count, number}} מתכונים מוסתרים בגלל פרופיל התזונה שלכם (מכילים <bdi>{{things}}</bdi>). <link>לבדיקת הפרופיל</link>"
-    },
-    "phrase": {
-      "zeroToBuy": "0 פריטים לקנייה",
-      "atMostToBuy": "עד {{count, number}} לקנייה",
-      "under30": "פחות מ-30 דק׳",
-      "30to60": "30–60 דק׳",
-      "over60": "יותר משעה",
-      "rating": "דירוג {{rating}} ומעלה",
-      "upToKcal": "עד {{kcal, number}} קק״ל",
-      "atLeastKcal": "לפחות {{kcal, number}} קק״ל",
-      "webOnly": "רק מתכונים מהרשת",
-      "libraryOnly": "רק מתכונים מהספרייה"
+      "title": "אין מתכונים מתאימים",
+      "moreHidden_one": "עוד מתכון אחד הוסתר בגלל התזונה (<bdi>{{things}}</bdi>). <link>לבדיקת הפרופיל</link>",
+      "moreHidden_two": "עוד {{count, number}} הוסתרו בגלל התזונה (<bdi>{{things}}</bdi>). <link>לבדיקת הפרופיל</link>",
+      "moreHidden_other": "עוד {{count, number}} הוסתרו בגלל התזונה (<bdi>{{things}}</bdi>). <link>לבדיקת הפרופיל</link>"
     },
     "active": {
       "label": "מסננים פעילים",
@@ -496,14 +471,6 @@
     "resultsFor_one": "מתכון אחד עבור <bdi>{{query}}</bdi>",
     "resultsFor_two": "{{count, number}} מתכונים עבור <bdi>{{query}}</bdi>",
     "resultsFor_other": "{{count, number}} מתכונים עבור <bdi>{{query}}</bdi>",
-    "sortedBy": "מיון לפי <strong>{{sort}}</strong>",
-    "sortedByKey": {
-      "fit": "התאמה למזווה",
-      "fewest": "הכי מעט פריטים לקנייה",
-      "rating": "דירוג כוכבים",
-      "kcal": "קלוריות",
-      "time": "זמן כולל"
-    },
     "sortBy": "מיון לפי",
     "results_one": "תוצאה אחת",
     "results_two": "{{count, number}} תוצאות",
@@ -520,9 +487,7 @@
       "namePlaceholder": "שם המתכון…"
     },
     "filter": {
-      "sortBy": "מיון לפי",
       "itemsToBuy": "פריטים לקנייה",
-      "atMost": "לכל היותר",
       "itemsToBuyLabel": "פריטים לקנייה, לכל היותר",
       "atMostOption": "{{count, number}}",
       "any": "הכול",
@@ -539,9 +504,12 @@
       "ratingOption": "{{rating}}+",
       "diet": "התאמה לתזונה",
       "matchesProfile": "תואם לפרופיל שלי",
-      "conflicts": "מתכונים שמתנגשים",
+      "rules_one": "כלל אחד",
+      "rules_two": "{{count, number}} כללים",
+      "rules_other": "{{count, number}} כללים",
+      "conflicts": "מתנגשים",
       "hide": "הסתרה",
-      "warn": "הצגה עם אזהרה",
+      "warn": "אזהרה",
       "source": "מקור",
       "library": "ספרייה",
       "web": "מהרשת"

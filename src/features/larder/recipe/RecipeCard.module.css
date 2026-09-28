@@ -217,7 +217,7 @@
 }
 
 .gridDense {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 196px), 1fr));
   gap: 16px;
 }
 

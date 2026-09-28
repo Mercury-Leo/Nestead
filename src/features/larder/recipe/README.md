@@ -23,7 +23,7 @@ Recipe presentation shared by the kitchen screens and the shopping list: cards, 
 - `StepText` renders each time through a callback: a quiet label on the detail page, a timer chip in cook mode (`StepText.tsx`).
 - A card shows the title, one meta line (time, rating, to buy), the fit bar and any diet warning; tags, description, calories, "You have 9/10", the need list and the source sit behind its toggle. Open or shut is per card and never saved (`RecipeCard.tsx`).
 - The title is the link (or, with `onChoose`, the button); the photo repeats it outside the tab order and the accessibility tree, and the toggle is a sibling button with `aria-expanded` and `aria-controls` (`RecipeCard.tsx`).
-- Grids fill as many columns as fit (240px minimum, 200px when dense) and start-align their items, so an open card never stretches its row (`RecipeCard.module.css`).
+- Grids fill as many columns as fit (240px minimum, 196px when dense: two columns beside Search's filters at 1024px and 1280px, three at 1440px) and start-align their items, so an open card never stretches its row (`RecipeCard.module.css`).
 
 ## Connections
 - Uses: `../../../components/ui` (`PhotoPlaceholder.tsx` and `badges.tsx` import `ui/cx` directly), `../../../domain/kitchen/` (diet, fit, search, quantity, durations), `../labels.ts`, `../../../auth/session.tsx` (`RecipePhoto.tsx`), `../../../i18n/`.

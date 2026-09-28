@@ -105,8 +105,8 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  min-height: 64px;
-  padding-block: 8px;
+  min-height: 56px;
+  padding-block: 6px;
   padding-inline: 16px 8px;
   border-radius: 16px;
   background: var(--sage-tint);
@@ -117,31 +117,11 @@
   color: var(--sage);
 }
 
-.pantryText {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .pantryTitle {
+  flex: 1;
+  min-width: 0;
   font-size: 15.5px;
   font-weight: 700;
-}
-
-.pantrySub {
-  color: var(--ink-2);
-  font-size: 13.5px;
-}
-
-.searching {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  margin-block: 0;
-  margin-inline: auto 0;
-  color: var(--ink-2);
-  font-size: 14px;
 }
 
 /*
@@ -154,7 +134,10 @@
   width: 100%;
 }
 
+/* Full-width groups share the width evenly, down to the narrow desktop panel. */
 .full > label {
+  min-width: 0;
+  padding-inline: 4px;
   white-space: normal;
 }
 
@@ -176,11 +159,19 @@
 
 /* ------------------------------------------------------------ filters -- */
 
+/* A narrower panel below 1280px leaves room for two result columns at 1024px. */
 .layout {
   display: grid;
-  grid-template-columns: 288px minmax(0, 1fr);
-  gap: 32px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
   align-items: start;
+}
+
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: 288px minmax(0, 1fr);
+    gap: 32px;
+  }
 }
 
 .panel {
@@ -368,7 +359,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
 }
@@ -381,15 +372,6 @@
   line-height: 1.15;
 }
 
-.sortedBy {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: 14px;
-}
-
-.sortedBy strong {
-  color: var(--ink);
-}
 
 .hidden {
   display: flex;
@@ -467,11 +449,6 @@
   margin-bottom: 20px;
 }
 
-.activeLabel {
-  margin-inline-end: 4px;
-  color: var(--ink-2);
-  font-size: 14.5px;
-}
 
 /* --------------------------------------------------------- no results -- */
 
@@ -510,15 +487,8 @@
   line-height: 1.1;
 }
 
-.noBody {
-  max-width: 500px;
-  margin: 14px 0 0;
-  color: var(--ink-2);
-  font-size: 16px;
-}
-
-.noBody strong {
-  color: var(--ink);
+.noAdd {
+  margin-top: 24px;
 }
 
 .loosen {
