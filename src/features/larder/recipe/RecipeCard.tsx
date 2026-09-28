@@ -61,7 +61,8 @@ function Meta({ view }: { view: RecipeView }): JSX.Element {
         <span className="tabular" dir="auto">
           {total}
         </span>
-      </span>
+      </span>{' '}
+      {/* Spaces between the items keep the words apart for screen readers; flex layout ignores them. */}
       {stars !== null && (
         <span className={s.metaItem}>
           <Star size={15} strokeWidth={0} fill="var(--honey)" aria-hidden />
@@ -70,7 +71,7 @@ function Meta({ view }: { view: RecipeView }): JSX.Element {
           </span>
           <span className="visually-hidden">{t('recipe.stars', { value: stars })}</span>
         </span>
-      )}
+      )}{' '}
       {fit.missing === 0 ? (
         <span className={cx(s.metaItem, s.nothing)}>
           <Check size={15} strokeWidth={2.4} aria-hidden />

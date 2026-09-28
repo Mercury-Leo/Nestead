@@ -188,17 +188,17 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
         <p className={s.statItems}>
           <span className={s.statItem}>
             <Clock size={18} strokeWidth={2} aria-hidden />
-            <span className="visually-hidden">{t('detail.stats.totalTime')}</span>
+            <span className="visually-hidden">{t('detail.stats.totalTime')}</span>{' '}
             <span dir="auto">{formatMinutes(t, total)}</span>
-          </span>
+          </span>{' '}
           <span className={s.statItem}>
             <Flame size={18} strokeWidth={2} aria-hidden />
-            <span className="visually-hidden">{t('detail.stats.calories')}</span>
+            <span className="visually-hidden">{t('detail.stats.calories')}</span>{' '}
             <span className="tabular" dir="auto">
               {kcal === undefined ? '—' : t('detail.stats.kcalValue', { kcal })}
             </span>
             {recipe.kcalEstimated && kcal !== undefined && <EstTag />}
-          </span>
+          </span>{' '}
           <span className={cx(s.statItem, fit.missing > 0 ? s.statAccent : s.statSage)}>
             {fit.missing > 0 ? <ShoppingBag size={18} strokeWidth={2} aria-hidden /> : <Check size={18} strokeWidth={2.4} aria-hidden />}
             <span className="tabular">{fit.missing > 0 ? t('recipe.badge.toBuy', { count: fit.missing }) : t('recipe.badge.nothingToBuy')}</span>
