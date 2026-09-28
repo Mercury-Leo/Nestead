@@ -14,16 +14,7 @@
     "backToLibrary": "חזרה לספרייה",
     "recipes_one": "מתכון אחד",
     "recipes_two": "{{count, number}} מתכונים",
-    "recipes_other": "{{count, number}} מתכונים",
-    "items_one": "פריט אחד",
-    "items_two": "{{count, number}} פריטים",
-    "items_other": "{{count, number}} פריטים",
-    "ingredients_one": "מצרך אחד",
-    "ingredients_two": "{{count, number}} מצרכים",
-    "ingredients_other": "{{count, number}} מצרכים",
-    "staples_one": "מצרך יסוד אחד",
-    "staples_two": "{{count, number}} מצרכי יסוד",
-    "staples_other": "{{count, number}} מצרכי יסוד"
+    "recipes_other": "{{count, number}} מתכונים"
   },
   "nav": {
     "home": "Nestead – דף הבית",
@@ -540,7 +531,6 @@
       "serving": "מנה",
       "totalTime": "זמן כולל",
       "prepCook": "הכנה {{prep, number}} · בישול {{cook, number}}",
-      "toBuy": "לקנייה",
       "more": "פרטים נוספים"
     },
     "startCooking": "התחלת בישול",

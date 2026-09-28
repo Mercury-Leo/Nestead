@@ -13,13 +13,7 @@
     "library": "Library",
     "backToLibrary": "Back to the library",
     "recipes_one": "{{count, number}} recipe",
-    "recipes_other": "{{count, number}} recipes",
-    "items_one": "{{count, number}} item",
-    "items_other": "{{count, number}} items",
-    "ingredients_one": "{{count, number}} ingredient",
-    "ingredients_other": "{{count, number}} ingredients",
-    "staples_one": "{{count, number}} staple",
-    "staples_other": "{{count, number}} staples"
+    "recipes_other": "{{count, number}} recipes"
   },
   "nav": {
     "home": "Nestead home",
@@ -516,7 +510,6 @@
       "serving": "serving",
       "totalTime": "Total time",
       "prepCook": "{{prep, number}} prep · {{cook, number}} cook",
-      "toBuy": "To buy",
       "more": "More details"
     },
     "startCooking": "Start cooking",
