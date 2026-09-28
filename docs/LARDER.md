@@ -70,8 +70,20 @@ placeholder, stars, badges, match bar, status marker, step text).
   its items to General. "Move to pantry" takes only groceries (Supermarket,
   recipe or catalog items); "Clear checked" takes everything ticked. The
   sidebar count is what is still to buy, not everything on the list.
-- **Copy.** "Rules apply everywhere…" adds "Everyone in the family shares
-  them."; the sidebar wordmark is Nestead with the jar mark.
+- **Copy.** The diet profile says its scope once, as the subtitle ("Shared by
+  the family, and applied everywhere.") instead of the brief's info box; the
+  sidebar wordmark is Nestead with the jar mark.
+- **Less text than the artboards** (September 2026). Recipe cards and rows show
+  the title (two lines at most), one line of time, rating and what to buy, the
+  fit bar and any diet warning; tags, description, calories, "You have 9/10",
+  the need list and the source open from a toggle beside the bar. The recipe
+  page puts time, calories and to-buy on one line with the rest behind a
+  toggle, and drops the "What it requires" summary, the legend and the second
+  shopping-list button. Counts replace sentences (the shopping list's "2/8",
+  "Left off this list · 18", Import's "What we read"), subtitles that
+  restated counts are gone, and learn-once hints (timers, arrow keys, swipes,
+  pantry Enter) show until used on that device (`features/larder/hints.ts`).
+  Search has one sort control, beside the results.
 - **Library ratings** show the family's own rating when set, as the brief says,
   so One-Pan Lemon Chicken shows 4.0 where the artboard shows 4.6.
 - **Step titles.** Cook mode shows "Step 6 of 7 · Bake" and "Next · Rest and
