@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { Check, ImagePlus, List, Plus, Timer, Trash2, User, X } from 'lucide-react';
+import { Check, ImagePlus, Link2, List, Plus, Timer, Trash2, User, X } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
 import { BackArrow, Button, IconButton, RemovableChip, Segmented, SelectButton, Stepper, TextField, cx } from '../../../components/ui';
@@ -12,6 +12,7 @@ import { detectDurations } from '../../../domain/kitchen/durations';
 import { parseIngredientBlock } from '../../../domain/kitchen/parse';
 import { formatList } from '../../../i18n';
 import { removeRecipeFromList } from '../actions';
+import { useHint } from '../hints';
 import { useKitchen } from '../KitchenContext';
 import { formatMinutes } from '../labels';
 import { equipmentIcon } from '../recipe/equipment';
@@ -190,6 +191,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
   };
 
   const isWeb = draft.source.kind === 'web';
+  const timersHint = useHint('timers');
   const heading = editing !== undefined ? t('add.headingEdit') : t('add.headingAdd');
 
   /* ---------------------------------------------------------- sections -- */
@@ -305,12 +307,13 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
           />
         </div>
       </div>
+      {/* Where the recipe came from, as a badge: a web recipe keeps its link. */}
       <p className={s.mine}>
         {isWeb ? (
           <Trans
             i18nKey="add.savedWeb"
             values={{ site: draft.source.kind === 'web' ? draft.source.site : '' }}
-            components={{ badge: <span className={s.webBadge} /> }}
+            components={{ badge: <span className={s.webBadge} />, icon: <Link2 size={12} strokeWidth={2.4} aria-hidden /> }}
           />
         ) : (
           <Trans
@@ -337,10 +340,18 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
     >
       {pasting && (
         <div className={s.paste}>
-          <label htmlFor="paste-list" className={s.label}>
-            {t('add.pasteHelp')}
+          <label htmlFor="paste-list" className="visually-hidden">
+            {t('add.pasteList')}
           </label>
-          <textarea id="paste-list" className={s.textarea} rows={5} dir="auto" value={pasted} onChange={(event) => setPasted(event.target.value)} />
+          <textarea
+            id="paste-list"
+            className={s.textarea}
+            rows={5}
+            dir="auto"
+            placeholder={t('add.pasteHelp')}
+            value={pasted}
+            onChange={(event) => setPasted(event.target.value)}
+          />
           <div className={s.pasteActions}>
             <Button variant="ghost" onClick={() => setPasting(false)}>
               {t('common.cancel')}
@@ -351,13 +362,6 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
           </div>
         </div>
       )}
-      <div className={s.ingredientHead} aria-hidden>
-        <span />
-        <span>{t('add.qty')}</span>
-        <span>{t('add.unit')}</span>
-        <span>{t('add.item')}</span>
-        <span />
-      </div>
       <datalist id={listId}>
         {CATALOG.map((item) => (
           <option key={item.id} value={item.name.toLowerCase()} />
@@ -452,7 +456,7 @@ function RecipeForm({ editing, start }: { editing: Recipe | undefined; start: An
   );
 
   const steps = (
-    <Card title={t('add.steps')} aside={<span className={s.aside}>{t('add.stepsAside')}</span>}>
+    <Card title={t('add.steps')} aside={timersHint ? <span className={s.aside}>{t('add.stepsAside')}</span> : undefined}>
       <ol className={s.steps}>
         {draft.steps.map((row, index) => {
           const trailing = index === draft.steps.length - 1 && row.text === '';

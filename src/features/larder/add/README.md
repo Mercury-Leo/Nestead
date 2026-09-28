@@ -16,9 +16,10 @@ Write or edit a recipe (`/add`, `/add?edit=:id`), including a draft handed over 
 - Save puts a new photo in `store.photos` first, then creates or updates the recipe, then removes a replaced photo (`AddRecipe.tsx`).
 - Delete takes the recipe off the shopping list first (`removeRecipeFromList()`), then removes the row and its photo (`AddRecipe.tsx`).
 - The ingredient list always ends in one empty row to type into (`setRows()` in `AddRecipe.tsx`).
+- Ingredient rows have no column heads: each input's placeholder and aria-label name it. The paste box's example is its placeholder, and the Steps card's "times become timers" line shows until a timer has been started in cook mode (`../hints.ts`).
 
 ## Connections
-- Uses: `../actions.ts`, `../KitchenContext.tsx`, `../labels.ts`, `../recipe/` (`equipment.ts`, `recipeView.ts`), `../../../domain/kitchen/` (catalog, durations, parse, calories, quantity), `../../../components/`.
+- Uses: `../actions.ts`, `../hints.ts`, `../KitchenContext.tsx`, `../labels.ts`, `../recipe/` (`equipment.ts`, `recipeView.ts`), `../../../domain/kitchen/` (catalog, durations, parse, calories, quantity), `../../../components/`.
 - Used by: `../../../app/AppRoutes.tsx`, `../import/PreviewCard.tsx` (`ImportHandoff`, `UNITS`), `../labels.test.ts` (`draft.ts`).
 
 ## Rules & gotchas
