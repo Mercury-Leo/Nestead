@@ -75,23 +75,17 @@ export interface ReadLine {
 /** "What we read": the checklist under the preview. */
 export function whatWeRead(recipe: AnyRecipe, stated: { photo: boolean; servings: boolean; times: boolean }): ReadLine[] {
   const t = i18n.t;
-  const titleLine = stated.servings
-    ? t(stated.photo ? 'import.read.titlePhotoServings' : 'import.read.titleServings', { count: recipe.servings })
-    : t(stated.photo ? 'import.read.titlePhoto' : 'import.read.title');
-  const lines: ReadLine[] = [
-    { ok: true, text: titleLine },
+  // The title and photo are on show beside this list, so only a missing photo is mentioned.
+  const lines: ReadLine[] = [];
+  if (stated.servings) lines.push({ ok: true, text: t('import.read.servings', { count: recipe.servings }) });
+  lines.push(
     stated.times
       ? { ok: true, text: t('import.read.times', { prep: formatMinutes(t, recipe.prepMin), cook: formatMinutes(t, recipe.cookMin) }) }
       : { ok: false, text: t('import.read.noTimes') },
-    {
-      ok: true,
-      text: t('import.read.summary', {
-        ingredients: t('import.read.ingredients', { count: recipe.ingredients.length }),
-        equipment: t('import.read.equipment', { count: recipe.equipment.length }),
-        steps: t('import.read.steps', { count: recipe.steps.length }),
-      }),
-    },
-  ];
+    { ok: true, text: t('import.read.ingredients', { count: recipe.ingredients.length }) },
+    { ok: true, text: t('import.read.tools', { count: recipe.equipment.length }) },
+    { ok: true, text: t('import.read.steps', { count: recipe.steps.length }) },
+  );
   if (!stated.photo) lines.push({ ok: false, text: t('import.read.noPhoto') });
   if (recipe.kcalEstimated) {
     lines.push({

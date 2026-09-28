@@ -139,7 +139,6 @@ export default function ImportRecipe(): JSX.Element {
               { value: 'search', label: t('import.searchOnline') },
             ]}
           />
-          {desktop && <span className={s.muted}>{t('import.worksWith')}</span>}
         </div>
 
         {mode === 'link' ? (

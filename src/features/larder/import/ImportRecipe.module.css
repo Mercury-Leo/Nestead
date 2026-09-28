@@ -219,36 +219,91 @@
 }
 
 .read ul {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   margin: 10px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.read li {
+/* What was read: ticked counts in a wrapping row. */
+.readOk {
   display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  font-size: 15px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.read li svg {
+.readOk li {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.readOk svg {
   flex-shrink: 0;
-  margin-top: 3px;
+  color: var(--sage);
+}
+
+/* What needs a look: a line each. */
+.readWarnings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .readWarn {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
   color: var(--warn-ink);
+  font-size: 14.5px;
+}
+
+.readWarn svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .sectionHead {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+}
+
+.sectionToggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sectionChevron {
+  color: var(--ink-2);
+  transition: transform 0.15s ease;
+}
+
+.sectionChevronOpen {
+  transform: rotate(180deg);
+}
+
+.timerCount {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .sectionTitle {
@@ -259,26 +314,6 @@
 
 .sectionHead .sectionTitle {
   margin: 0;
-}
-
-.legend {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  color: var(--ink-2);
-  font-size: 13.5px;
-}
-
-.legend > span {
-  width: 18px;
-  height: 18px;
-  margin-inline-start: 6px;
-}
-
-.legend svg {
-  width: 11px;
-  height: 11px;
 }
 
 .lines {
@@ -403,6 +438,10 @@
   list-style: none;
 }
 
+.steps[hidden] {
+  display: none;
+}
+
 .steps li {
   display: flex;
   gap: 12px;
@@ -436,22 +475,9 @@
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding-top: 18px;
   border-top: 1px solid var(--line);
-}
-
-.savedAs {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin: 0;
-  color: var(--ink-2);
-  font-size: 14.5px;
-}
-
-.savedAs strong {
-  color: var(--ink);
 }
 
 .footActions {

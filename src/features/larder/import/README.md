@@ -13,6 +13,7 @@ Bring in a recipe from a link or from the offline web index (`/import`), check i
 - `fromImported()` parses every line with `parseIngredientLine()`, gives ids `imp-i<n>` and `imp-s<n>`, defaults servings to 4, and estimates calories the page left out (`imported.ts`).
 - "Search online" is `kitchen.provider.search()`, the bundled offline index (`ImportRecipe.tsx`, `../seed/webIndex.ts`).
 - Save calls `saveToLibrary()`; "Edit before saving" goes to `/add` with an `ImportHandoff` in router state (`PreviewCard.tsx`).
+- The preview shows what needs checking and folds the rest: the fit as a bar and a to-buy count, "What we read" as ticked counts with each problem on its own line (`whatWeRead()` lists the counts first, then the problems), and the steps behind a toggle (`PreviewCard.tsx`). Results are compact `RecipeRow`s whose title and thumbnail choose the recipe.
 
 ## Connections
 - Uses: `server/import` (types only), `../add/AddRecipe.tsx` (the `ImportHandoff` type), `../add/draft.ts` (`UNITS`), `../actions.ts`, `../recipe/`, `../labels.ts`, `../KitchenContext.tsx`.
@@ -24,4 +25,4 @@ Bring in a recipe from a link or from the offline web index (`/import`), check i
 - An imported recipe's id is `import:<url>` until it is saved (`imported.ts`).
 
 ## Tests
-`imported.test.ts`, on `tests/fixtures/gnocchi.html`: every line parsed and the handful of basil flagged, the calorie estimate, "What we read", suggested tags, a typed fix applied.
+`imported.test.ts`, on `tests/fixtures/gnocchi.html`: every line parsed and the handful of basil flagged, the calorie estimate, "What we read" (counts, then what to check), suggested tags, a typed fix applied.

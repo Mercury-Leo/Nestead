@@ -35,10 +35,12 @@ describe('imported gnocchi', () => {
   it('says what it read', () => {
     const lines = whatWeRead(recipe, { photo: true, servings: true, times: true });
     expect(lines.map((line) => [line.ok, line.text.replace(/~\d+/, '~N')])).toEqual([
-      [true, 'Title, photo and 4 servings'],
+      [true, '4 servings'],
       [true, 'Prep 10 min · cook 25 min'],
-      [true, '9 ingredients, 2 pieces of equipment, 5 steps'],
-      [false, 'Calories not listed — we’ll show an estimate (~N kcal)'],
+      [true, '9 ingredients'],
+      [true, '2 tools'],
+      [true, '5 steps'],
+      [false, 'Calories estimated (~N kcal)'],
       [false, '1 ingredient needs a quantity'],
     ]);
   });

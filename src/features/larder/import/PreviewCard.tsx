@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Clock, Flame, Globe, Leaf, Pencil, Plus, Timer } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, Clock, Flame, Leaf, Pencil, Plus, Timer } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { Button, Chip, SelectButton, cx } from '../../../components/ui';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
@@ -44,6 +44,9 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
   const [tags, setTags] = useState<string[]>(() => suggestions.filter((t) => t.preselected).map((t) => t.tag));
   const [fixes, setFixes] = useState<Record<string, Fix>>({});
   const [saving, setSaving] = useState(false);
+  // Steps are the least likely thing to need a fix before saving, so they start folded.
+  const [stepsOpen, setStepsOpen] = useState(false);
+  const stepsId = useId();
 
   const recipe = applyFixes(preview.recipe, fixes, tags);
   const view = recipeView(recipe, kitchen.pantry, kitchen.profile);
@@ -89,7 +92,6 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
     <section className={s.preview} aria-labelledby="preview-title">
       <header className={s.previewHead}>
         <span className={s.eyebrow}>{t('import.preview.eyebrow')}</span>
-        <span className={s.muted}>{t('import.preview.check')}</span>
       </header>
 
       <div className={s.previewGrid}>
@@ -145,26 +147,37 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
             </div>
           )}
 
+          {/* What it read, as ticked counts; anything to check before saving, as a line of its own. */}
           <div className={s.read}>
             <p className={s.eyebrow}>{t('import.preview.whatWeRead')}</p>
-            <ul>
-              {read.map((line) => (
-                <li key={line.text} className={cx(!line.ok && s.readWarn)}>
-                  {line.ok ? <Check size={16} strokeWidth={2.4} aria-hidden /> : <AlertTriangle size={16} strokeWidth={2.2} aria-hidden />}
-                  {line.text}
-                </li>
-              ))}
+            <ul className={s.readOk}>
+              {read
+                .filter((line) => line.ok)
+                .map((line) => (
+                  <li key={line.text}>
+                    <Check size={14} strokeWidth={2.6} aria-hidden />
+                    <bdi>{line.text}</bdi>
+                  </li>
+                ))}
             </ul>
+            {read.some((line) => !line.ok) && (
+              <ul className={s.readWarnings}>
+                {read
+                  .filter((line) => !line.ok)
+                  .map((line) => (
+                    <li key={line.text} className={s.readWarn}>
+                      <AlertTriangle size={16} strokeWidth={2.2} aria-hidden />
+                      {line.text}
+                    </li>
+                  ))}
+              </ul>
+            )}
           </div>
         </div>
 
         <div className={s.previewRight}>
           <div className={s.sectionHead}>
             <h3 className={s.sectionTitle}>{t('import.preview.ingredients', { count: recipe.ingredients.length })}</h3>
-            <span className={s.legend}>
-              <StatusMarker status="have" /> {t('recipe.status.have')} <StatusMarker status="staple" /> {t('recipe.status.staple')}{' '}
-              <StatusMarker status="missing" /> {t('recipe.status.toBuy')}
-            </span>
           </div>
           <ul className={s.lines}>
             {recipe.ingredients
@@ -236,10 +249,27 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
           )}
 
           <div className={s.sectionHead}>
-            <h3 className={s.sectionTitle}>{t('import.preview.steps', { count: recipe.steps.length })}</h3>
-            <span className={s.muted}>{t('import.preview.timersFound', { count: timers })}</span>
+            <h3 className={s.sectionTitle}>
+              <button
+                type="button"
+                className={s.sectionToggle}
+                aria-expanded={stepsOpen}
+                aria-controls={stepsId}
+                onClick={() => setStepsOpen(!stepsOpen)}
+              >
+                {t('import.preview.steps', { count: recipe.steps.length })}
+                <ChevronDown size={18} strokeWidth={2.2} aria-hidden className={cx(s.sectionChevron, stepsOpen && s.sectionChevronOpen)} />
+              </button>
+            </h3>
+            {timers > 0 && (
+              <span className={s.timerCount}>
+                <Timer size={14} strokeWidth={2.2} aria-hidden />
+                <span aria-hidden>{formatNumber(timers)}</span>
+                <span className="visually-hidden">{t('import.preview.timersFound', { count: timers })}</span>
+              </span>
+            )}
           </div>
-          <ol className={s.steps}>
+          <ol id={stepsId} className={s.steps} hidden={!stepsOpen}>
             {recipe.steps.map((step, index) => {
               const durations = detectDurations(step.text, index + 1);
               return (
@@ -276,12 +306,11 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
         </div>
       </div>
 
-      <footer className={s.previewFoot}>
-        <p className={s.savedAs}>
-          <Globe size={16} strokeWidth={2} aria-hidden /> <Trans i18nKey="import.preview.savedAs" values={{ site }} />
-        </p>
-        {desktop && <div className={s.footActions}>{actions}</div>}
-      </footer>
+      {desktop && (
+        <footer className={s.previewFoot}>
+          <div className={s.footActions}>{actions}</div>
+        </footer>
+      )}
       {!desktop && <div className={s.stickyBar}>{actions}</div>}
     </section>
   );
