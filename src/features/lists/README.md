@@ -4,7 +4,7 @@ The family's shopping list (`/lists`), for everything, not only food: Supermarke
 ## Files
 | File | Responsibility |
 | --- | --- |
-| `ShoppingList.tsx` (+ `ShoppingList.module.css`, shared by every file here) | The page: sections, progress, checked actions, recipes on the list, the "left off" note. |
+| `ShoppingList.tsx` (+ `ShoppingList.module.css`, shared by every file here) | The page: sections, progress, checked actions, recipes on the list, and what was left off the list. |
 | `ListRows.tsx` | `ItemRow`, `AddItem` (commas add several) and the `Group` shape. |
 | `ItemForm.tsx` | Sheet to rename an item, add a note, move it to another section or remove it. |
 | `GroupForm.tsx` | Sheet to add, rename or delete a section the family made. |
@@ -18,6 +18,7 @@ The family's shopping list (`/lists`), for everything, not only food: Supermarke
 - Typed items go through `addOwnToList()`; recipe items arrive from `addRecipeToList()` on the recipe page (`../larder/actions.ts`).
 - "Move to pantry" takes only checked groceries (`isGrocery()`); "Clear checked" removes everything checked (`ShoppingList.tsx`).
 - Folded sections are a per-family device preference, `listCollapsed` (`ShoppingList.tsx`).
+- "Left off this list" folds like a section: a count, and the pantry and staple names when opened. It starts folded and is not remembered. There is no page subtitle: the progress bar counts the items ("2/8") and the recipes card lists the recipes, each with its item count (`ShoppingList.tsx`).
 - Product rules: [LARDER.md](../../../docs/LARDER.md#where-it-differs-from-the-larder-brief).
 
 ## Connections

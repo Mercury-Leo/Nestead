@@ -144,27 +144,9 @@ export function ShoppingList(): JSX.Element {
     }
   };
 
-  // i18n: staple names are catalog names (English), lower-cased to sit mid-sentence.
-  const staplesLike = leftOff.staples.slice(0, 2).map((name) => name.toLowerCase());
-  const leftOffText = (
-    <Trans
-      i18nKey={staplesLike.length > 0 ? 'lists.leftOffLike' : 'lists.leftOff'}
-      values={{
-        ingredients: t('common.ingredients', { count: leftOffCount }),
-        pantry: leftOff.pantry.length,
-        staples: t('common.staples', { count: leftOff.staples.length }),
-        examples: formatList(staplesLike),
-      }}
-    />
-  );
-
+  // The bar and "2/8"; the bar carries the words for screen readers.
   const progress = items.length > 0 && (
     <div className={s.progressWrap}>
-      <div className={s.progressHead}>
-        <span>
-          <Trans i18nKey="lists.progress" values={{ checked: checked.length, total: items.length }} />
-        </span>
-      </div>
       <div
         className={s.progress}
         role="progressbar"
@@ -175,6 +157,9 @@ export function ShoppingList(): JSX.Element {
       >
         <span style={{ width: `${(checked.length / items.length) * 100}%` }} />
       </div>
+      <span className={cx(s.progressCount, 'tabular')} aria-hidden>
+        {t('lists.progress', { checked: checked.length, total: items.length })}
+      </span>
     </div>
   );
 
@@ -183,7 +168,8 @@ export function ShoppingList(): JSX.Element {
       <span className={s.actionText}>
         <Check size={20} strokeWidth={2.2} aria-hidden />
         <span>
-          <Trans i18nKey="lists.checked" values={{ count: checked.length, names: formatList(checked.map((item) => item.name)) }} />
+          {/* The checked items are struck through in the list below. */}
+          <Trans i18nKey="lists.checked" values={{ count: checked.length }} />
         </span>
       </span>
       <Button variant="ghost" onClick={clearChecked}>
@@ -255,11 +241,7 @@ export function ShoppingList(): JSX.Element {
         </header>
         {open && (
           <div id={bodyId} className={s.groupBody}>
-            {rows.length === 0 && group.id === SUPERMARKET && (
-              <p className={s.muted}>
-                <Trans i18nKey="lists.supermarketEmpty" />
-              </p>
-            )}
+            {rows.length === 0 && group.id === SUPERMARKET && <p className={s.muted}>{t('lists.supermarketEmpty')}</p>}
             {group.id === SUPERMARKET
               ? groupBySection(rows).map(([aisle, aisleRows]) => (
                   <div key={aisle} className={s.group}>
@@ -313,9 +295,7 @@ export function ShoppingList(): JSX.Element {
       <h2 id="on-list-title" className={s.cardTitle}>
         {t('lists.onList')}
       </h2>
-      {recipes.length === 0 ? (
-        <p className={s.muted}>{t('lists.noRecipes')}</p>
-      ) : (
+      {recipes.length > 0 && (
         <ul className={s.recipes}>
           {recipes.map((entry) => {
             const recipe = recipeFor(entry.recipeId);
@@ -334,7 +314,10 @@ export function ShoppingList(): JSX.Element {
                       {entry.title}
                     </span>
                   )}
-                  <span className={s.muted}>{t('lists.itemsAdded', { count: entry.count })}</span>
+                  <span className="visually-hidden">{t('lists.itemsAdded', { count: entry.count })}</span>
+                </span>
+                <span className={cx(s.chipCount, 'tabular')} aria-hidden>
+                  {formatNumber(entry.count)}
                 </span>
                 <button
                   type="button"
@@ -355,26 +338,27 @@ export function ShoppingList(): JSX.Element {
     </section>
   );
 
+  // What the recipes need that you already have: a count, and the names on demand.
   const leftOffCard = leftOffCount > 0 && (
     <section className={s.card} aria-labelledby="left-off-title">
       <h2 id="left-off-title" className={s.cardTitle}>
-        {t('lists.leftOffTitle')}
+        <button type="button" className={s.groupToggle} aria-expanded={showLeftOff} aria-controls="left-off-body" onClick={() => setShowLeftOff(!showLeftOff)}>
+          <ChevronDown size={20} strokeWidth={2.2} aria-hidden className={cx(s.groupChevron, !showLeftOff && s.groupChevronShut)} />
+          {t('lists.leftOffTitle')} <span className={cx(s.groupCount, 'tabular')}>{formatNumber(leftOffCount)}</span>
+        </button>
       </h2>
-      <p className={s.leftOff}>{leftOffText}</p>
-      <button type="button" className={s.showThem} aria-expanded={showLeftOff} onClick={() => setShowLeftOff(!showLeftOff)}>
-        {showLeftOff ? t('lists.hideThem') : t('lists.showThem')}{' '}
-        <ChevronDown size={16} strokeWidth={2.2} aria-hidden className={cx(showLeftOff && s.flip)} />
-      </button>
-      {showLeftOff && (
-        <div className={s.leftOffLists}>
+      <div id="left-off-body" className={s.leftOffLists} hidden={!showLeftOff}>
+        {leftOff.pantry.length > 0 && (
           <p>
-            <Trans i18nKey="lists.pantryNames" values={{ names: formatList(leftOff.pantry, 'unit') }} />
+            <Trans i18nKey="lists.pantryNames" values={{ count: leftOff.pantry.length, names: formatList(leftOff.pantry, 'unit') }} />
           </p>
+        )}
+        {leftOff.staples.length > 0 && (
           <p>
-            <Trans i18nKey="lists.stapleNames" values={{ names: formatList(leftOff.staples, 'unit') }} />
+            <Trans i18nKey="lists.stapleNames" values={{ count: leftOff.staples.length, names: formatList(leftOff.staples, 'unit') }} />
           </p>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 
@@ -413,16 +397,6 @@ export function ShoppingList(): JSX.Element {
     </section>
   );
 
-  const forRecipes = items.filter((item) => item.parts.length > 0).length;
-  const itemCount = t('common.items', { count: items.length });
-  const subtitle =
-    items.length === 0
-      ? t('lists.subtitleEmpty')
-      : recipes.length === 0
-        ? itemCount
-        : forRecipes === items.length
-          ? t('lists.subtitleAll', { items: itemCount, recipes: t('common.recipes', { count: recipes.length }) })
-          : t('lists.subtitleSome', { items: itemCount, count: forRecipes, recipes: t('common.recipes', { count: recipes.length }) });
 
   const sheets = (
     <>
@@ -437,9 +411,9 @@ export function ShoppingList(): JSX.Element {
 
   return (
     <div>
+      {/* No subtitle: the progress bar counts the items and the recipes card lists the recipes. */}
       <PageHeader
         title={t('lists.title')}
-        subtitle={subtitle}
         actions={
           desktop ? (
             <ButtonLink to="/library" variant="secondary" size="lg" icon={Plus}>
@@ -491,7 +465,7 @@ export function ShoppingList(): JSX.Element {
           )}
           {empty}
           {list}
-          {leftOffCount > 0 && <p className={s.leftOffLine}>{leftOffText}</p>}
+          {leftOffCard}
           {readySection}
           {checked.length > 0 && <div className={s.stickySpace} aria-hidden />}
           {checked.length > 0 && (

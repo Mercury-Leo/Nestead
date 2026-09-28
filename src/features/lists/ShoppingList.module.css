@@ -42,18 +42,19 @@
 
 .progressWrap {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  align-items: center;
 }
 
-.progressHead {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 15px;
+.progressCount {
+  flex-shrink: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .progress {
+  flex: 1;
   height: 6px;
   border-radius: 3px;
   background: var(--sunk-2);
@@ -452,33 +453,8 @@ a.recipeTitle:hover {
   color: var(--ink);
 }
 
-.leftOff {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: 15px;
-}
-
-.leftOff strong {
-  color: var(--ink);
-}
-
-.showThem {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  align-self: flex-start;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent-ink);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* Turns the ChevronDown to point up: vertical, so the same in either direction. */
-.flip {
-  transform: rotate(180deg);
+.leftOffLists[hidden] {
+  display: none;
 }
 
 .leftOffLists p {
@@ -553,11 +529,6 @@ a.recipeTitle:hover {
   font-weight: 700;
 }
 
-.leftOffLine {
-  margin: 16px 0 0;
-  color: var(--ink-2);
-  font-size: 14px;
-}
 
 .stickyMove {
   position: fixed;
