@@ -22,7 +22,7 @@ export function BoardPage(): JSX.Element {
     <div className="app">
       <PageHeader
         title={t('board.title')}
-        subtitle={family !== undefined ? <Trans i18nKey="board.subtitleFamily" values={{ family: family.name }} /> : t('board.subtitle')}
+        subtitle={family !== undefined ? <bdi>{family.name}</bdi> : undefined}
         actions={
           <div className="who">
             {setMe === undefined ? (

@@ -102,11 +102,9 @@
   },
   "board": {
     "title": "Board",
-    "subtitle": "Everything the family has on the go.",
-    "subtitleFamily": "Everything <bdi>{{family}}</bdi> has on the go.",
     "iAm": "I am",
     "family": "Family",
-    "invite": "You are the only one here. Share this code so someone can join: <code>{{code}}</code>. It stays on the <link>Family</link> page, with an invite link you can send.",
+    "invite": "Just you so far. Share code <code>{{code}}</code> or an <link>invite link</link>.",
     "filter": {
       "search": "Search tasks",
       "mine": "Mine",
@@ -146,7 +144,7 @@
       "assigned": "Assigned",
       "nobody": "Nobody",
       "dueDate": "Due date",
-      "repeatNoDate": "With no due date, it repeats from the day it’s done.",
+      "repeatNoDate": "Repeats from when it’s done.",
       "comesBack": "Comes back {{date}}",
       "icon": "Icon",
       "confirmDelete": "Confirm delete",
