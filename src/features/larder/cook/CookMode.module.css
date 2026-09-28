@@ -112,15 +112,6 @@
   text-align: center;
 }
 
-.eyebrow {
-  display: block;
-  color: var(--c-text-3);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .recipeTitle {
   overflow: hidden;
   max-width: 100%;
@@ -265,14 +256,6 @@
   gap: 20px;
   align-items: center;
   padding-bottom: 20px;
-}
-
-.trayLabel {
-  flex-shrink: 0;
-  width: 100px;
-  margin: 0;
-  color: var(--c-text-3);
-  font-size: 13px;
 }
 
 .trayCards {
@@ -534,6 +517,14 @@
   font-family: var(--serif);
   font-size: 30px;
   font-weight: 600;
+}
+
+.drawerStep {
+  color: var(--c-text-3);
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .ingredients {

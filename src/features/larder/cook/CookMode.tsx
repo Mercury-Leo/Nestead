@@ -8,6 +8,7 @@ import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { BackArrow, ForwardArrow, cx } from '../../../components/ui';
 import type { AnyRecipe } from '../../../domain/types';
 import type { DetectedDuration } from '../../../domain/kitchen/durations';
+import { markHintUsed, useHint } from '../hints';
 import { useKitchen } from '../KitchenContext';
 import { recipePath } from '../recipe/recipeView';
 import { scaledAmount, servingsFor } from '../recipe/servings';
@@ -48,6 +49,10 @@ function Cook({ recipe }: { recipe: AnyRecipe }): JSX.Element {
   const timers = useTimers();
   const now = useNow();
   const swipe = useRef<{ x: number; y: number } | null>(null);
+  // Read from across the kitchen: hints go once they have been used, never by shrinking.
+  const timersHint = useHint('timers');
+  const keysHint = useHint('cookKeys');
+  const swipeHint = useHint('cookSwipe');
   // Forward is to the right in LTR and to the left in RTL, for keys and swipes.
   const forward = useDirection() === 'rtl' ? -1 : 1;
   useWakeLock();
@@ -74,8 +79,10 @@ function Cook({ recipe }: { recipe: AnyRecipe }): JSX.Element {
     const onKey = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
       if (target !== null && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
-      if (event.key === 'ArrowRight') go(index + forward);
-      else if (event.key === 'ArrowLeft') go(index - forward);
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        markHintUsed('cookKeys');
+        go(event.key === 'ArrowRight' ? index + forward : index - forward);
+      }
       else if (event.key === 'Escape') {
         // Esc closes the phone's ingredient sheet first, then leaves.
         if (drawer && !desktop) setDrawer(false);
@@ -97,13 +104,17 @@ function Cook({ recipe }: { recipe: AnyRecipe }): JSX.Element {
     if (origin === null || touch === undefined) return;
     const dx = touch.clientX - origin.x;
     const dy = touch.clientY - origin.y;
-    if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx * forward < 0 ? index + 1 : index - 1);
+    if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      markHintUsed('cookSwipe');
+      go(dx * forward < 0 ? index + 1 : index - 1);
+    }
   };
 
   const pressChip = (duration: DetectedDuration): void => {
     const key = chipKey(index, duration);
     const timer = findTimer(recipe.id, key);
     if (timer === undefined || timer.state === 'done') {
+      markHintUsed('timers');
       start({
         recipeId: recipe.id,
         recipeTitle: recipe.title,
@@ -161,12 +172,9 @@ function Cook({ recipe }: { recipe: AnyRecipe }): JSX.Element {
           )}
           <div className={s.headerCentre}>
             {desktop ? (
-              <>
-                <span className={s.eyebrow}>{t('cook.eyebrow')}</span>
-                <span className={s.recipeTitle} dir="auto">
-                  {recipe.title}
-                </span>
-              </>
+              <span className={s.recipeTitle} dir="auto">
+                {recipe.title}
+              </span>
             ) : (
               <>
                 <span className={s.stepOf}>
@@ -224,26 +232,24 @@ function Cook({ recipe }: { recipe: AnyRecipe }): JSX.Element {
           )}
         </section>
 
-        <section className={s.tray} aria-label={t('cook.timers')}>
-          {desktop && (
-            <p className={s.trayLabel}>
-              <Trans i18nKey="cook.trayLabel" components={{ eyebrow: <span className={s.eyebrow} /> }} />
-            </p>
-          )}
-          <div className={s.trayCards}>
-            {tray.length === 0 ? (
-              <p className={s.trayEmpty}>{t('cook.trayEmpty')}</p>
-            ) : (
-              tray.map((timer) => <TrayCard key={timer.id} timer={timer} now={now} desktop={desktop} />)
-            )}
-          </div>
-        </section>
+        {/* Running timers stay here on every step. Empty, it shows how to start one until that has been done once. */}
+        {(tray.length > 0 || timersHint) && (
+          <section className={s.tray} aria-label={t('cook.timers')}>
+            <div className={s.trayCards}>
+              {tray.length === 0 ? (
+                <p className={s.trayEmpty}>{t('cook.trayEmpty')}</p>
+              ) : (
+                tray.map((timer) => <TrayCard key={timer.id} timer={timer} now={now} desktop={desktop} />)
+              )}
+            </div>
+          </section>
+        )}
 
         <nav className={s.nav} aria-label={t('cook.steps')}>
           <button type="button" className={s.back} disabled={index === 0} onClick={() => go(index - 1)}>
             <BackArrow size={22} strokeWidth={2.2} aria-hidden /> {t('cook.back')}
           </button>
-          {desktop && (
+          {desktop && keysHint && (
             <p className={s.keysHint}>
               <Trans i18nKey="cook.keysHint" />
             </p>
@@ -267,7 +273,7 @@ function Cook({ recipe }: { recipe: AnyRecipe }): JSX.Element {
             </button>
           )}
         </nav>
-        {!desktop && (
+        {!desktop && swipeHint && (
           <p className={s.swipeHint}>
             <Hand size={18} strokeWidth={2} aria-hidden /> {t('cook.swipeHint')}
           </p>
@@ -277,10 +283,9 @@ function Cook({ recipe }: { recipe: AnyRecipe }): JSX.Element {
       {drawer && desktop && (
         <aside className={s.drawer} aria-label={t('cook.ingredients')}>
           <header className={s.drawerHead}>
-            <div>
-              <span className={s.eyebrow}>{allIngredients ? t('cook.allSteps') : t('cook.forStep', { step: index + 1 })}</span>
-              <h2 className={s.drawerTitle}>{t('cook.ingredients')}</h2>
-            </div>
+            <h2 className={s.drawerTitle}>
+              {t('cook.ingredients')} <span className={s.drawerStep}>{allIngredients ? t('cook.allSteps') : t('cook.forStep', { step: index + 1 })}</span>
+            </h2>
             <button type="button" className={s.round} aria-label={t('cook.closeIngredients')} onClick={() => setDrawer(false)}>
               <X size={22} strokeWidth={2.2} />
             </button>
@@ -294,10 +299,9 @@ function Cook({ recipe }: { recipe: AnyRecipe }): JSX.Element {
           <div className={s.sheet} role="dialog" aria-modal="true" aria-label={t('cook.ingredients')} onClick={(event) => event.stopPropagation()}>
             <span className={s.sheetHandle} aria-hidden />
             <header className={s.drawerHead}>
-              <div>
-                <span className={s.eyebrow}>{allIngredients ? t('cook.allSteps') : t('cook.forStep', { step: index + 1 })}</span>
-                <h2 className={s.drawerTitle}>{t('cook.ingredients')}</h2>
-              </div>
+              <h2 className={s.drawerTitle}>
+                {t('cook.ingredients')} <span className={s.drawerStep}>{allIngredients ? t('cook.allSteps') : t('cook.forStep', { step: index + 1 })}</span>
+              </h2>
               <button type="button" className={s.round} aria-label={t('cook.closeIngredients')} onClick={() => setDrawer(false)}>
                 <X size={22} strokeWidth={2.2} />
               </button>

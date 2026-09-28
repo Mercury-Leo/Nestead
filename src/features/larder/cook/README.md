@@ -15,13 +15,15 @@ Cook mode (`/recipe/:id/cook?step=N`): full screen, one step at a time, with tap
 - `stepIngredients()` uses the step's `ingredientIds`, else the ingredients whose catalog name, alias or group appears in its text (`steps.ts`).
 - Arrow keys and horizontal swipes of 60px or more change step, mirrored in RTL; Escape closes the phone drawer, then leaves (`CookMode.tsx`).
 - `useWakeLock()` keeps the screen on; finishing clears this recipe's finished timers (`CookMode.tsx`).
+- The tray, the arrow-key line and the swipe line teach once: each shows until its action has been done on this device (`timers`, `cookKeys`, `cookSwipe` in `../hints.ts`). With no timer running and the lesson learned, the tray takes no space (`CookMode.tsx`).
 
 ## Connections
-- Uses: `../timers/store.ts`, `../recipe/` (`StepText.tsx`, `servings.ts`, `recipeView.ts`), `../KitchenContext.tsx`, `../labels.ts`, `../../../hooks/` (`useDirection`, `useIsDesktop`, `useWakeLock`).
+- Uses: `../timers/store.ts`, `../recipe/` (`StepText.tsx`, `servings.ts`, `recipeView.ts`), `../KitchenContext.tsx`, `../hints.ts`, `../labels.ts`, `../../../hooks/` (`useDirection`, `useIsDesktop`, `useWakeLock`).
 - Used by: `../../../app/AppRoutes.tsx`.
 
 ## Rules & gotchas
 - A timer is matched to its chip by recipe id and `chipKey()`, which is the step index plus the time's character offset (`../recipe/StepText.tsx`). Editing a step's text moves the offsets.
 - `../../../app/Shell.tsx` removes the sidebar and tab bar on this route.
 - Cook mode keeps its own dark tokens in both themes (`CookMode.module.css`, per the header of `../../../styles/tokens.css`).
+- It is read from across the kitchen: say less rather than set smaller type.
 - Without a `title`, a step is named after its first timer's verb (`stepTitle()`); see [LARDER.md](../../../../docs/LARDER.md#where-it-differs-from-the-larder-brief).
