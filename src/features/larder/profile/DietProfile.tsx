@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Info, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
@@ -84,9 +84,7 @@ export function DietProfilePage(): JSX.Element {
 
       <div className={s.layout}>
         <section className={s.card} aria-label={t('diet.rules')}>
-          <h2 className={s.sectionTitle}>
-            {t('diet.style')} <span className={s.sectionAside}>{t('diet.pickAny')}</span>
-          </h2>
+          <h2 className={s.sectionTitle}>{t('diet.style')}</h2>
           {tiles('style')}
 
           <h2 className={s.sectionTitle}>
@@ -97,9 +95,7 @@ export function DietProfilePage(): JSX.Element {
           <h2 className={s.sectionTitle}>{t('diet.religious')}</h2>
           {tiles('religious')}
 
-          <h2 className={s.sectionTitle}>
-            {t('diet.own')} <span className={s.sectionAside}>{t('diet.ownAside')}</span>
-          </h2>
+          <h2 className={s.sectionTitle}>{t('diet.own')}</h2>
           <form
             className={s.ruleForm}
             onSubmit={(event) => {
@@ -161,13 +157,11 @@ export function DietProfilePage(): JSX.Element {
                 {
                   value: 'warn',
                   label: t('diet.warn'),
+                  // The sample badge is the explanation.
                   hint: (
-                    <>
-                      {t('diet.warnHint')}
-                      <span className={s.sample}>
-                        <WarningBadge>{t('diet.sampleBadge')}</WarningBadge>
-                      </span>
-                    </>
+                    <span className={s.sample}>
+                      <WarningBadge>{t('diet.sampleBadge')}</WarningBadge>
+                    </span>
                   ),
                 },
               ]}
@@ -199,11 +193,6 @@ export function DietProfilePage(): JSX.Element {
             )}
             <p className={s.muted}>{t('diet.savedNote')}</p>
           </section>
-
-          <p className={s.info}>
-            <Info size={18} strokeWidth={2} aria-hidden />
-            {t('diet.info')}
-          </p>
         </aside>
       </div>
     </div>

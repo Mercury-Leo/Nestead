@@ -795,26 +795,22 @@
   },
   "diet": {
     "title": "Diet profile",
-    "subtitle": "Larder checks every recipe against these rules before showing it to you.",
+    "subtitle": "Shared by the family, and applied everywhere.",
     "rules": "Rules",
     "style": "Eating style",
-    "pickAny": "Pick any that apply",
     "allergies": "Allergies & intolerances",
     "allergiesOn": "{{count, number}} on",
     "religious": "Religious & cultural",
     "own": "Your own rules",
-    "ownAside": "Anything else to avoid",
     "addRule": "Add an ingredient or allergy",
-    "addRulePlaceholder": "Add an ingredient or allergy — e.g. “no mushrooms”",
+    "addRulePlaceholder": "e.g. “no mushrooms”",
     "removeRule": "Remove rule {{label}}",
     "conflictTitle": "When a recipe conflicts",
     "hide": "Hide it",
-    "hideHint": "It won’t appear in search or pantry suggestions. You can still reveal hidden results from a search.",
+    "hideHint": "Left out of results; a search can still show it.",
     "warn": "Show it with a warning",
-    "warnHint": "It appears in results with a badge like this:",
     "sampleBadge": "Contains peanuts, sesame",
     "saved": "Saved recipes that conflict",
-    "savedNote": "Recipes you’ve saved stay in your library and carry a warning, so nothing disappears on you.",
-    "info": "Rules apply everywhere: your library, search, pantry matches and recipes you import from the web. Everyone in the family shares them."
+    "savedNote": "They stay in the library, with a warning."
   }
 }
