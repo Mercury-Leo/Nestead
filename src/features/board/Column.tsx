@@ -16,6 +16,10 @@ interface ColumnProps {
   tasks: Task[];
   /** The subset of tasks that pass the board's search and assignee filter. */
   visibleTasks: Task[];
+  /** Today as YYYY-MM-DD, for the cards' "overdue". */
+  today: string;
+  /** The task being dragged, if any. */
+  draggingId: string | undefined;
   filtering: boolean;
   /** Narrow screens stack columns and let them fold away. */
   collapsible: boolean;
@@ -28,6 +32,8 @@ export function Column({
   columns,
   tasks,
   visibleTasks,
+  today,
+  draggingId,
   filtering,
   collapsible,
   collapsed,
@@ -137,7 +143,7 @@ export function Column({
         <>
           <ul className="cards">
             {visibleTasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard key={task.id} task={task} today={today} dragging={task.id === draggingId} />
             ))}
           </ul>
 

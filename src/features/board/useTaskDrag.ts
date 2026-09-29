@@ -58,7 +58,6 @@ interface Press {
 
 interface TaskDragContextValue {
   startDrag: (event: ReactPointerEvent<HTMLElement>, task: Task) => void;
-  draggingId?: string;
 }
 
 export const TaskDragContext = createContext<TaskDragContextValue>({ startDrag: () => {} });

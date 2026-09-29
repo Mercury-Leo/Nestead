@@ -24,6 +24,7 @@ The kanban board and home page: the family's columns and task cards, with drag a
 - `reviveRecurring()` runs when the board loads: done repeats whose date has arrived go back to the first non-done column. There is no server job (`Board.tsx`, `actions.ts`).
 - The filter is saved per family on this device as the preference `boardFilter` (`Board.tsx`).
 - Below 768px (`useIsNarrow()`) columns stack and fold, done columns folded first (`Board.tsx`). A mouse drags after 5px, a finger after a 350ms press (`useTaskDrag.ts`).
+- A drag re-renders the board on every pointer move, but not the cards: `TaskCard` is memoised, the drag context holds only the stable `startDrag`, and the card being dragged learns it from its `dragging` prop (`Board.tsx`, `TaskCard.tsx`).
 - Design background: [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md#the-board).
 
 ## Connections
@@ -34,6 +35,7 @@ The kanban board and home page: the family's columns and task cards, with drag a
 - `Task.done` must equal its column's `isDone`: `placeTask()`, `TaskComposer.tsx` (on create) and `reviveRecurring()` (only into a non-done column) keep it so.
 - `recurFrom` stays apart from `dueDate` so a chore on the 31st returns to the 31st; setting a new due date resets it (`recurrence.ts`, `TaskCard.tsx`).
 - Cards move only by pointer drag: `useTaskDrag.ts` mentions a keyboard route, but `TaskCard.tsx` has no move control.
+- `TaskCard` is memoised, so everything it shows must come from its props (`task`, `today`, `dragging`) or its contexts. Anything that depends on the clock goes through `today`, which the board works out on each render; `new Date()` inside the card would go stale (`TaskCard.tsx`).
 - `board.css` is global, not a module, so its class names (`.card`, `.column`) are shared app-wide (`../../main.tsx`).
 - Only real columns are scroll-snap targets; the "New column" box is not. When the board paints before its columns arrive, that box is the only target, and the browser keeps it snapped as the columns land in front of it, which opened the board at its far end (`board.css`).
 

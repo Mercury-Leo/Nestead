@@ -1,18 +1,24 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
 import type { Task } from '../../domain/types';
 import { formatDate } from '../../i18n';
 import { TASK_ICONS } from './icons';
 import { DueDateInput } from './DueDateInput';
-import { REPEAT_OPTIONS, isOverdue, repeatOf, repeats, schedulePatch } from './recurrence';
+import { REPEAT_OPTIONS, fromIsoDate, isOverdue, repeatOf, repeats, schedulePatch } from './recurrence';
 import { useTaskDragContext } from './useTaskDrag';
 
-/** Moving a task, within its column or to another, is done by dragging it. */
-export function TaskCard({ task }: { task: Task }): JSX.Element {
+/**
+ * Moving a task, within its column or to another, is done by dragging it.
+ *
+ * Memoised: the board re-renders on every pointer move of a drag, and a card
+ * only has to when its task, the day or whether it is the one being dragged
+ * changes. Everything it shows comes from those props and its contexts.
+ */
+export const TaskCard = memo(function TaskCard({ task, today, dragging }: { task: Task; today: string; dragging: boolean }): JSX.Element {
   const { t } = useTranslation();
   const { store, members } = useSession();
-  const drag = useTaskDragContext();
+  const { startDrag } = useTaskDragContext();
   const [open, setOpen] = useState(false);
   // Edited locally and saved on blur, so typing does not write every keystroke.
   const [description, setDescription] = useState(task.description ?? '');
@@ -25,7 +31,7 @@ export function TaskCard({ task }: { task: Task }): JSX.Element {
   };
 
   const assignee = members.find((member) => member.id === task.assigneeId);
-  const overdue = isOverdue(task, new Date());
+  const overdue = isOverdue(task, fromIsoDate(today));
   const repeating = repeats(task);
   const repeat = repeatOf(task);
 
@@ -36,7 +42,7 @@ export function TaskCard({ task }: { task: Task }): JSX.Element {
 
   return (
     <li
-      className={`card ${task.done ? 'card-done' : ''} ${drag.draggingId === task.id ? 'card-dragging' : ''}`}
+      className={`card ${task.done ? 'card-done' : ''} ${dragging ? 'card-dragging' : ''}`}
       data-task-id={task.id}
     >
       <div className="card-head">
@@ -44,7 +50,7 @@ export function TaskCard({ task }: { task: Task }): JSX.Element {
           type="button"
           className="card-toggle"
           aria-expanded={open}
-          onPointerDown={(event) => drag.startDrag(event, task)}
+          onPointerDown={(event) => startDrag(event, task)}
           onClick={() => {
             if (!open) setDescription(task.description ?? '');
             setConfirmingDelete(false);
@@ -176,4 +182,4 @@ export function TaskCard({ task }: { task: Task }): JSX.Element {
       )}
     </li>
   );
-}
+});

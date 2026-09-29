@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,7 @@ import { endPosition, placeTask, reviveRecurring } from './actions';
 import { Column } from './Column';
 import { dropPosition, type DropTarget } from './dragDrop';
 import { TaskDragContext, useTaskDrag, type Box } from './useTaskDrag';
+import { toIsoDate } from './recurrence';
 import {
   NO_FILTER,
   UNASSIGNED,
@@ -102,6 +103,11 @@ export function Board(): JSX.Element {
 
   const boardRef = useRef<HTMLDivElement>(null);
   const { drag, startDrag } = useTaskDrag(boardRef, (task, target) => void dropTask(task, target));
+  // The same object for the whole drag, so a pointer move re-renders no card
+  // (TaskCard is memoised; the card being dragged learns it from a prop).
+  const dragContext = useMemo(() => ({ startDrag }), [startDrag]);
+  // Cards work out "overdue" from this, so a new day still reaches them.
+  const today = toIsoDate(new Date());
   // Picked up and held over its own place, the card would not move: no line.
   const dropMoves =
     drag?.target != null &&
@@ -119,7 +125,7 @@ export function Board(): JSX.Element {
   };
 
   return (
-    <TaskDragContext.Provider value={{ startDrag, draggingId: drag?.task.id }}>
+    <TaskDragContext.Provider value={dragContext}>
       <div className="board-filter" role="search">
         <input
           type="search"
@@ -171,6 +177,8 @@ export function Board(): JSX.Element {
               columns={ordered}
               tasks={tasksInColumn(column.id)}
               visibleTasks={visibleInColumn(column.id)}
+              today={today}
+              draggingId={drag?.task.id}
               filtering={filtering}
               collapsible={narrow}
               // A search should show its hits, so folded columns open while filtering.
