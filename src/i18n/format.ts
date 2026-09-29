@@ -10,19 +10,43 @@ function intl(): string {
   return localeInfo(i18n.language).intl;
 }
 
+/**
+ * Intl formatters are slow to build and free to reuse, and a busy screen
+ * formats hundreds of values a render: every card's due date, every recipe's
+ * numbers, again on each frame of a drag. One per kind, locale and options,
+ * for the life of the page.
+ */
+const formatters = new Map<string, unknown>();
+
+function formatter<T>(key: string, options: object | undefined, make: () => T): T {
+  const full = `${key}|${options === undefined ? '' : JSON.stringify(options)}`;
+  let found = formatters.get(full) as T | undefined;
+  if (found === undefined) {
+    found = make();
+    formatters.set(full, found);
+  }
+  return found;
+}
+
 export function formatNumber(value: number, options?: Intl.NumberFormatOptions): string {
-  return new Intl.NumberFormat(intl(), options).format(value);
+  const locale = intl();
+  return formatter(`number|${locale}`, options, () => new Intl.NumberFormat(locale, options)).format(value);
 }
 
 /** A calendar date. ISO strings like "2026-09-26" are read as that local day, not UTC midnight. */
 export function formatDate(value: Date | string, options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }): string {
   const date = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00`) : new Date(value);
-  return new Intl.DateTimeFormat(intl(), options).format(date);
+  const locale = intl();
+  // A DateTimeFormat keeps the time zone it was made in; keyed by the offset, a
+  // device that changes zone mid-session gets a new one.
+  const key = `date|${locale}|${date.getTimezoneOffset()}`;
+  return formatter(key, options, () => new Intl.DateTimeFormat(locale, options)).format(date);
 }
 
 /** "in 3 days", "yesterday". */
 export function formatRelative(value: number, unit: Intl.RelativeTimeFormatUnit, options: Intl.RelativeTimeFormatOptions = { numeric: 'auto' }): string {
-  return new Intl.RelativeTimeFormat(intl(), options).format(value, unit);
+  const locale = intl();
+  return formatter(`relative|${locale}`, options, () => new Intl.RelativeTimeFormat(locale, options)).format(value, unit);
 }
 
 /** Whole days from today to a calendar date: 0 today, 1 tomorrow, -1 yesterday. */
@@ -71,12 +95,17 @@ export function isolateNumber(text: string): string {
  * a leading RLM makes a <bdi> around the list resolve to RTL (dir=auto looks
  * at the first strong character and does not skip isolates).
  */
+function listFormat(type: Intl.ListFormatType): Intl.ListFormat {
+  const locale = intl();
+  return formatter(`list|${locale}|${type}`, undefined, () => new Intl.ListFormat(locale, { type }));
+}
+
 export function formatList(items: readonly string[], type: Intl.ListFormatType = 'conjunction'): string {
-  if (localeInfo(i18n.language).dir === 'ltr') return new Intl.ListFormat(intl(), { type }).format(items);
-  return RLM + new Intl.ListFormat(intl(), { type }).format(items.map((item) => FSI + item + PDI));
+  if (localeInfo(i18n.language).dir === 'ltr') return listFormat(type).format(items);
+  return RLM + listFormat(type).format(items.map((item) => FSI + item + PDI));
 }
 
 /** The same list in pieces, so each item can be styled on its own: bold phrases joined by plain "and". */
 export function formatListParts(items: readonly string[], type: Intl.ListFormatType = 'conjunction'): { type: 'element' | 'literal'; value: string }[] {
-  return new Intl.ListFormat(intl(), { type }).formatToParts(items);
+  return listFormat(type).formatToParts(items);
 }

@@ -18,6 +18,7 @@ Translation and locale: the i18next instance, the provider that owns language an
 - The locale is the person's choice per device, under the device preference `locale`; there is no language detector (`i18n.ts`).
 - `index.html` sets `lang` and `dir` from the same key before first paint; `LocaleProvider` then takes over (`LocaleProvider.tsx`).
 - In right-to-left locales `formatList()` and `isolateNumber()` add Unicode isolates, so English names and "1½" keep their order (`format.ts`).
+- Each `Intl` formatter is built once per kind, locale and options and then reused; date formatters are also keyed by the UTC offset, so a device that changes time zone gets a fresh one (`format.ts`).
 - The language picker is on the Family page (`../features/family/FamilyPage.tsx`).
 
 ## Connections
