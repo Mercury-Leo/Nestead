@@ -33,6 +33,7 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 | `src/hooks/`, `src/styles/` | Media query, direction, wake lock, pointer-drag helpers; `tokens.css` palette | none |
 | `server/import/` | Recipe import handler | [README](server/import/README.md) |
 | `supabase/` | Schema, migrations, CLI config | [README](supabase/README.md) |
+| `scripts/perf/` | Performance measurements: bundle, page load, interactions, database; results in `docs/PERFORMANCE.md` | [README](scripts/perf/README.md) |
 
 ## Rules
 - Before editing a folder, read its README's "Rules & gotchas"; update the README on the same branch. Merges into `main` are blocked until you do (`../.claude/hooks/docs-on-merge.mjs`; `# docs-ok` only after checking).
