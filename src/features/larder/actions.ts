@@ -19,10 +19,13 @@ import { pantryRow } from '../../domain/kitchen/pantry';
  * shows items in createdAt order, and new ones keep the plan's order.
  */
 async function applyPlan(store: DataStore, plan: ListPlan): Promise<string[]> {
-  await Promise.all([
+  // Every write has finished before this returns or throws, as when they went one by one.
+  const settled = await Promise.allSettled([
     ...plan.remove.map((id) => store.listItems.remove(id)),
     ...plan.update.map(({ id, patch }) => store.listItems.update(id, patch)),
   ]);
+  const failed = settled.find((result) => result.status === 'rejected');
+  if (failed !== undefined) throw failed.reason;
   const created: string[] = [];
   for (const row of plan.create) created.push((await store.listItems.create(row)).id);
   return created;
