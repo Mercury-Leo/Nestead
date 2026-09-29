@@ -391,10 +391,19 @@ async function measureSize(sizeName: keyof typeof SIZES, app: Signed, peer: Sign
       }
 
       if (wanted('photos') && photoIds.length > 0) {
+        let urls: Array<string | null> = [];
         actions.photos = await measure(`${photoIds.length} photo URLs`, 'app',
           async () => createSupabaseStore(app.familyId, app.client).photos,
-          async (photos) => Promise.all(photoIds.map((id) => photos.url(id))),
+          async (photos) => {
+            urls = await Promise.all(photoIds.map((id) => photos.url(id)));
+          },
           async () => {});
+        // Every card got a URL, each for its own photo, and one of them serves the file.
+        const empty = urls.filter((url) => url === null).length;
+        const mismatched = urls.filter((url, index) => url !== null && !url.includes(encodeURI(photoIds[index]!))).length;
+        const served = urls[0] === null || urls[0] === undefined ? 0 : (await fetch(urls[0])).status;
+        console.log(`  (photo URLs: ${empty} empty, ${mismatched} for the wrong photo, first one served with HTTP ${served})`);
+        if (empty > 0 || mismatched > 0 || served !== 200) throw new Error('photo URLs are wrong');
       }
 
       if (wanted('sync')) {

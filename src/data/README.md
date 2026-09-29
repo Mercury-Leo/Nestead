@@ -21,6 +21,7 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 - `createStore()` picks by `VITE_BACKEND` (unset means `local`, anything else throws), but only `../auth/demoSession.tsx` calls it; `../auth/supabaseSession.tsx` builds `withCache(createSupabaseStore(...))` itself (`index.ts`).
 - `CachedCollection` runs at most one read at a time, queues one more for changes that arrive mid-read, applies `update` and `remove` at once and undoes them if the backend refuses (`cache.ts`).
 - A collection nobody watches stays subscribed for `LINGER_MS` (30 s); `preload()` opens one before its screen mounts (`cache.ts`).
+- On Supabase, `photos.url()` calls made in the same task are signed in one `createSignedUrls` request once its microtasks have run, and each URL is kept for 55 minutes. A screen of recipe cards costs one request, not one per card (`supabaseStore.ts`).
 - Realtime echoes every insert and update back to the client that made it. `supabaseStore.ts` remembers the version each of its own writes returned and drops an echo carrying exactly that version, since `create()` and `update()` have already notified. A writer re-reads the table once per write, not twice.
 - `loaded` is false until the first read, so a screen can tell "no rows" from "not read yet" (`useCollection.ts`).
 - Local rows are one JSON array per key `nestead:<familyId>:<collection>`; other tabs hear of changes through the `storage` event (`local/localStore.ts`).

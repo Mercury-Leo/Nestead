@@ -262,6 +262,32 @@ const SIGNED_FOR_S = 3600;
 function createPhotoStore(client: SupabaseClient, familyId: string): PhotoStore {
   const signed = new Map<string, { url: string; until: number }>();
 
+  type Waiting = Map<string, Array<(url: string | null) => void>>;
+  /**
+   * Photos asked for since the current task began. A screen of recipe cards
+   * asks for all its photos in one go, one url() call per card; once that
+   * task's microtasks have run they are signed in a single request.
+   */
+  let waiting: Waiting | null = null;
+
+  async function signAll(batch: Waiting): Promise<void> {
+    const found = new Map<string, string>();
+    try {
+      const { data, error } = await client.storage.from(PHOTO_BUCKET).createSignedUrls([...batch.keys()], SIGNED_FOR_S);
+      if (error === null) {
+        for (const entry of data) if (entry.path !== null && entry.error === null && entry.signedUrl) found.set(entry.path, entry.signedUrl);
+      }
+    } catch {
+      // Every photo in the batch shows its placeholder, as a failed one did before.
+    }
+    const until = Date.now() + (SIGNED_FOR_S - 300) * 1000;
+    for (const [id, resolvers] of batch) {
+      const url = found.get(id) ?? null;
+      if (url !== null) signed.set(id, { url, until });
+      for (const resolve of resolvers) resolve(url);
+    }
+  }
+
   return {
     async put(blob) {
       const id = `${familyId}/${crypto.randomUUID()}.jpg`;
@@ -275,10 +301,19 @@ function createPhotoStore(client: SupabaseClient, familyId: string): PhotoStore 
     async url(id) {
       const cached = signed.get(id);
       if (cached !== undefined && cached.until > Date.now()) return cached.url;
-      const { data, error } = await client.storage.from(PHOTO_BUCKET).createSignedUrl(id, SIGNED_FOR_S);
-      if (error !== null || data === null) return null;
-      signed.set(id, { url: data.signedUrl, until: Date.now() + (SIGNED_FOR_S - 300) * 1000 });
-      return data.signedUrl;
+      return new Promise<string | null>((resolve) => {
+        if (waiting === null) {
+          const batch: Waiting = new Map();
+          waiting = batch;
+          queueMicrotask(() => {
+            waiting = null;
+            void signAll(batch);
+          });
+        }
+        const resolvers = waiting.get(id);
+        if (resolvers === undefined) waiting.set(id, [resolve]);
+        else resolvers.push(resolve);
+      });
     },
 
     async remove(id) {
