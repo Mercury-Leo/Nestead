@@ -32,7 +32,7 @@ Who is signed in and which family's `DataStore` they get: two interchangeable se
 - Screens depend on the `Session` shape: `setMe` exists only in demo mode; `family`, `rotateJoinCode` and `refreshFamily` only with Supabase (`session.tsx`).
 - `readMembership()` must filter by `id`: RLS returns every member of the family (`membership.ts`).
 - `families` is not in the realtime publication, so a code rotated elsewhere appears only through `refreshFamily()` (`session.tsx`).
-- The remembered family is only a head start. Nothing shows until membership confirms it, and it must never decide what a user may see; RLS does that (`openFamily.ts`). It lives in the device preference `lastFamily`, keyed by user id.
+- The remembered family is only a head start. Nothing shows until membership confirms it, and it must never decide what a user may see; RLS does that (`openFamily.ts`). It lives in the device preference `lastFamily`, keyed by user id, and is cleared when membership finds no family.
 - The screens and `useInviteFamily` call `getSupabaseClient()`, which throws without `VITE_SUPABASE_*`; they render only under `SupabaseSession`.
 
 ## Tests
