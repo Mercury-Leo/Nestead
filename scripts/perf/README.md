@@ -6,7 +6,8 @@ Measurements behind [docs/PERFORMANCE.md](../../docs/PERFORMANCE.md): bundle siz
 | --- | --- |
 | `bundle.mjs` | Builds through Vite's API and reports each chunk's modules and its raw, gzip and brotli size. |
 | `browser.mjs` | Shared by the two browser scripts: a local stand-in for Cloudflare Pages, headless Chrome, a small CDP client, throttling. |
-| `pageload.mjs` | Cold and warm loads of a build, throttled like a phone: usable, FCP, LCP, CLS, long tasks, bytes by type. |
+| `pageload.mjs` | Cold and warm loads of a build, throttled like a phone: usable, FCP, LCP, CLS, long tasks, bytes by type. With `--after <previous build>`, the first open after a deploy instead of a warm load. |
+| `redeploy.mjs` | Builds twice, the second time with a one-attribute change to the board page, and reports which files an app-only deploy makes every device download again. |
 | `interact.mjs` | The open demo build with a heavy family: opening screens, ticking list items, typing a search, dragging a task, memory over 60 screens. |
 | `profile.mjs` | A CPU profile of one screen's load (or, with `--drag`, of a task drag), summed by function. Use an unminified build (`--minify false`) to read names. |
 | `demodata.ts` | Writes the demo backend's localStorage for a typical and a heavy family (run with `npx vite-node`). |
@@ -26,6 +27,8 @@ npx vite-node scripts/perf/demodata.ts <scratch>/demodata.json
 node scripts/perf/pageload.mjs <scratch>/prod prod --ready "form input[type=email]" --out <scratch>/page-prod.json
 node scripts/perf/pageload.mjs <scratch>/demo demo --data <scratch>/demodata.json --size typical --out <scratch>/page-demo.json
 node scripts/perf/interact.mjs <scratch>/demo --data <scratch>/demodata.json --size heavy --out <scratch>/interact.json
+node scripts/perf/redeploy.mjs <scratch> production deploy
+node scripts/perf/pageload.mjs <scratch>/deploy-b deploy --ready "form input[type=email]" --after <scratch>/deploy-a
 PERF_OUT=<scratch>/db.json npx vitest run --config scripts/perf/vitest.config.ts
 ```
 

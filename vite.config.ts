@@ -80,6 +80,22 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react(), recipeImport()],
+    build: {
+      rollupOptions: {
+        output: {
+          // Libraries change far less often than the app. In chunks of their
+          // own they stay cached on every device through a deploy that only
+          // touched app code, instead of coming down again inside the entry.
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (/node_modules[\\/](@supabase|iceberg-js)[\\/]/.test(id)) return 'supabase';
+            if (/node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|@remix-run)[\\/]/.test(id)) return 'react';
+            if (/node_modules[\\/](i18next|react-i18next|html-parse-stringify|void-elements)[\\/]/.test(id)) return 'i18n';
+            return undefined;
+          },
+        },
+      },
+    },
     // SUPABASE_TEST_* live in .env.test, which Vite only loads in test mode, so
     // they never reach a production build. Do not put them in .env.local, which
     // IS loaded for builds and would inline them into the public bundle.

@@ -1,11 +1,14 @@
 // Page load in headless Chrome, as a phone on a middling connection sees it.
 //
 //   node scripts/perf/pageload.mjs <distDir> <label> [--runs 5] [--ready <css>]
-//        [--data <demodata.json> --size typical|heavy] [--out <result.json>]
+//        [--data <demodata.json> --size typical|heavy] [--after <previousDist>]
+//        [--out <result.json>]
 //
 // The build is served like production (see browser.mjs) and loaded with the
 // network at 150 ms round trips and 1.6 Mbps and the CPU 4x slower: cold
 // loads (HTTP cache cleared before each) and warm ones (cache kept).
+// With --after, the warm loads are instead the first open after a deploy:
+// each run clears the cache, opens <previousDist>, then opens <distDir>.
 // "Usable" is the first frame painted after --ready matches (default: a task
 // card on the board).
 
@@ -25,6 +28,7 @@ const READY = option('ready', '.card');
 const DATA = option('data', undefined);
 const SIZE = option('size', 'typical');
 const OUT = option('out', undefined);
+const AFTER = option('after', undefined);
 
 // Before any of the page's own scripts: paint, LCP, layout shift, long tasks,
 // and the frame after the "usable" selector first matches (a message posted
@@ -52,10 +56,19 @@ const browser = await launchChrome();
 const { cdp } = browser;
 await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: INSTRUMENT });
 
-async function measureLoad(cold) {
+async function measureLoad(cold, afterDeploy = false) {
   await throttle(cdp, { network: false, cpu: false });
   await cdp.navigate(`${server.origin}/__blank`);
-  if (cold) await cdp.send('Network.clearBrowserCache');
+  if (cold || afterDeploy) await cdp.send('Network.clearBrowserCache');
+  if (afterDeploy) {
+    // The device has the previous build cached, then the new one goes live.
+    server.use(AFTER);
+    await cdp.navigate(`${server.origin}/`);
+    for (let i = 0; i < 300 && (await cdp.evaluate('window.__perf.ready')) === null; i += 1) await new Promise((done) => setTimeout(done, 50));
+    await new Promise((done) => setTimeout(done, 1000));
+    await cdp.navigate(`${server.origin}/__blank`);
+    server.use(dist);
+  }
   await throttle(cdp, { network: true, cpu: true });
   await cdp.navigate(`${server.origin}/`);
   // Usable, then 1.5 s with no new resources, so late fonts and chunks count.
@@ -106,10 +119,10 @@ try {
     const sample = await measureLoad(true);
     if (run > 0) cold.push(sample);
   }
-  await measureLoad(false); // prime the cache
+  if (AFTER === undefined) await measureLoad(false); // prime the cache
   const warm = [];
   for (let run = 0; run <= RUNS; run += 1) {
-    const sample = await measureLoad(false);
+    const sample = await measureLoad(false, AFTER !== undefined);
     if (run > 0) warm.push(sample);
   }
   result.cold = summarise(cold);
@@ -119,7 +132,8 @@ try {
   const f = (s, unit = 'ms', scale = 1) => `${(s.median / scale).toFixed(0)} ${unit} (${(s.min / scale).toFixed(0)}–${(s.max / scale).toFixed(0)})`;
   for (const kind of ['cold', 'warm']) {
     const s = result[kind];
-    console.log(`${label} ${kind}: usable ${f(s.ready)}, FCP ${f(s.fcp)}, LCP ${f(s.lcp)}, CLS ${s.cls.median.toFixed(3)}, long tasks ${f(s.longTaskTotal)}, ` +
+    const name = kind === 'warm' && AFTER !== undefined ? 'after a deploy' : kind;
+    console.log(`${label} ${name}: usable ${f(s.ready)}, FCP ${f(s.fcp)}, LCP ${f(s.lcp)}, CLS ${s.cls.median.toFixed(3)}, long tasks ${f(s.longTaskTotal)}, ` +
       `${s.requests.median} requests (${s.fromCache.median} cached, ${s.revalidated.median} 304), ${f(s.bytes, 'KB', 1024)} ` +
       `[js ${f(s.js, 'KB', 1024)}, css ${f(s.css, 'KB', 1024)}, fonts ${f(s.font, 'KB', 1024)} done by ${f(s.fontsDoneBy)}]`);
   }

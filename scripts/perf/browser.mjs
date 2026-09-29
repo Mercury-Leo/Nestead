@@ -48,9 +48,10 @@ function certificate() {
   return { key: readFileSync(key), cert: readFileSync(cert) };
 }
 
+/** Serves distDir; `use(otherDir)` switches to another build, as a deploy would. */
 export async function startServer(distDir) {
-  const dist = resolve(distDir);
-  const rules = headerRules(dist);
+  let dist = resolve(distDir);
+  let rules = headerRules(dist);
   const matches = (pattern, path) => (pattern.endsWith('*') ? path.startsWith(pattern.slice(0, -1)) : path === pattern);
   const files = new Map();
   const load = (path) => {
@@ -94,7 +95,14 @@ export async function startServer(distDir) {
   });
   await new Promise((done) => server.listen(0, '127.0.0.1', done));
   // An IP, not "localhost": Chrome would try ::1 first, which nothing listens on.
-  return { origin: `https://127.0.0.1:${server.address().port}`, close: () => server.close() };
+  return {
+    origin: `https://127.0.0.1:${server.address().port}`,
+    use(otherDir) {
+      dist = resolve(otherDir);
+      rules = headerRules(dist);
+    },
+    close: () => server.close(),
+  };
 }
 
 export class Cdp {
