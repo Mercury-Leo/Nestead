@@ -16,7 +16,7 @@ Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [
 - `../../app/App.tsx` mounts `KitchenProvider` once; `loaded` is true only when all five collections have been read (`KitchenContext.tsx`).
 - `profile` is the oldest diet-profile row, in case two devices raced to create one (`KitchenContext.tsx`).
 - `findRecipe()` finds library rows (marked `inLibrary`) and offline web recipes from `seed/webIndex.ts` (`KitchenContext.tsx`).
-- Screens decide what to do; `actions.ts` writes it, applying the plans from `../../domain/kitchen/list.ts`.
+- Screens decide what to do; `actions.ts` writes it, applying the plans from `../../domain/kitchen/list.ts`. A plan's removes and updates go out together; its creates go one at a time. `moveToPantry()` makes its pantry rows one at a time and sends each list item's remove while the next row is being made.
 - Learn-once copy (the timers line, cook mode's key and swipe lines, pantry's swipe and Enter lines) reads `useHint()`; the screen that sees the action calls `markHintUsed()`, and the list lives at `nestead:device:pref:hintsUsed` (`hints.ts`).
 - Screen map and design decisions: [LARDER.md](../../../docs/LARDER.md); data: [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md#the-kitchen-larder).
 
@@ -27,6 +27,7 @@ Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [
 ## Rules & gotchas
 - `seed/webIndex.ts` ships in every build, because `KitchenContext.tsx` imports `offlineProvider`; only the demo seed is left out of Supabase builds (`../../auth/session.tsx`).
 - Stored names stay English (sections, staples); show them through `labels.ts`.
+- Keep creates in `actions.ts` sequential. The shopping list and the pantry show rows in `createdAt` order, and rows created in parallel would land in whatever order the server started them, not the plan's.
 - Hints are device state: read and write them through `hints.ts`, which uses the device preference helpers, never the `DataStore`.
 - Screens share through `recipe/` or this folder, with two exceptions: `import/PreviewCard.tsx` imports the `ImportHandoff` type from `add/AddRecipe.tsx` and `UNITS` from `add/draft.ts`.
 

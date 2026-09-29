@@ -11,10 +11,18 @@ import { pantryRow } from '../../domain/kitchen/pantry';
  * store, so every write goes the same way whichever screen asked.
  */
 
-/** Returns the ids of the rows it created. */
+/**
+ * Returns the ids of the rows it created.
+ *
+ * Removes and updates touch rows that already exist, so they go out together
+ * rather than one round trip each. Creates stay one after another: the list
+ * shows items in createdAt order, and new ones keep the plan's order.
+ */
 async function applyPlan(store: DataStore, plan: ListPlan): Promise<string[]> {
-  for (const id of plan.remove) await store.listItems.remove(id);
-  for (const { id, patch } of plan.update) await store.listItems.update(id, patch);
+  await Promise.all([
+    ...plan.remove.map((id) => store.listItems.remove(id)),
+    ...plan.update.map(({ id, patch }) => store.listItems.update(id, patch)),
+  ]);
   const created: string[] = [];
   for (const row of plan.create) created.push((await store.listItems.create(row)).id);
   return created;
@@ -111,14 +119,26 @@ export async function moveToPantry(
   pantryItems: readonly PantryItem[],
 ): Promise<void> {
   const have = new Set(pantryItems.filter((p) => p.kind === 'have').map((p) => keyForText(p.name, p.canonicalId)));
-  for (const item of items) {
-    const key = keyForText(item.name, item.canonicalId);
-    if (!have.has(key)) {
-      const row: NewRow<PantryItem> = { name: item.name, section: item.section, kind: 'have' };
-      if (item.canonicalId !== undefined) row.canonicalId = item.canonicalId;
-      await store.pantry.create(row);
-      have.add(key);
+  // An item leaves the list only once its pantry row exists. Pantry rows are
+  // made one after another, since Have now lists them in createdAt order; each
+  // remove goes out while the next row is being made.
+  const removals: Array<Promise<void>> = [];
+  try {
+    for (const item of items) {
+      const key = keyForText(item.name, item.canonicalId);
+      if (!have.has(key)) {
+        const row: NewRow<PantryItem> = { name: item.name, section: item.section, kind: 'have' };
+        if (item.canonicalId !== undefined) row.canonicalId = item.canonicalId;
+        await store.pantry.create(row);
+        have.add(key);
+      }
+      const removal = store.listItems.remove(item.id);
+      removal.catch(() => undefined); // reported by Promise.all below, not as unhandled
+      removals.push(removal);
     }
-    await store.listItems.remove(item.id);
+  } finally {
+    // Every remove that started has finished before this returns or throws.
+    await Promise.allSettled(removals);
   }
+  await Promise.all(removals);
 }
