@@ -34,6 +34,7 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 | `server/import/` | Recipe import handler | [README](server/import/README.md) |
 | `supabase/` | Schema, migrations, CLI config | [README](supabase/README.md) |
 | `scripts/perf/` | Performance measurements: bundle, page load, interactions, database; results in `docs/PERFORMANCE.md` | [README](scripts/perf/README.md) |
+| `.claude/skills/` | Claude Code skills: `preview` builds the production bundle and opens it on port 4173 for the user to test, signed in | [SKILL.md](.claude/skills/preview/SKILL.md) |
 
 ## Rules
 - Before editing a folder, read its README's "Rules & gotchas"; update the README on the same branch. Merges into `main` are blocked until you do (`../.claude/hooks/docs-on-merge.mjs`; `# docs-ok` only after checking).
