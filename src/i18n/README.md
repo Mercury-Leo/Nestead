@@ -26,8 +26,9 @@ Translation and locale: the i18next instance, the provider that owns language an
 
 ## Rules & gotchas
 - A new language needs `locales/<code>.json`, an entry in `LOCALES` and one in `LOADERS` (`i18n.ts`); `i18n.test.ts` fails if any is missing.
-- `literals.test.ts` scans `src/` except `domain/`, `data/`, `i18n/`, any `/seed/` path, `defaultColumns.ts` and `larder/labels.ts`, all matched by path. Mark deliberate English with an `i18n:` comment.
+- `literals.test.ts` scans `src/` except `domain/`, `data/`, `i18n/`, any `/seed/` path, `defaultColumns.ts`, `larder/labels.ts` and `*.test.ts(x)` files, all matched by path. Mark deliberate English with an `i18n:` comment.
 - Only `en.json` types the keys: other locales use their own plural categories (Hebrew adds `_two`) (`i18n.ts`).
+- Nothing flags a key the source no longer uses: when a string goes, delete its key (every plural form) from both locale files yourself. `i18n.test.ts` only fails when `he.json` keeps a key `en.json` dropped.
 - English copy is British, and Intl formats English as `en-GB` (`LOCALES` in `i18n.ts`).
 
 ## Tests
