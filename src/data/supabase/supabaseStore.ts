@@ -93,6 +93,16 @@ function fail(table: TableName, action: string, message: string): never {
   throw new Error(`${table}.${action}: ${message}`);
 }
 
+/** A Postgres or realtime timestamp as fromRow() would give it, or null if it is not one. */
+function canonicalTime(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? null : new Date(ms).toISOString();
+}
+
+/** Enough to cover the echoes still on their way; older entries are dropped first. */
+const WRITTEN_LIMIT = 200;
+
 function createCollection<T extends Base>(
   client: SupabaseClient,
   familyId: string,
@@ -100,6 +110,31 @@ function createCollection<T extends Base>(
 ): Collection<T> {
   const listeners = new Set<ChangeListener>();
   let channel: RealtimeChannel | null = null;
+
+  /**
+   * The version of each row this client last wrote, by id. Realtime sends
+   * every insert and update back to the client that made it, a few hundred
+   * milliseconds after create() and update() have already notified. An echo
+   * carrying exactly the version written here is dropped, so the listeners do
+   * not re-read the whole table a second time. Anything else still notifies,
+   * including a later change to the same row from somewhere else.
+   */
+  const written = new Map<string, string>();
+
+  function remember(row: T): T {
+    written.delete(row.id);
+    written.set(row.id, row.updatedAt);
+    if (written.size > WRITTEN_LIMIT) written.delete(written.keys().next().value as string);
+    return row;
+  }
+
+  function isOwnEcho(record: Record<string, unknown> | undefined): boolean {
+    if (record === undefined || typeof record.id !== 'string') return false;
+    const version = written.get(record.id);
+    if (version === undefined || version !== canonicalTime(record.updated_at)) return false;
+    written.delete(record.id);
+    return true;
+  }
 
   function notify(): void {
     for (const listener of [...listeners]) listener();
@@ -119,8 +154,9 @@ function createCollection<T extends Base>(
       };
       const { data, error } = await client.from(table).insert(payload).select().single();
       if (error !== null) fail(table, 'create', error.message);
+      const created = remember(fromRow<T>(data as Record<string, unknown>));
       notify();
-      return fromRow<T>(data as Record<string, unknown>);
+      return created;
     },
 
     async update(id: string, patch: Partial<NewRow<T>>): Promise<T> {
@@ -139,8 +175,9 @@ function createCollection<T extends Base>(
       const rows = data ?? [];
       if (rows.length === 0) fail(table, 'update', `no row with id ${id}`);
 
+      const updated = remember(fromRow<T>(rows[0] as Record<string, unknown>));
       notify();
-      return fromRow<T>(rows[0] as Record<string, unknown>);
+      return updated;
     },
 
     async remove(id: string): Promise<void> {
@@ -169,7 +206,10 @@ function createCollection<T extends Base>(
               table,
               filter: `family_id=eq.${familyId}`,
             },
-            () => notify(),
+            (payload) => {
+              if (isOwnEcho(payload.new as Record<string, unknown> | undefined)) return;
+              notify();
+            },
           )
           .subscribe();
       }
