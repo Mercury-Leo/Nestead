@@ -17,15 +17,13 @@ import { dirname } from 'node:path';
 import { afterAll, it } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cacheOf, preloadStore, withCache } from '../../src/data/cache';
+import { cacheOf, withCache } from '../../src/data/cache';
 import { createSupabaseStore } from '../../src/data/supabase/supabaseStore';
 import { signInTester } from '../../src/data/supabase/supabaseTestSession';
 import type { Collection, DataStore } from '../../src/data/types';
 import type { Base, BoardColumn, ListItem, NewRow, Recipe } from '../../src/domain/types';
-import { readMembership } from '../../src/auth/membership';
-import { seedDefaultColumns } from '../../src/features/board/defaultColumns';
+import { openFamily } from '../../src/auth/openFamily';
 import { placeTask } from '../../src/features/board/actions';
-import { ensureKitchen } from '../../src/features/larder/setup';
 import { addRecipeToList, moveToPantry, removeRecipeFromList } from '../../src/features/larder/actions';
 import { keyForText, pantryIndex } from '../../src/domain/kitchen/fit';
 import { planAddRecipe } from '../../src/domain/kitchen/list';
@@ -267,32 +265,34 @@ async function measureSize(sizeName: keyof typeof SIZES, app: Signed, peer: Sign
     console.log(`  task create ${show(writes.create!)}, update ${show(writes.update!)}, remove ${show(writes.remove!)}`);
   }
 
-  if (wanted('startup')) {
+  // Startup is SupabaseSession's resolve(): openFamily(), then its setup. A
+  // device that has opened the app before knows the family; a new one does not.
+  for (const [name, guess] of [['startup', startupFrom.familyId], ['startupNewDevice', null]] as const) {
+    if (!wanted(name)) continue;
     const samples: Sample[] = [];
     for (let run = 0; run <= RUNS; run += 1) {
       const client = await freshClient(startupFrom);
       await settle(1000);
       const first = hits.length;
       const t0 = performance.now();
-      const family = await readMembership(client, startupFrom.userId);
-      if (family === null) throw new Error('startup: no family');
-      const store = withCache(createSupabaseStore(family.id, client));
-      preloadStore(store);
-      const stops = COLLECTIONS.map((name) => cacheOf(store[name] as Collection<Base>).subscribe(() => {}));
-      await Promise.all([seedDefaultColumns(store), ensureKitchen(store)]);
+      const opened = await openFamily(client, startupFrom.userId, guess);
+      if (opened === null) throw new Error('startup: no family');
+      const { store } = opened;
+      const stops = COLLECTIONS.map((collection) => cacheOf(store[collection] as Collection<Base>).subscribe(() => {}));
+      await opened.setup;
       const ready = performance.now() - t0;
       await until(() => loaded(store.members) && loaded(store.columns) && loaded(store.tasks), 30_000, 'board rows');
       const board = performance.now() - t0;
-      await until(() => KITCHEN.every((name) => loaded(store[name] as Collection<Base>)), 30_000, 'kitchen rows');
+      await until(() => KITCHEN.every((collection) => loaded(store[collection] as Collection<Base>)), 30_000, 'kitchen rows');
       const kitchen = performance.now() - t0;
       await settle(1000);
       if (run > 0) samples.push({ ready, board: Math.max(board, ready), kitchen: Math.max(kitchen, ready), ...windowStats(first, 'startup') });
       for (const stop of stops) stop();
       await client.removeAllChannels();
     }
-    out.startup = summarise(samples);
-    const startup = out.startup as Record<string, Spread>;
-    console.log(`  startup: loading screen gone ${show(startup.ready!)}, board rows ${show(startup.board!)}, kitchen rows ${show(startup.kitchen!)}, ` +
+    out[name] = summarise(samples);
+    const startup = out[name] as Record<string, Spread>;
+    console.log(`  ${name}: loading screen gone ${show(startup.ready!)}, board rows ${show(startup.board!)}, kitchen rows ${show(startup.kitchen!)}, ` +
       `${startup.requests!.median} requests, read ${show(startup.readKB!, 'KB', 1)}`);
   }
 

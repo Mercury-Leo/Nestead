@@ -1,0 +1,60 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { preloadStore, withCache } from '../data/cache';
+import { readDevicePreference, writeDevicePreference } from '../data/local/localStore';
+import { createSupabaseStore } from '../data/supabase/supabaseStore';
+import type { DataStore } from '../data/types';
+import { seedDefaultColumns } from '../features/board/defaultColumns';
+import { ensureKitchen } from '../features/larder/setup';
+import { readMembership } from './membership';
+import type { Family } from './session';
+
+export interface OpenedFamily {
+  family: Family;
+  /** Its rows are already loading. */
+  store: DataStore;
+  /** A new family's default columns and kitchen; wait for it before showing the app. */
+  setup: Promise<unknown>;
+}
+
+function start(client: SupabaseClient, familyId: string): Omit<OpenedFamily, 'family'> {
+  // Every table starts loading now, alongside the setup, so the board and the
+  // kitchen have their rows by the time they mount.
+  const store = withCache(createSupabaseStore(familyId, client));
+  preloadStore(store);
+  return { store, setup: Promise.all([seedDefaultColumns(store), ensureKitchen(store)]) };
+}
+
+/**
+ * The signed-in user's family, with a store whose rows are on their way, or
+ * null for someone who has not joined one.
+ *
+ * `lastFamilyId` is the family this device opened for this user last time.
+ * Its store starts while membership is checked rather than after, which takes
+ * a round trip off every launch. A stale guess costs only requests: a user
+ * belongs to one family at most, so RLS shows the old one no rows and refuses
+ * its setup writes, and it is dropped as soon as membership answers.
+ */
+export async function openFamily(client: SupabaseClient, userId: string, lastFamilyId: string | null): Promise<OpenedFamily | null> {
+  const early = lastFamilyId === null ? null : start(client, lastFamilyId);
+  // Judged below; until then a failure must not surface as unhandled.
+  early?.setup.catch(() => undefined);
+
+  const family = await readMembership(client, userId);
+  if (family === null) return null;
+  const started = early !== null && lastFamilyId === family.id ? early : start(client, family.id);
+  return { family, ...started };
+}
+
+const LAST_FAMILY = 'lastFamily';
+
+/** The family this device last opened for this user, if it remembers one. */
+export function lastFamilyOf(userId: string): string | null {
+  const saved = readDevicePreference(LAST_FAMILY);
+  if (typeof saved !== 'object' || saved === null) return null;
+  const { userId: savedUser, familyId } = saved as { userId?: unknown; familyId?: unknown };
+  return savedUser === userId && typeof familyId === 'string' ? familyId : null;
+}
+
+export function rememberFamily(userId: string, familyId: string): void {
+  writeDevicePreference(LAST_FAMILY, { userId, familyId });
+}

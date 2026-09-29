@@ -2,15 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Trans } from 'react-i18next';
-import { preloadStore, withCache } from '../data/cache';
 import { getSupabaseClient, takeRecoveryLink } from '../data/supabase/supabaseClient';
-import { createSupabaseStore } from '../data/supabase/supabaseStore';
 import type { DataStore } from '../data/types';
 import { useCollection } from '../data/useCollection';
-import { ensureKitchen } from '../features/larder/setup';
-import { seedDefaultColumns } from '../features/board/defaultColumns';
 import { clearInvite, pendingInvite } from './invite';
-import { readFamily, readMembership } from './membership';
+import { readFamily } from './membership';
+import { lastFamilyOf, openFamily, rememberFamily } from './openFamily';
 import { JoinOrCreate } from './screens/JoinOrCreate';
 import type { Family } from './session';
 import { SessionContext } from './session';
@@ -45,8 +42,8 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
   /** Works out which of the three states a signed-in user is actually in. */
   const resolve = useCallback(
     async (userId: string): Promise<void> => {
-      const family = await readMembership(client, userId);
-      if (family === null) {
+      const opened = await openFamily(client, userId, lastFamilyOf(userId));
+      if (opened === null) {
         setPhase({ kind: 'noFamily', userId });
         return;
       }
@@ -54,14 +51,10 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
       // Already in a family (one per person), so an invite opened on this
       // device has nothing left to do.
       clearInvite();
+      rememberFamily(userId, opened.family.id);
 
-      // Every table starts loading now, alongside the setup below, so the
-      // board and the kitchen have their rows by the time they mount.
-      const store = withCache(createSupabaseStore(family.id, client));
-      preloadStore(store);
-      await Promise.all([seedDefaultColumns(store), ensureKitchen(store)]);
-
-      setPhase({ kind: 'ready', userId, store, family });
+      await opened.setup;
+      setPhase({ kind: 'ready', userId, store: opened.store, family: opened.family });
     },
     [client],
   );
