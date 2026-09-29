@@ -76,21 +76,28 @@
   min-width: 0;
 }
 
+/* No gap: the toggle's end padding keeps the title off the tools, so there is no dead strip between them. */
 .groupHead {
   display: flex;
-  gap: 12px;
   align-items: center;
   justify-content: space-between;
   min-height: 44px;
 }
 
-/* The whole title folds its section away. */
+/* The title takes the row up to the tools. They stay outside it: buttons cannot nest. */
+.groupHead > h2 {
+  flex: 1;
+}
+
+/* The whole line folds its section away, not only the words. */
 .groupToggle {
-  display: inline-flex;
+  display: flex;
   gap: 8px;
   align-items: center;
+  width: 100%;
   min-height: 44px;
-  padding: 0;
+  padding-block: 0;
+  padding-inline: 0 12px;
   border: 0;
   background: none;
   color: inherit;

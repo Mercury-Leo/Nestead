@@ -30,6 +30,7 @@ The family's shopping list (`/lists`), for everything, not only food: Supermarke
 - `builtin` rows only hold a place: they are never renamed or deleted, and `GroupForm` never receives one (`ShoppingList.tsx`).
 - Renaming an item looks up its catalog id and aisle again: loosely in Supermarket, by exact name elsewhere (`ItemForm.tsx`).
 - `useSectionDrag.ts` borrows `insertionBefore()` from `../board/dragDrop.ts`; a change there affects both drags.
+- A section's whole title line folds it, not only the words: the title grows up to the rename and grip buttons, which stay outside the toggle because buttons cannot nest. The header has no gap; the toggle's end padding spaces the tools (`ShoppingList.module.css`).
 
 ## Tests
 None here. The planning logic is tested in `../../domain/kitchen/` and `../larder/seed/seed.test.ts`.
