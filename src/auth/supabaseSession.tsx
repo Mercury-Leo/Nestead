@@ -44,6 +44,8 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
     async (userId: string): Promise<void> => {
       const opened = await openFamily(client, userId, lastFamilyOf(userId));
       if (opened === null) {
+        // Out of the family this device remembered: stop guessing it.
+        rememberFamily(userId, null);
         setPhase({ kind: 'noFamily', userId });
         return;
       }

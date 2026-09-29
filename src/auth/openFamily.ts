@@ -55,6 +55,7 @@ export function lastFamilyOf(userId: string): string | null {
   return savedUser === userId && typeof familyId === 'string' ? familyId : null;
 }
 
-export function rememberFamily(userId: string, familyId: string): void {
-  writeDevicePreference(LAST_FAMILY, { userId, familyId });
+/** Remembers the family this user opened on this device, or forgets it with null. */
+export function rememberFamily(userId: string, familyId: string | null): void {
+  writeDevicePreference(LAST_FAMILY, familyId === null ? null : { userId, familyId });
 }
