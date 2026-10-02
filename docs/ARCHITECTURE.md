@@ -22,7 +22,7 @@ same way the board was, without changing anything the core guarantees.
 | Tests           | Vitest 2 + jsdom              | `npm test`                                          |
 | Data            | Supabase Postgres + RLS       | `src/data/supabase/supabaseStore.ts`, `supabase/schema.sql` |
 | Data (demo)     | `localStorage`                | `src/data/local/localStore.ts`                      |
-| Auth            | Supabase Auth, one account per person | `src/auth/supabaseSession.tsx`              |
+| Auth            | Supabase Auth, one account per person | `src/auth/accountSession.tsx` over `src/data/supabase/supabaseAccount.ts` |
 | Auth (demo)     | None: pick a member per tab   | `src/auth/demoSession.tsx`                          |
 | Text            | i18next: English bundled, Hebrew fetched on first use | `src/i18n/`                 |
 | Hosting         | Cloudflare Pages               | static, plus one Pages Function: `/api/import`      |
@@ -43,16 +43,19 @@ is a dev dependency.
    `useSession()` and `useCollection()` (or `useKitchen()`, built on them). No
    feature imports `localStorage` or a Supabase client; the one thing screens
    take from a backend module is the device-preference helpers in
-   `src/data/local/localStore.ts`.
+   `src/data/local/localStore.ts`. `src/data/boundary.test.ts` fails if any
+   file outside `src/data/supabase/` imports the Supabase SDK or that folder,
+   bar the swap point.
 2. **Every row is family-scoped.** `Base` carries `familyId`, every store is
    built for one family, and the target SQL enforces the same rule with RLS.
    There is no code path that returns another family's rows.
 3. **The backend is chosen in one place and must pass the same contract.**
    `SessionProvider` in `src/auth/session.tsx` picks by `VITE_BACKEND`: the demo
-   session builds its store with `createStore()` in `src/data/index.ts`, and the
-   Supabase session builds a cached `createSupabaseStore()` for the signed-in
-   family. A backend qualifies once it passes `runDataStoreContract()`
-   unchanged.
+   session over a cached local store, or `AccountSession` over a backend's
+   `Account` (sign-in, families, and `openStore()` for the signed-in family's
+   `DataStore`). A backend qualifies once its store passes
+   `runDataStoreContract()` unchanged. See
+   [Swapping the backend](#swapping-the-backend).
 4. **Domain types mirror the SQL schema.** `src/domain/types.ts` and
    `supabase/schema.sql` are the same shapes — camelCase in TypeScript,
    snake_case in Postgres. Change one, change the other.
@@ -73,23 +76,22 @@ src/
   auth/
     session.tsx              SessionProvider / useSession: the Session shape.
     demoSession.tsx          Local backend: pick a member per tab.
-    supabaseSession.tsx      Supabase Auth: one account per person.
-    membership.ts            Which family a signed-in user is in, in one request.
+    accountSession.tsx       Real sign-in over any backend's Account: one account per person.
+    openFamily.ts            Membership plus the family's cached, preloading store.
     invite.ts                Invite links: /join/<code>, kept until the join screen uses it.
     useInviteFamily.ts       Names the family behind an invite code, signed out.
     screens/                 SignIn, JoinOrCreate, SetNewPassword.
     auth.css                 Styles for those screens (global class names).
   data/
-    types.ts                 Collection and DataStore interfaces.
-    index.ts                 createStore(): a cached backend by VITE_BACKEND
-                             (the demo session's store).
+    types.ts                 Collection, DataStore and Account: what a backend provides.
+    boundary.test.ts         Only supabase/ may know about Supabase.
     cache.ts                 Shared rows per collection, over any backend:
                              one read for every screen, writes shown at once.
     useCollection.ts         Hook: live rows from a Collection, via the cache.
     collection.contract.ts   runDataStoreContract() — the backend contract.
     local/                   localStorage backend, IndexedDB photos, and the
                              preference helpers (per family and per device).
-    supabase/                Supabase client, backend, and its test suites.
+    supabase/                The Supabase adapter: client, store, account, live suites.
   domain/
     types.ts                 Entities and Base/NewRow. Mirrors the SQL schema.
     position.ts              Sparse ordering for board rows and list sections.
@@ -341,7 +343,8 @@ project and no network.
    The contract does not change: if a case fails, the backend is wrong, not the
    contract. Between cases the suite deletes every task, column and kitchen row
    in both test families, so use throwaway accounts.
-5. **Session.** `SupabaseSession` (`src/auth/supabaseSession.tsx`) signs in with
+5. **Session.** `AccountSession` (`src/auth/accountSession.tsx`), over
+   `supabaseAccount()` (`src/data/supabase/supabaseAccount.ts`), signs in with
    email and password, **one account per person**. Not a shared family
    password: a shared secret cannot be revoked for one person, gives no
    attribution, and would make `members.id = auth.users.id` meaningless
@@ -354,12 +357,45 @@ project and no network.
      (`supabase/config.toml`) so the confirmation email returns to the invite;
      without it the email goes to the Site URL, and only the device that opened
      the link still has the code.
-   - Once in a family, `SupabaseSession` builds the cached store for the
+   - Once in a family, `AccountSession` builds the cached store for the
      member's `family_id`; `me` is the signed-in member and there is no `setMe`.
 6. **The demo.** `DemoSession` and its seed stay for local development. A
    Supabase build leaves them out of the bundle (`src/auth/session.tsx`), and
    `npm run build` refuses to build without `VITE_BACKEND=supabase`
    (`vite.config.ts`).
+
+## Swapping the backend
+
+Supabase is one adapter, `src/data/supabase/`, behind two interfaces in
+`src/data/types.ts`: `DataStore` (a family's rows and photos) and `Account`
+(sign-in, families, and `openStore()`). Nothing else imports it but
+`SessionProvider`, and `src/data/boundary.test.ts` keeps it that way. To move
+to another backend:
+
+1. **Store.** Implement `DataStore` and pass `runDataStoreContract()` unchanged
+   (copy `src/data/supabase/supabaseStore.test.ts`). Mind what the contract
+   cannot check: a patch value of `undefined` clears the field; `subscribe`
+   hears other clients' changes; an `update` of a missing row throws.
+2. **Account.** Implement `Account`. Its doc comment lists what the backend,
+   not the client, must enforce: a member's id is their user id, one family per
+   person, rows visible only to their family, one diet profile per family. On
+   Supabase those are RLS policies, unique constraints and the
+   `security definer` functions in `supabase/schema.sql`.
+   `src/auth/accountSession.test.tsx` runs the session over an in-memory
+   `Account`; the same flows should work over yours.
+3. **Switch.** Add a `VITE_BACKEND` case in `src/auth/session.tsx` and the
+   value to `src/vite-env.d.ts`, and update the build check in
+   `vite.config.ts`, which insists on `VITE_BACKEND=supabase` and its two keys.
+4. **Data.** Move the rows across. `src/domain/types.ts` is the shape to map
+   to; photo ids are opaque strings the store hands out, so a store may keep
+   Supabase's `<familyId>/<uuid>.jpg` or rewrite them in the migration.
+5. **What stays Supabase-specific** and is fine to delete with it:
+   `supabase/`, `scripts/perf/db.perf.ts`, the `SUPABASE_TEST_*` variables, and
+   the `supabase` chunk in `vite.config.ts`.
+
+The demo backend (`src/data/local/`, `src/auth/demoSession.tsx`) is a second
+`DataStore` that already passes the contract, so the store half has been
+swapped before.
 
 ## Known limits
 

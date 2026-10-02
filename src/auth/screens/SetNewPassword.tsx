@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getSupabaseClient } from '../../data/supabase/supabaseClient';
+import type { Account } from '../../data/types';
 
 /**
  * Shown after following a password reset email. The link has already signed
  * the person in, so all that is left is choosing the new password.
  */
 export function SetNewPassword({
+  account,
   onDone,
   onSignOut,
 }: {
+  account: Account;
   onDone: () => void;
   onSignOut: () => Promise<void>;
 }): JSX.Element {
   const { t } = useTranslation();
-  const client = getSupabaseClient();
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -30,13 +31,13 @@ export function SetNewPassword({
     setBusy(true);
     setError(null);
 
-    const { error: failed } = await client.auth.updateUser({ password });
-
-    setBusy(false);
-
-    if (failed !== null) {
-      setError(failed.message);
+    try {
+      await account.setPassword(password);
+    } catch (failed) {
+      setError((failed as Error).message);
       return;
+    } finally {
+      setBusy(false);
     }
     onDone();
   };

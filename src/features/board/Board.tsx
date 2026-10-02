@@ -25,7 +25,7 @@ import {
 
 /**
  * The board. Reads everything through useSession() and useCollection(), so it
- * works against whichever backend createStore() built.
+ * works against whichever backend the session opened.
  *
  * Wide screens get columns side by side. Phone screens stack them into
  * collapsible sections instead: a horizontally scrolling board shows one column

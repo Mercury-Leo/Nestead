@@ -1,12 +1,13 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest';
-import { signInTester } from '../data/supabase/supabaseTestSession';
-import { readFamily, readMembership } from './membership';
+import { createSupabaseAccount } from './supabaseAccount';
+import { signInTester } from './supabaseTestSession';
 
 /**
- * readMembership() against a real Supabase project, with the same gitignored
- * .env.test as the contract suite. Skips when that is not set up.
+ * The Supabase Account's membership reads against a real Supabase project,
+ * with the same gitignored .env.test as the contract suite. Skips when that is
+ * not set up.
  *
  * It reads the family through an embedded select, which depends on the
  * members -> families foreign key and on RLS letting a member see their own
@@ -24,7 +25,7 @@ const config = {
 
 const configured = Object.values(config).every((value) => typeof value === 'string' && value !== '');
 
-describe('membership: supabase', () => {
+describe('account: supabase', () => {
   if (!configured) {
     it.skip('skipped: .env.test is not set up (see .env.test.example)', () => {
       // Intentionally empty.
@@ -41,9 +42,10 @@ describe('membership: supabase', () => {
       config.password as string,
     );
 
-    const family = await readMembership(session.client, session.userId);
+    const account = createSupabaseAccount(session.client);
+    const family = await account.readMembership(session.userId);
 
-    expect(family).toEqual(await readFamily(session.client, session.familyId));
+    expect(family).toEqual(await account.readFamily(session.familyId));
   });
 
   it('is null for someone who is not a member', async () => {
@@ -55,6 +57,6 @@ describe('membership: supabase', () => {
       config.password as string,
     );
 
-    expect(await readMembership(session.client, '00000000-0000-0000-0000-000000000000')).toBeNull();
+    expect(await createSupabaseAccount(session.client).readMembership('00000000-0000-0000-0000-000000000000')).toBeNull();
   });
 });

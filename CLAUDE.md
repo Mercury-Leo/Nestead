@@ -9,7 +9,8 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 
 ## Architecture
 - Screens: rows only through `useSession()`, `useCollection()` and `useKitchen()`; from a backend module they import only the preference helpers.
-- Backend: `SessionProvider` (`src/auth/session.tsx`) picks demo or Supabase by `VITE_BACKEND`; a backend counts once it passes `runDataStoreContract()` unchanged.
+- Backend: `SessionProvider` (`src/auth/session.tsx`) picks demo or Supabase by `VITE_BACKEND`, the only place that names one; a backend is a `DataStore` that passes `runDataStoreContract()` unchanged plus an `Account` (`src/data/types.ts`). Porting steps: `docs/ARCHITECTURE.md#swapping-the-backend`.
+- Supabase: only `src/data/supabase/` imports `@supabase/supabase-js` or that folder, bar `session.tsx`; `src/data/boundary.test.ts` fails otherwise.
 - Cache: `withCache()` wraps every backend, so writes show before the backend confirms (`src/data/cache.ts`).
 - Session: screens rely only on the `Session` type in `src/auth/session.tsx`, never on which session provides it.
 - Domain: `src/domain/` is pure and imports nothing outside itself; `types.ts` mirrors `supabase/schema.sql`.
@@ -21,8 +22,8 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 | Folder | What | Guide |
 | --- | --- | --- |
 | `src/app/` | Shell, sidebar and tab bar, routes | [README](src/app/README.md) |
-| `src/auth/` | Demo and Supabase sessions, sign-in, invite links | [README](src/auth/README.md) |
-| `src/data/` | Contract, cache, local and Supabase backends | [README](src/data/README.md) |
+| `src/auth/` | Demo session and `AccountSession` (any backend), sign-in, invite links | [README](src/auth/README.md) |
+| `src/data/` | `DataStore` and `Account` interfaces, contract, cache, local and Supabase backends | [README](src/data/README.md) |
 | `src/domain/` | Types, ordering, pure kitchen logic | [README](src/domain/README.md) |
 | `src/components/` | UI kit (`ui/`) and theme | [README](src/components/README.md) |
 | `src/i18n/` | i18next, locale provider, formatting, locale files | [README](src/i18n/README.md) |
@@ -38,6 +39,7 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 
 ## Rules
 - Before editing a folder, read its README's "Rules & gotchas"; update the README on the same branch. Merges into `main` are blocked until you do (`../.claude/hooks/docs-on-merge.mjs`; `# docs-ok` only after checking).
+- Backend work stays behind the interfaces: a new backend capability is a method on `DataStore` or `Account` (`src/data/types.ts`), implemented in each adapter folder (`src/data/supabase/`, `src/data/local/` where it applies) and called through the interface. No backend SDK, table name, RPC name or backend-specific behaviour outside its adapter folder; the only file that names a backend is `src/auth/session.tsx` (`src/data/boundary.test.ts`). If a feature needs something the interfaces cannot express, extend the interface and document what the backend must enforce, rather than reaching past it.
 - Schema change: a new file in `supabase/migrations/`, the same change in `supabase/schema.sql`, and `src/domain/types.ts`.
 - Omitting a key in a patch leaves the field; patch it to `undefined` to clear it (`src/data/cache.ts`, `src/data/supabase/supabaseStore.ts`).
 - Reorder by writing one row at `positionBetween()` of its neighbours and sort with `comparePosition()` (`src/domain/position.ts`).
@@ -53,4 +55,4 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 - `src/features/larder/seed/webIndex.ts` is production code (the offline search index), not demo data.
 - Don't add `StrictMode`: `src/main.tsx` leaves it out so the demo seed does not run twice.
 - `index.html` reads the theme and locale preferences before React; keep its keys in step with `src/components/theme/theme.tsx` and `src/i18n/i18n.ts`.
-- Only `DemoSession` calls `createStore()` (`src/data/index.ts`); `SupabaseSession` builds its store itself, so production never runs `createStore()`'s Supabase branch.
+- Auth screens take the `Account` as a prop from `AccountSession`; never reach for a backend client in a screen.

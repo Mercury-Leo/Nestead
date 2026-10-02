@@ -4,7 +4,7 @@ import type { DataStore } from './types';
 
 /**
  * The contract every backend must satisfy. A new backend is "done" when it
- * passes these cases unchanged; only then does it earn a case in src/data/index.ts.
+ * passes these cases unchanged; only then does it earn a case in src/auth/session.tsx.
  *
  * Three things this contract deliberately does NOT require, because the
  * Collection interface never promised them and demanding them would only

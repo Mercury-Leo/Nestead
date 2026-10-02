@@ -1,25 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { Trans } from 'react-i18next';
-import { getSupabaseClient, takeRecoveryLink } from '../data/supabase/supabaseClient';
-import type { DataStore } from '../data/types';
+import type { Account, DataStore, Family } from '../data/types';
 import { useCollection } from '../data/useCollection';
 import { clearInvite, pendingInvite } from './invite';
-import { readFamily } from './membership';
 import { lastFamilyOf, openFamily, rememberFamily } from './openFamily';
 import { JoinOrCreate } from './screens/JoinOrCreate';
-import type { Family } from './session';
 import { SessionContext } from './session';
 import { SetNewPassword } from './screens/SetNewPassword';
 import { SignIn } from './screens/SignIn';
 
 /**
- * The real session.
+ * The real session, on whichever backend `account` belongs to.
  *
- * Being signed in and being in a family are different things. A new account has
- * an auth.users row and no members row, so current_family_id() returns null and
- * RLS denies everything. That in-between state is a screen, not an error.
+ * Being signed in and being in a family are different things. A new account
+ * has no member row, so the backend shows it nothing. That in-between state is
+ * a screen, not an error.
  */
 
 type Phase =
@@ -29,20 +25,19 @@ type Phase =
   | { kind: 'noFamily'; userId: string }
   | { kind: 'ready'; userId: string; store: DataStore; family: Family };
 
-export function SupabaseSession({ children }: { children: ReactNode }): JSX.Element {
-  const client = getSupabaseClient();
+export function AccountSession({ account, children }: { account: Account; children: ReactNode }): JSX.Element {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
 
   // A reset link signs you in, but that must not let you into the app until
   // you have chosen a new password. Every auth event while this is set lands
   // on SetNewPassword instead of resolving the family.
   const recovering = useRef<boolean | null>(null);
-  if (recovering.current === null) recovering.current = takeRecoveryLink();
+  if (recovering.current === null) recovering.current = account.takeRecoveryLink();
 
   /** Works out which of the three states a signed-in user is actually in. */
   const resolve = useCallback(
     async (userId: string): Promise<void> => {
-      const opened = await openFamily(client, userId, lastFamilyOf(userId));
+      const opened = await openFamily(account, userId, lastFamilyOf(userId));
       if (opened === null) {
         // Out of the family this device remembered: stop guessing it.
         rememberFamily(userId, null);
@@ -58,56 +53,42 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
       await opened.setup;
       setPhase({ kind: 'ready', userId, store: opened.store, family: opened.family });
     },
-    [client],
+    [account],
   );
 
-  // Which user the auth events last resolved. Startup reports the same session
-  // twice (getSession and INITIAL_SESSION) and a token refresh reports it again
-  // every hour; none of that changes the family, so the store is kept rather
-  // than rebuilt, which would drop every cached row and realtime channel.
+  // Which user the auth events last resolved. Startup can report the same
+  // session twice and a token refresh reports it again every hour; none of
+  // that changes the family, so the store is kept rather than rebuilt, which
+  // would drop every cached row and realtime channel.
   const resolvedFor = useRef<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  useEffect(
+    () =>
+      account.watchUser((userId, recovery) => {
+        if (recovery) recovering.current = true;
+        if (userId === null) {
+          resolvedFor.current = null;
+          recovering.current = false;
+          setPhase({ kind: 'signedOut' });
+          return;
+        }
+        if (recovering.current === true) {
+          resolvedFor.current = null;
+          setPhase({ kind: 'recovering', userId });
+          return;
+        }
+        if (resolvedFor.current === userId) return;
+        resolvedFor.current = userId;
+        void resolve(userId).catch((error: unknown) => {
+          // Let the next auth event try again.
+          resolvedFor.current = null;
+          throw error;
+        });
+      }),
+    [account, resolve],
+  );
 
-    const apply = (userId: string | undefined): void => {
-      if (!active) return;
-      if (userId === undefined) {
-        resolvedFor.current = null;
-        recovering.current = false;
-        setPhase({ kind: 'signedOut' });
-        return;
-      }
-      if (recovering.current === true) {
-        resolvedFor.current = null;
-        setPhase({ kind: 'recovering', userId });
-        return;
-      }
-      if (resolvedFor.current === userId) return;
-      resolvedFor.current = userId;
-      void resolve(userId).catch((error: unknown) => {
-        // Let the next auth event try again.
-        resolvedFor.current = null;
-        throw error;
-      });
-    };
-
-    void client.auth.getSession().then(({ data }) => apply(data.session?.user.id));
-
-    const { data: listener } = client.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') recovering.current = true;
-      apply(session?.user.id);
-    });
-
-    return () => {
-      active = false;
-      listener.subscription.unsubscribe();
-    };
-  }, [client, resolve]);
-
-  const signOut = useCallback(async (): Promise<void> => {
-    await client.auth.signOut();
-  }, [client]);
+  const signOut = useCallback((): Promise<void> => account.signOut(), [account]);
 
   switch (phase.kind) {
     case 'loading':
@@ -117,10 +98,11 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
         </p>
       );
     case 'signedOut':
-      return <SignIn inviteCode={pendingInvite()} />;
+      return <SignIn account={account} inviteCode={pendingInvite()} />;
     case 'recovering':
       return (
         <SetNewPassword
+          account={account}
           onDone={() => {
             recovering.current = false;
             void resolve(phase.userId);
@@ -129,10 +111,17 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
         />
       );
     case 'noFamily':
-      return <JoinOrCreate inviteCode={pendingInvite()} onJoined={() => void resolve(phase.userId)} onSignOut={signOut} />;
+      return (
+        <JoinOrCreate
+          account={account}
+          inviteCode={pendingInvite()}
+          onJoined={() => void resolve(phase.userId)}
+          onSignOut={signOut}
+        />
+      );
     case 'ready':
       return (
-        <Ready client={client} userId={phase.userId} store={phase.store} initialFamily={phase.family} signOut={signOut}>
+        <Ready account={account} userId={phase.userId} store={phase.store} initialFamily={phase.family} signOut={signOut}>
           {children}
         </Ready>
       );
@@ -147,14 +136,14 @@ export function SupabaseSession({ children }: { children: ReactNode }): JSX.Elem
  * without going back through resolve() and reseeding.
  */
 function Ready({
-  client,
+  account,
   userId,
   store,
   initialFamily,
   signOut,
   children,
 }: {
-  client: SupabaseClient;
+  account: Account;
   userId: string;
   store: DataStore;
   initialFamily: Family;
@@ -166,14 +155,13 @@ function Ready({
   const [family, setFamily] = useState(initialFamily);
 
   const rotateJoinCode = useCallback(async (): Promise<void> => {
-    const { data, error } = await client.rpc('rotate_join_code');
-    if (error !== null) throw new Error(error.message);
-    setFamily((current) => ({ ...current, joinCode: data as string }));
-  }, [client]);
+    const joinCode = await account.rotateJoinCode();
+    setFamily((current) => ({ ...current, joinCode }));
+  }, [account]);
 
   const refreshFamily = useCallback(async (): Promise<void> => {
-    setFamily(await readFamily(client, initialFamily.id));
-  }, [client, initialFamily.id]);
+    setFamily(await account.readFamily(initialFamily.id));
+  }, [account, initialFamily.id]);
 
   if (me === null) {
     return (

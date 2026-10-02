@@ -1,11 +1,11 @@
 # data
-The only way screens reach stored rows: the `Collection` and `DataStore` contract, a shared row cache, and two backends.
+The only way screens reach stored rows: the `Collection` and `DataStore` contract, the `Account` interface for sign-in and families, a shared row cache, and two backends.
 
 ## Files
 | File | Responsibility |
 | --- | --- |
-| `types.ts` | `Collection<T>`, `PhotoStore`, and `DataStore` (every collection one family owns). |
-| `index.ts` | `createStore(familyId)`: a backend picked by `VITE_BACKEND`, wrapped in `withCache`. |
+| `types.ts` | `Collection<T>`, `PhotoStore`, `DataStore` (every collection one family owns), and `Account` and `Family` (sign-in, families, `openStore()`). |
+| `boundary.test.ts` | Fails if anything outside `supabase/` imports the Supabase SDK or that folder, bar `../auth/session.tsx`. |
 | `cache.ts` (+ `cache.test.ts`) | `CachedCollection`, `withCache()`, `cacheOf()`, `preloadStore()`: one shared copy per collection, writes shown at once. |
 | `useCollection.ts` | `useCollectionState()` (`rows` and `loaded`) and `useCollection()` (rows only). |
 | `collection.contract.ts` | `runDataStoreContract(name, make, reset?)`: the nine cases every backend must pass. |
@@ -13,12 +13,14 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 | `local/localPhotos.ts` | Local `PhotoStore` in IndexedDB (`nestead-photos`). |
 | `supabase/supabaseClient.ts` | Browser client from `VITE_SUPABASE_*`, remember-me session storage, email-link parsing. |
 | `supabase/supabaseStore.ts` (+ `supabaseStore.test.ts`) | Supabase backend: snake_case mapping, realtime `subscribe`, the `recipe-photos` bucket. |
+| `supabase/supabaseAccount.ts` (+ `supabaseAccount.test.ts`) | Supabase `Account`: Supabase Auth, membership in one request, and the `create_family`, `join_family`, `rotate_join_code`, `invite_family_name` RPCs. `supabaseAccount()` is the browser's shared one. |
 | `supabase/supabaseTestSession.ts` | `signInTester()` for the live suites, retrying transient failures. |
 | `supabase/supabaseRealtime.test.ts` | A change made by a second client arrives over realtime. |
-| `supabase/joinCode.test.ts` | `rotate_join_code()` against the live project. |
+| `supabase/joinCode.test.ts` | `Account.rotateJoinCode()` against the live project. |
 
 ## How it works
-- `createStore()` picks by `VITE_BACKEND` (unset means `local`, anything else throws), but only `../auth/demoSession.tsx` calls it; `../auth/supabaseSession.tsx` builds `withCache(createSupabaseStore(...))` itself (`index.ts`).
+- A backend is a `DataStore` plus, for real sign-in, an `Account` whose `openStore()` builds it. `../auth/session.tsx` is the only place that picks one; the demo session builds `withCache(createLocalStore(...))`, and `../auth/openFamily.ts` builds `withCache(account.openStore(...))`.
+- `supabase/` is the whole Supabase adapter. Swapping backends means a new folder beside it with the same two interfaces; the steps are in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#swapping-the-backend).
 - `CachedCollection` runs at most one read at a time, queues one more for changes that arrive mid-read, applies `update` and `remove` at once and undoes them if the backend refuses (`cache.ts`).
 - A collection nobody watches stays subscribed for `LINGER_MS` (30 s); `preload()` opens one before its screen mounts (`cache.ts`).
 - On Supabase, `photos.url()` calls made in the same task are signed in one `createSignedUrls` request once its microtasks have run, and each URL is kept for 55 minutes. A screen of recipe cards costs one request, not one per card (`supabaseStore.ts`).
@@ -28,10 +30,12 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 - The guarantees every backend owes are listed in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#collectiont).
 
 ## Connections
-- Uses: `../domain/types.ts`, `@supabase/supabase-js`.
-- Used by: `../auth/` (building the store), every screen through `useCollection`, and `local/localStore.ts`'s preference helpers in `../components/theme/`, `../i18n/`, `../features/board/`, `../features/lists/`, `../features/larder/timers/`.
+- Uses: `../domain/types.ts`; `@supabase/supabase-js` in `supabase/` only.
+- Used by: `../auth/` (the `Account`, building the store), every screen through `useCollection`, and `local/localStore.ts`'s preference helpers in `../components/theme/`, `../i18n/`, `../features/board/`, `../features/lists/`, `../features/larder/timers/`.
 
 ## Rules & gotchas
+- New backend work goes through the interfaces: add a method to `DataStore` or `Account` in `types.ts`, implement it in the adapter folder, and call it through the interface. Screens, `../auth/` and `../features/` never import an adapter, a backend SDK, or name a table or RPC. A rule the backend must enforce goes in the interface's doc comment.
+- The `Account` doc comment in `types.ts` lists what a backend must enforce itself (member id is user id, one family per person, family-only visibility, one diet profile per family). The client relies on all four.
 - A patch value of `undefined` clears the field in both backends and the cache (`cache.ts` `merge`, `supabaseStore.ts` `toRow`, and a contract case).
 - `supabaseStore.ts` converts top-level keys only (nested jsonb keeps camelCase), reads NULL as absent, and throws on an `update` that matched no row, which PostgREST reports as success.
 - Another client's delete never arrives over realtime. The channel filters on `family_id`, and a DELETE event carries only the primary key, so the filter never matches. The deleting client still notifies its own listeners (`supabaseStore.ts`; measured in `../../docs/PERFORMANCE.md`).
@@ -40,4 +44,4 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 - With all six `SUPABASE_TEST_*` values in `.env.test`, `npm test` runs the live suites, which delete every row in both test families between cases (`supabase/supabaseStore.test.ts`).
 
 ## Tests
-The contract runs three times: `local/localStore.test.ts`, `cache.test.ts` (cached local, plus ten cache cases), and `supabase/supabaseStore.test.ts` (live). The Supabase suites run in the `node` environment, not jsdom.
+The contract runs three times: `local/localStore.test.ts`, `cache.test.ts` (cached local, plus ten cache cases), and `supabase/supabaseStore.test.ts` (live). The Supabase suites run in the `node` environment, not jsdom. `boundary.test.ts` reads source files only.

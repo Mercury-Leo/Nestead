@@ -17,13 +17,14 @@ The Postgres schema for the real backend, the migrations for projects that alrea
 ## How it works
 - Each migration's header says `schema.sql` already includes it: a fresh project needs only `schema.sql`.
 - Every family table has `family_id` and a policy comparing it with `current_family_id()`, a `security definer` function that returns NULL, and so denies everything, for a user in no family (`schema.sql`).
-- `create_family`, `join_family`, `rotate_join_code` and `invite_family_name` are `security definer` RPCs, since RLS makes those steps impossible from the client (`schema.sql`, `../src/auth/screens/JoinOrCreate.tsx`).
+- `create_family`, `join_family`, `rotate_join_code` and `invite_family_name` are `security definer` RPCs, since RLS makes those steps impossible from the client (`schema.sql`, `../src/data/supabase/supabaseAccount.ts`).
 - Realtime publishes `members`, `board_columns`, `tasks` and the five kitchen tables, not `families` (`schema.sql`).
 - Photos live in the private `recipe-photos` bucket, one folder per family id, enforced by storage policies (`schema.sql`).
 
 ## Connections
 - Mirrored by `../src/domain/types.ts`; mapped by `../src/data/supabase/supabaseStore.ts`.
-- Exercised by the live suites in `../src/data/supabase/` and `../src/auth/membership.test.ts`.
+- Called by `../src/data/supabase/` only: `supabaseStore.ts` for rows and photos, `supabaseAccount.ts` for auth and the RPCs.
+- Exercised by the live suites in `../src/data/supabase/`.
 
 ## Rules & gotchas
 - A schema change is a new migration plus the same change in `schema.sql`, plus `../src/domain/types.ts` (snake_case here, camelCase there).

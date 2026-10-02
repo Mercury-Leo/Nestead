@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** Which data backend createStore() builds. Defaults to "local" when unset. */
+  /** Which backend SessionProvider (src/auth/session.tsx) uses. Defaults to "local" when unset. */
   readonly VITE_BACKEND?: 'local' | 'supabase';
   readonly VITE_SUPABASE_URL?: string;
   /** Publishable key only. A secret key must never reach a VITE_* variable. */

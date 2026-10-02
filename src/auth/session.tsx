@@ -1,26 +1,23 @@
 import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
-import type { DataStore } from '../data/types';
+import { supabaseAccount } from '../data/supabase/supabaseAccount';
+import type { DataStore, Family } from '../data/types';
 import type { Member } from '../domain/types';
+import { AccountSession } from './accountSession';
 import { DemoSession } from './demoSession';
-import { SupabaseSession } from './supabaseSession';
+
+export type { Family } from '../data/types';
 
 /**
  * Who you are and which family's data you get. Screens read this and never ask
  * how it was decided.
  *
  * There are two implementations. The local backend has no accounts, so
- * DemoSession lets you pick a member per tab. The supabase backend signs you in
- * for real. Both provide the same shape, which is the point: the board does not
- * change when auth becomes real.
+ * DemoSession lets you pick a member per tab. AccountSession signs you in for
+ * real, against any backend that provides an Account (src/data/types.ts). Both
+ * provide the same shape, which is the point: the board does not change when
+ * auth becomes real, or when the backend behind it is swapped.
  */
-
-export interface Family {
-  id: string;
-  name: string;
-  /** Share this so somebody can join. Rotatable, see Session.rotateJoinCode. */
-  joinCode: string;
-}
 
 export interface Session {
   store: DataStore;
@@ -54,12 +51,21 @@ export function useSession(): Session {
   return session;
 }
 
+/**
+ * The swap point: the only place that names a backend. Another backend is one
+ * more case here, once its DataStore passes runDataStoreContract() and its
+ * Account keeps the promises listed on the interface.
+ *
+ * VITE_BACKEND is compared directly, not through a local, so the build sees a
+ * constant condition and leaves the other backends, and the demo kitchen the
+ * demo session seeds, out of the bundle.
+ */
 export function SessionProvider({ children }: { children: ReactNode }): JSX.Element {
-  // Compared directly so a Supabase build leaves the demo session, and the
-  // demo kitchen it seeds, out of the bundle.
-  return import.meta.env.VITE_BACKEND === 'supabase' ? (
-    <SupabaseSession>{children}</SupabaseSession>
-  ) : (
-    <DemoSession>{children}</DemoSession>
-  );
+  if (import.meta.env.VITE_BACKEND === 'supabase') {
+    return <AccountSession account={supabaseAccount()}>{children}</AccountSession>;
+  }
+  if (import.meta.env.VITE_BACKEND === undefined || import.meta.env.VITE_BACKEND === 'local') {
+    return <DemoSession>{children}</DemoSession>;
+  }
+  throw new Error(`VITE_BACKEND="${import.meta.env.VITE_BACKEND}" is not a known backend. Use "local" or "supabase".`);
 }

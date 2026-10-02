@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { getRememberMe, getSupabaseClient, setRememberMe, takeLinkError } from '../../data/supabase/supabaseClient';
+import type { Account, SignUpResult } from '../../data/types';
 import { inviteLink } from '../invite';
 import { useInviteFamily } from '../useInviteFamily';
 
 /**
  * Email and password rather than a magic link: a link depends on email actually
- * being delivered, and Supabase's built-in mailer is rate limited and meant for
- * testing. Sessions refresh themselves, so this screen is rare after the first
+ * being delivered, and a hosted auth service's built-in mailer is usually rate
+ * limited and meant for testing. Sessions refresh themselves, so this screen is rare after the first
  * time on a device.
  *
  * Both people sign in as themselves. There is no shared family password: a
  * shared secret cannot be revoked for one person, gives no attribution, and
- * would make members.id = auth.users.id meaningless.
+ * would make a member's id being their account's id meaningless.
  *
  * Forgotten passwords are the one place email is unavoidable. The link comes
- * back to this app, and SupabaseSession shows SetNewPassword instead of the app.
+ * back to this app, and AccountSession shows SetNewPassword instead of the app.
  *
  * Opened from an invite link, it starts on Create account: the person invited
  * is most likely new, and it names the family they are about to join. Signing
@@ -24,18 +24,17 @@ import { useInviteFamily } from '../useInviteFamily';
 
 type Mode = 'signIn' | 'signUp' | 'forgot';
 
-export function SignIn({ inviteCode }: { inviteCode: string | null }): JSX.Element {
+export function SignIn({ account, inviteCode }: { account: Account; inviteCode: string | null }): JSX.Element {
   const { t } = useTranslation();
-  const client = getSupabaseClient();
 
   const [mode, setMode] = useState<Mode>(inviteCode !== null ? 'signUp' : 'signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(getRememberMe);
+  const [remember, setRemember] = useState(() => account.rememberMe());
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(takeLinkError);
+  const [error, setError] = useState<string | null>(() => account.takeLinkError());
   const [notice, setNotice] = useState<string | null>(null);
-  const invite = useInviteFamily(inviteCode);
+  const invite = useInviteFamily(account, inviteCode);
 
   const switchTo = (next: Mode): void => {
     setMode(next);
@@ -49,13 +48,13 @@ export function SignIn({ inviteCode }: { inviteCode: string | null }): JSX.Eleme
     setNotice(null);
 
     if (mode === 'forgot') {
-      const { error: failed } = await client.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin + window.location.pathname,
-      });
-      setBusy(false);
-      if (failed !== null) {
-        setError(failed.message);
+      try {
+        await account.sendPasswordReset(email.trim(), window.location.origin + window.location.pathname);
+      } catch (failed) {
+        setError((failed as Error).message);
         return;
+      } finally {
+        setBusy(false);
       }
       // Worded the same whether or not the account exists, so this screen
       // cannot be used to find out who has one.
@@ -63,30 +62,25 @@ export function SignIn({ inviteCode }: { inviteCode: string | null }): JSX.Eleme
       return;
     }
 
-    setRememberMe(remember);
-
-    const credentials = { email: email.trim(), password };
-    const { data, error: failed } =
-      mode === 'signUp'
-        ? await client.auth.signUp({
-            ...credentials,
-            // The confirmation email comes back to the invite, so it is not lost
-            // if the link is opened in another browser. Supabase only follows
-            // redirect URLs on its allow list and otherwise uses the Site URL.
-            options: inviteCode !== null ? { emailRedirectTo: inviteLink(inviteCode) } : undefined,
-          })
-        : await client.auth.signInWithPassword(credentials);
-
-    setBusy(false);
-
-    if (failed !== null) {
-      setError(failed.message);
+    let result: SignUpResult = 'signedIn';
+    try {
+      if (mode === 'signUp') {
+        // The confirmation email comes back to the invite, so it is not lost
+        // if the link is opened in another browser.
+        result = await account.signUp(email.trim(), password, remember, inviteCode !== null ? inviteLink(inviteCode) : undefined);
+      } else {
+        await account.signIn(email.trim(), password, remember);
+      }
+    } catch (failed) {
+      setError((failed as Error).message);
       return;
+    } finally {
+      setBusy(false);
     }
 
-    // Sign-up returns a user with no session when the project requires email
-    // confirmation. Nothing more happens until that link is clicked.
-    if (mode === 'signUp' && data.session === null) {
+    // When the backend requires email confirmation, nothing more happens until
+    // that link is clicked.
+    if (result === 'confirmEmail') {
       switchTo('signIn');
       setNotice(t('auth.signIn.confirmEmail'));
     }

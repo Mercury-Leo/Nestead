@@ -60,3 +60,69 @@ export interface DataStore {
   listGroups: Collection<ListGroup>;
   photos: PhotoStore;
 }
+
+/** The family a signed-in person belongs to. */
+export interface Family {
+  id: string;
+  name: string;
+  /** Share this so somebody can join. Rotatable, see Account.rotateJoinCode. */
+  joinCode: string;
+}
+
+/** What sign-up led to. */
+export type SignUpResult = 'signedIn' | 'confirmEmail';
+
+/**
+ * Accounts and families: everything a backend with real sign-in owes the app
+ * besides the DataStore. AccountSession (src/auth/accountSession.tsx) and the
+ * sign-in screens talk only to this, so swapping the backend means writing one
+ * of these and one DataStore, then naming them in src/auth/session.tsx.
+ *
+ * Every method that fails throws an Error whose message the screens show as is.
+ *
+ * What the backend must enforce, not the client:
+ *   * a member row's id is the signed-in user's id;
+ *   * a person belongs to one family at most;
+ *   * a family's rows, and the family itself, are visible only to its members,
+ *     so a stale guess at a family id reads nothing and writes nothing;
+ *   * at most one diet profile per family (src/features/larder/setup.ts relies
+ *     on the second insert failing).
+ */
+export interface Account {
+  /**
+   * Calls back with the signed-in user's id, or null, now and after every
+   * change. `recovery` is true when the change came from a password-reset link.
+   * Repeat calls for the same user are allowed (token refresh, say).
+   */
+  watchUser(onChange: (userId: string | null, recovery: boolean) => void): Unsubscribe;
+  /** True once, if the page was opened from a password-reset link. Read before watchUser. */
+  takeRecoveryLink(): boolean;
+  /** Why an email link failed (usually that it expired), once. */
+  takeLinkError(): string | null;
+
+  /** Whether the next sign-in is remembered past closing the browser. */
+  rememberMe(): boolean;
+  signIn(email: string, password: string, remember: boolean): Promise<void>;
+  /** `confirmTo` is where the confirmation email's link should land, if it matters. */
+  signUp(email: string, password: string, remember: boolean, confirmTo?: string): Promise<SignUpResult>;
+  /** Emails a reset link that comes back to `returnTo`. Succeeds whether or not the account exists. */
+  sendPasswordReset(email: string, returnTo: string): Promise<void>;
+  /** For the signed-in user, after a recovery link. */
+  setPassword(password: string): Promise<void>;
+  signOut(): Promise<void>;
+
+  /** The family this user belongs to, or null if they have not joined one. */
+  readMembership(userId: string): Promise<Family | null>;
+  readFamily(familyId: string): Promise<Family>;
+  /** Makes a family with the signed-in user as its first member. */
+  createFamily(familyName: string, displayName: string): Promise<void>;
+  /** Adds the signed-in user to the family with this join code. */
+  joinFamily(code: string, displayName: string): Promise<void>;
+  /** Replaces the user's family's join code and returns the new one. */
+  rotateJoinCode(): Promise<string>;
+  /** The name of the family behind a join code, null if none; answers signed out too. */
+  inviteFamilyName(code: string): Promise<string | null>;
+
+  /** The family's rows, uncached: the caller wraps it in withCache(). */
+  openStore(familyId: string): DataStore;
+}

@@ -1,12 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { preloadStore, withCache } from '../data/cache';
 import { readDevicePreference, writeDevicePreference } from '../data/local/localStore';
-import { createSupabaseStore } from '../data/supabase/supabaseStore';
-import type { DataStore } from '../data/types';
+import type { Account, DataStore, Family } from '../data/types';
 import { seedDefaultColumns } from '../features/board/defaultColumns';
 import { ensureKitchen } from '../features/larder/setup';
-import { readMembership } from './membership';
-import type { Family } from './session';
 
 export interface OpenedFamily {
   family: Family;
@@ -16,10 +12,10 @@ export interface OpenedFamily {
   setup: Promise<unknown>;
 }
 
-function start(client: SupabaseClient, familyId: string): Omit<OpenedFamily, 'family'> {
+function start(account: Account, familyId: string): Omit<OpenedFamily, 'family'> {
   // Every table starts loading now, alongside the setup, so the board and the
   // kitchen have their rows by the time they mount.
-  const store = withCache(createSupabaseStore(familyId, client));
+  const store = withCache(account.openStore(familyId));
   preloadStore(store);
   return { store, setup: Promise.all([seedDefaultColumns(store), ensureKitchen(store)]) };
 }
@@ -31,17 +27,17 @@ function start(client: SupabaseClient, familyId: string): Omit<OpenedFamily, 'fa
  * `lastFamilyId` is the family this device opened for this user last time.
  * Its store starts while membership is checked rather than after, which takes
  * a round trip off every launch. A stale guess costs only requests: a user
- * belongs to one family at most, so RLS shows the old one no rows and refuses
+ * belongs to one family at most, so the backend shows the old one no rows and refuses
  * its setup writes, and it is dropped as soon as membership answers.
  */
-export async function openFamily(client: SupabaseClient, userId: string, lastFamilyId: string | null): Promise<OpenedFamily | null> {
-  const early = lastFamilyId === null ? null : start(client, lastFamilyId);
+export async function openFamily(account: Account, userId: string, lastFamilyId: string | null): Promise<OpenedFamily | null> {
+  const early = lastFamilyId === null ? null : start(account, lastFamilyId);
   // Judged below; until then a failure must not surface as unhandled.
   early?.setup.catch(() => undefined);
 
-  const family = await readMembership(client, userId);
+  const family = await account.readMembership(userId);
   if (family === null) return null;
-  const started = early !== null && lastFamilyId === family.id ? early : start(client, family.id);
+  const started = early !== null && lastFamilyId === family.id ? early : start(account, family.id);
   return { family, ...started };
 }
 

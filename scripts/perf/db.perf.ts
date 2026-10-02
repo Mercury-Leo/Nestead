@@ -23,6 +23,7 @@ import { signInTester } from '../../src/data/supabase/supabaseTestSession';
 import type { Collection, DataStore } from '../../src/data/types';
 import type { Base, BoardColumn, ListItem, NewRow, Recipe } from '../../src/domain/types';
 import { openFamily } from '../../src/auth/openFamily';
+import { createSupabaseAccount } from '../../src/data/supabase/supabaseAccount';
 import { placeTask } from '../../src/features/board/actions';
 import { addRecipeToList, moveToPantry, removeRecipeFromList } from '../../src/features/larder/actions';
 import { keyForText, pantryIndex } from '../../src/domain/kitchen/fit';
@@ -265,7 +266,7 @@ async function measureSize(sizeName: keyof typeof SIZES, app: Signed, peer: Sign
     console.log(`  task create ${show(writes.create!)}, update ${show(writes.update!)}, remove ${show(writes.remove!)}`);
   }
 
-  // Startup is SupabaseSession's resolve(): openFamily(), then its setup. A
+  // Startup is AccountSession's resolve(): openFamily(), then its setup. A
   // device that has opened the app before knows the family; a new one does not.
   for (const [name, guess] of [['startup', startupFrom.familyId], ['startupNewDevice', null]] as const) {
     if (!wanted(name)) continue;
@@ -275,7 +276,7 @@ async function measureSize(sizeName: keyof typeof SIZES, app: Signed, peer: Sign
       await settle(1000);
       const first = hits.length;
       const t0 = performance.now();
-      const opened = await openFamily(client, startupFrom.userId, guess);
+      const opened = await openFamily(createSupabaseAccount(client), startupFrom.userId, guess);
       if (opened === null) throw new Error('startup: no family');
       const { store } = opened;
       const stops = COLLECTIONS.map((collection) => cacheOf(store[collection] as Collection<Base>).subscribe(() => {}));

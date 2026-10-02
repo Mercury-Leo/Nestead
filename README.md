@@ -108,7 +108,7 @@ src/
   app/                       Shell, navigation (sidebar and tab bar), routes.
   auth/                      SessionProvider / useSession, demo and Supabase
                              sessions, invite links; screens/ for sign-in.
-  data/                      Collection/DataStore, createStore, the row cache,
+  data/                      Collection/DataStore/Account, the row cache,
                              useCollection, the contract; local/ and supabase/ backends.
   domain/                    Entities, Base, NewRow, ordering for board rows and list sections.
   domain/kitchen/            Pure kitchen logic: ingredient catalog and parser,

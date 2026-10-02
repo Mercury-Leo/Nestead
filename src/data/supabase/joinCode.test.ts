@@ -1,12 +1,14 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest';
+import { createSupabaseAccount } from './supabaseAccount';
 import { signInTester } from './supabaseTestSession';
 import type { TestSession } from './supabaseTestSession';
 
 /**
- * rotate_join_code() against a real Supabase project, with the same gitignored
- * .env.test as the contract suite. Skips when that is not set up.
+ * Account.rotateJoinCode(), which calls rotate_join_code(), against a real
+ * Supabase project, with the same gitignored .env.test as the contract suite.
+ * Skips when that is not set up.
  *
  * It rotates family-a's code for real. Harmless for throwaway test accounts:
  * nobody is meant to join them by code.
@@ -54,10 +56,7 @@ if (!configured) {
       const a = await signIn('family-a');
       const before = await readCode(a);
 
-      const { data, error } = await a.client.rpc('rotate_join_code');
-      expect(error).toBeNull();
-
-      const rotated = data as string;
+      const rotated = await createSupabaseAccount(a.client).rotateJoinCode();
       expect(rotated).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/);
       expect(rotated).not.toBe(before);
       expect(await readCode(a)).toBe(rotated);
@@ -68,13 +67,12 @@ if (!configured) {
       const b = await signIn('family-b');
       const bBefore = await readCode(b);
 
-      const { data, error } = await a.client.rpc('rotate_join_code');
-      expect(error).toBeNull();
+      const rotated = await createSupabaseAccount(a.client).rotateJoinCode();
 
       expect(await readCode(b)).toBe(bBefore);
 
       // RLS hides a's row from b, code or no code.
-      const peek = await b.client.from('families').select('id').eq('join_code', data as string);
+      const peek = await b.client.from('families').select('id').eq('join_code', rotated);
       expect(peek.error).toBeNull();
       expect(peek.data).toEqual([]);
     });

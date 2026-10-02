@@ -1,31 +1,27 @@
 import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { getSupabaseClient } from '../../data/supabase/supabaseClient';
+import type { Account } from '../../data/types';
 import { clearInvite } from '../invite';
 import { useInviteFamily } from '../useInviteFamily';
 
 /**
  * Shown to somebody signed in who is not in a family yet.
  *
- * Both paths are database functions rather than client queries, because RLS
- * makes them impossible from here: you cannot insert a family whose policy
- * requires you to be in it, and you cannot look one up by a code the policy is
- * hiding from you.
- *
  * After an invite link, it opens on Join with the code filled in and the
  * family named, so only a name is left to type.
  */
 export function JoinOrCreate({
+  account,
   inviteCode,
   onJoined,
   onSignOut,
 }: {
+  account: Account;
   inviteCode: string | null;
   onJoined: () => void;
   onSignOut: () => Promise<void>;
 }): JSX.Element {
   const { t } = useTranslation();
-  const client = getSupabaseClient();
 
   const [joining, setJoining] = useState(inviteCode !== null);
   const [displayName, setDisplayName] = useState('');
@@ -33,27 +29,20 @@ export function JoinOrCreate({
   const [code, setCode] = useState(inviteCode ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const invite = useInviteFamily(inviteCode);
+  const invite = useInviteFamily(account, inviteCode);
 
   const submit = async (): Promise<void> => {
     setBusy(true);
     setError(null);
 
-    const { error: failed } = joining
-      ? await client.rpc('join_family', {
-          code: code.trim().toUpperCase(),
-          display_name: displayName.trim(),
-        })
-      : await client.rpc('create_family', {
-          family_name: familyName.trim(),
-          display_name: displayName.trim(),
-        });
-
-    setBusy(false);
-
-    if (failed !== null) {
-      setError(failed.message);
+    try {
+      if (joining) await account.joinFamily(code.trim().toUpperCase(), displayName.trim());
+      else await account.createFamily(familyName.trim(), displayName.trim());
+    } catch (failed) {
+      setError((failed as Error).message);
       return;
+    } finally {
+      setBusy(false);
     }
     onJoined();
   };

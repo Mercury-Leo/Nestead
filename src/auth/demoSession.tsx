@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { createStore } from '../data';
+import { withCache } from '../data/cache';
+import { createLocalStore } from '../data/local/localStore';
 import type { DataStore } from '../data/types';
 import { useCollection } from '../data/useCollection';
 import type { Member } from '../domain/types';
@@ -13,7 +14,7 @@ import { SessionContext } from './session';
  * and you pick which member you are; sessionStorage keeps that per tab, so two
  * tabs can be two people.
  *
- * This exists so the app runs with no Supabase project and no network. It is
+ * This exists so the app runs with no backend and no network. It is
  * not a security model and never was.
  */
 
@@ -29,7 +30,7 @@ const DEMO_MEMBERS: ReadonlyArray<{ name: string; color: string }> = [
 let storeSingleton: DataStore | null = null;
 
 function getStore(): DataStore {
-  if (storeSingleton === null) storeSingleton = createStore(DEMO_FAMILY_ID);
+  if (storeSingleton === null) storeSingleton = withCache(createLocalStore(DEMO_FAMILY_ID));
   return storeSingleton;
 }
 

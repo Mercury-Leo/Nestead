@@ -22,7 +22,7 @@ Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [
 
 ## Connections
 - Uses: `../../auth/session.tsx`, `../../data/useCollection.ts`, `../../domain/kitchen/`, `../../i18n/`.
-- Used by: `../../app/` (App, routes, nav), `../../auth/supabaseSession.tsx` (`ensureKitchen`), `../lists/`.
+- Used by: `../../app/` (App, routes, nav), `../../auth/openFamily.ts` (`ensureKitchen`), `../lists/`.
 
 ## Rules & gotchas
 - `seed/webIndex.ts` ships in every build, because `KitchenContext.tsx` imports `offlineProvider`; only the demo seed is left out of Supabase builds (`../../auth/session.tsx`).
