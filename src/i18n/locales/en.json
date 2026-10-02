@@ -302,6 +302,18 @@
       "sheet_one": "sheet",
       "sheet_other": "sheets"
     },
+    "servingUnit": {
+      "piece_one": "piece",
+      "piece_other": "pieces",
+      "cookie_one": "cookie",
+      "cookie_other": "cookies",
+      "muffin_one": "muffin",
+      "muffin_other": "muffins",
+      "bar_one": "bar",
+      "bar_other": "bars",
+      "square_one": "square",
+      "square_other": "squares"
+    },
     "duration": {
       "minutes": "{{minutes, number}} min",
       "hours_one": "{{count, number}} h",

@@ -92,6 +92,66 @@ export function formatListQtyT(t: TFunction, parts: readonly ListPart[]): string
     .join(' + ');
 }
 
+/* ----------------------------------------------------------- servings -- */
+
+// Keyed by every unit, so the compiler flags a new one; the translation file names each as kitchen.unit.<unit>.
+const UNIT_IDS: Record<Exclude<Unit, null>, true> = {
+  g: true,
+  kg: true,
+  ml: true,
+  l: true,
+  tsp: true,
+  tbsp: true,
+  cup: true,
+  pinch: true,
+  clove: true,
+  can: true,
+  bunch: true,
+  head: true,
+  slice: true,
+  sheet: true,
+};
+
+// The other words an import keeps as a serving unit, read from the yield by server/import/parse.ts;
+// the translation file names each as kitchen.servingUnit.<word>.
+const SERVING_WORDS = ['piece', 'cookie', 'muffin', 'bar', 'square'] as const;
+
+function isUnitId(word: string): word is Exclude<Unit, null> {
+  return (UNIT_IDS as Partial<Record<string, true>>)[word] === true;
+}
+
+function isServingWord(word: string): word is (typeof SERVING_WORDS)[number] {
+  return (SERVING_WORDS as readonly string[]).includes(word);
+}
+
+/** A serving unit as the translation file names it, in the form for `count`; null for a word it does not name. */
+function namedServingUnit(t: TFunction, unit: string, count: number): string | null {
+  if (isUnitId(unit)) return t(`kitchen.unit.${unit}`, { count });
+  if (isServingWord(unit)) return t(`kitchen.servingUnit.${unit}`, { count });
+  return null;
+}
+
+/**
+ * A recipe's serving unit, as in "Per slice" and "280 kcal/slice". It is stored
+ * in English: a unit the translation file names shows in the reader's language
+ * ("פרוסה", "עוגייה"), any other word as stored.
+ */
+export function servingUnitWord(t: TFunction, unit: string): string {
+  return namedServingUnit(t, unit, 1) ?? unit;
+}
+
+/**
+ * The caption under the servings stepper's number: "servings", or the serving
+ * unit's plural ("slices", "פרוסות"). A word the translation file does not name
+ * keeps the recipe's spelling, which English makes plural with an "s".
+ */
+export function servingsCaption(t: TFunction, unit: string | undefined): string {
+  if (unit === undefined) return t('detail.servingsCaption');
+  // A label, plural at every number as "servings" is: three reads as the plain
+  // plural in English and Hebrew alike, where two would read as Hebrew's dual.
+  return namedServingUnit(t, unit, 3) ?? t('detail.servingsCaptionUnit', { unit });
+}
+
 /* ------------------------------------------------------ time and timers -- */
 
 /** "35 min", "1 h", "1 h 20 min"; compact drops the last " min" where space is short ("1 h 20"). */

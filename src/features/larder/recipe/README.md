@@ -19,6 +19,7 @@ Recipe presentation shared by the kitchen screens and the shopping list: cards, 
 ## How it works
 - Screens build `RecipeView`s with `recipeView(recipe, pantry, profile)`; search passes its own `fit` and `diet` so they are not worked out twice (`recipeView.ts`, `../search/Search.tsx`).
 - `recipePath()` URL-encodes the id, because web ids contain a colon (`recipeView.ts`).
+- A card's calories name the serving unit through `servingUnitWord()`: "280 kcal/slice", in Hebrew "280 קק״ל/פרוסה"; a word the translation file does not name shows as stored (`recipeView.ts`, `../labels.ts`).
 - Chosen servings live in a module-level map for the page's lifetime, so cook mode follows the detail page and a reload starts over (`servings.ts`).
 - `StepText` renders each time through a callback: a quiet label on the detail page, a timer chip in cook mode (`StepText.tsx`).
 - A card shows the title, one meta line (time, rating, to buy), the fit bar and any diet warning; tags, description, calories, "You have 9/10", the need list and the source sit behind its toggle. Open or shut is per card and never saved (`RecipeCard.tsx`).
@@ -35,3 +36,4 @@ Recipe presentation shared by the kitchen screens and the shopping list: cards, 
 - Both branches of `hasPhoto()` must work: without a photo the card has no image area and the row no thumbnail (`RecipeCard.tsx`).
 - `chipKey()` is the step index plus the time's character offset in the text; running timers are found by it (`StepText.tsx`, `../timers/store.ts`).
 - The rating shown is the family's `userRating` if set, else `sourceRating` (`displayRating()` in `../../../domain/kitchen/search.ts`).
+- `servingUnit` is stored in English: show it through `servingUnitWord()` or `servingsCaption()` (`../labels.ts`), never as stored.

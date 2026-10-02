@@ -7,7 +7,7 @@ The family kitchen: state and writes shared by the kitchen screens, one folder p
 | `KitchenContext.tsx` | `KitchenProvider` and `useKitchen()`: recipes, have-now, staples, pantry index, profile, list items and sections, read once; `findRecipe()`. |
 | `actions.ts` | Writes that span collections: recipes on and off the list, typed items, sections, save to library, pantry adds, move to pantry. |
 | `setup.ts` | `ensureKitchen()`: a new family's empty diet profile and `DEFAULT_STAPLES`. Never throws. |
-| `labels.ts` (+ `labels.test.ts`) | Translated words for the domain's fixed ids: sections, presets, units, amounts, timers, diet warnings. |
+| `labels.ts` (+ `labels.test.ts`) | Translated words for the domain's fixed ids: sections, presets, units, a recipe's serving unit, amounts, timers, diet warnings. |
 | `hints.ts` (+ `hints.test.ts`) | `useHint()` and `markHintUsed()`: helper copy that shows until its action has been done once on this device. |
 
 Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [import/](import/README.md), [pantry/](pantry/README.md), [search/](search/README.md). Shared: [recipe/](recipe/README.md), [seed/](seed/README.md), [timers/](timers/README.md). One-file screens are below.
@@ -26,13 +26,14 @@ Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [
 
 ## Rules & gotchas
 - `seed/webIndex.ts` ships in every build, because `KitchenContext.tsx` imports `offlineProvider`; only the demo seed is left out of Supabase builds (`../../auth/session.tsx`).
-- Stored names stay English (sections, staples); show them through `labels.ts`.
+- Stored names stay English (sections, staples, serving units); show them through `labels.ts`.
+- A serving unit is translated when the translation file names it (`servingUnitWord()`, `servingsCaption()`): a kitchen unit in `kitchen.unit` ("slice" reads "פרוסה" in Hebrew), or one of the other words an import keeps from a yield, `SERVING_WORDS` in `kitchen.servingUnit` (piece, cookie, muffin, bar, square). Any other word shows as stored, so a word added to the import's yield pattern (`../../../server/import/parse.ts`) needs a `SERVING_WORDS` entry and keys in both locale files.
 - Keep creates in `actions.ts` sequential. The shopping list and the pantry show rows in `createdAt` order, and rows created in parallel would land in whatever order the server started them, not the plan's.
 - Hints are device state: read and write them through `hints.ts`, which uses the device preference helpers, never the `DataStore`.
 - Screens share through `recipe/` or this folder, with two exceptions: `import/PreviewCard.tsx` imports the `ImportHandoff` type from `add/AddRecipe.tsx` and `UNITS` from `add/draft.ts`.
 
 ## Tests
-`labels.test.ts`: the English wording matches the domain's for every seed recipe and profile, and Hebrew says numbers and plurals correctly. `hints.test.ts`: a used hint is stored once, and a stored value that is not a list starts over.
+`labels.test.ts`: the English wording matches the domain's for every seed recipe and profile, serving units read as stored, and Hebrew says numbers and plurals correctly and names every serving unit the real importer keeps from a yield ("24 cookies": "עוגייה", and "עוגיות" under the servings stepper). `hints.test.ts`: a used hint is stored once, and a stored value that is not a list starts over.
 
 ## Single-file screens
 | Folder | Route | What it does |

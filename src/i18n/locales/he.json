@@ -313,6 +313,23 @@
       "sheet_two": "דפים",
       "sheet_other": "דפים"
     },
+    "servingUnit": {
+      "piece_one": "חתיכה",
+      "piece_two": "חתיכות",
+      "piece_other": "חתיכות",
+      "cookie_one": "עוגייה",
+      "cookie_two": "עוגיות",
+      "cookie_other": "עוגיות",
+      "muffin_one": "מאפין",
+      "muffin_two": "מאפינס",
+      "muffin_other": "מאפינס",
+      "bar_one": "חטיף",
+      "bar_two": "חטיפים",
+      "bar_other": "חטיפים",
+      "square_one": "ריבוע",
+      "square_two": "ריבועים",
+      "square_other": "ריבועים"
+    },
     "duration": {
       "minutes": "{{minutes, number}} דק׳",
       "hours_one": "שעה",

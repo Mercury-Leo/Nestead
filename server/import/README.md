@@ -28,6 +28,7 @@ Recipe import: fetch a web page and read the recipe from its schema.org data. On
 - The Pages Function has no DNS API, so there `checkUrl()` judges the URL alone (`../../functions/api/import.ts`).
 - `vite.config.ts` mounts the handler in `configureServer` only, so `/api/import` does not exist under `vite preview`.
 - `tsconfig.json` includes `server/` and `functions/`, so `npm run build` type-checks them.
+- A recipe's serving unit is its yield's word (`slices?|pieces?|cookies?|muffins?|bars?|squares?` in `parse.ts`), kept singular and in English. The app translates exactly these words (`SERVING_WORDS` in `../../src/features/larder/labels.ts`, `kitchen.servingUnit` in the locale files), so add a new one there too, or Hebrew readers see it in English; `labels.test.ts` imports through this parser to check them.
 
 ## Tests
 `import.test.ts`, with `../../tests/fixtures/gnocchi.html`: JSON-LD in an `@graph`, microdata fallback, no recipe, ISO durations and equipment, the SSRF guard including DNS, redirects re-checked, the size cap, the timeout.

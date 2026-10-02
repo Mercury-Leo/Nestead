@@ -16,7 +16,7 @@ import { formatNumber } from '../../../i18n';
 import { totalMinutes } from '../../../domain/kitchen/search';
 import type { ListHandoff } from '../../lists/useJustAdded';
 import { addRecipeToList, saveToLibrary } from '../actions';
-import { dietLabel, formatMinutes } from '../labels';
+import { dietLabel, formatMinutes, servingUnitWord, servingsCaption } from '../labels';
 import { useHint } from '../hints';
 import { useKitchen } from '../KitchenContext';
 import { RecipePhoto } from '../recipe/RecipePhoto';
@@ -181,7 +181,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
 
   // Time, calories and what to buy on one line; how each was worked out behind the toggle.
   const kcal = recipe.kcalPerServing;
-  const unit = recipe.servingUnit ?? t('detail.stats.serving');
+  const unit = recipe.servingUnit === undefined ? t('detail.stats.serving') : servingUnitWord(t, recipe.servingUnit);
   const stats = (
     <div className={s.stats}>
       <div className={s.statLine}>
@@ -268,7 +268,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
           label={t('detail.servings')}
           fewerLabel={t('detail.fewerServings')}
           moreLabel={t('detail.moreServings')}
-          caption={recipe.servingUnit !== undefined ? t('detail.servingsCaptionUnit', { unit: recipe.servingUnit }) : t('detail.servingsCaption')}
+          caption={servingsCaption(t, recipe.servingUnit)}
           value={servings}
           min={1}
           max={12}

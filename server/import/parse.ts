@@ -234,6 +234,7 @@ export function parseRecipeHtml(html: string, url: string): { recipe: ImportedRe
   const servings = firstNumber(yieldText);
   if (servings !== undefined && servings > 0) {
     recipe.servings = Math.round(servings);
+    // Kept singular and in English; the app translates each of these words (SERVING_WORDS in src/features/larder/labels.ts).
     const unit = /\d+\s*(slices?|pieces?|cookies?|muffins?|bars?|squares?)\b/i.exec(yieldText.join(' '));
     if (unit !== null) recipe.servingUnit = (unit[1] as string).toLowerCase().replace(/s$/, '');
   }

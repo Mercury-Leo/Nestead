@@ -4,7 +4,7 @@ import type { DietCheck } from '../../../domain/kitchen/diet';
 import { pantryFit } from '../../../domain/kitchen/fit';
 import type { PantryFit, PantryIndex } from '../../../domain/kitchen/fit';
 import { i18n } from '../../../i18n';
-import { formatMinutes } from '../labels';
+import { formatMinutes, servingUnitWord } from '../labels';
 import { displayRating, totalMinutes } from '../../../domain/kitchen/search';
 
 /** Everything a card or row shows about a recipe, worked out once. */
@@ -36,7 +36,7 @@ export function recipeView(
       recipe.kcalPerServing === undefined
         ? null
         : recipe.servingUnit !== undefined
-          ? i18n.t('recipe.kcalPer', { kcal: recipe.kcalPerServing, unit: recipe.servingUnit })
+          ? i18n.t('recipe.kcalPer', { kcal: recipe.kcalPerServing, unit: servingUnitWord(i18n.t, recipe.servingUnit) })
           : i18n.t('recipe.kcal', { kcal: recipe.kcalPerServing }),
     need: fit.missingLines.map((line) => line.item),
   };

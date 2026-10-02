@@ -5,6 +5,7 @@ import { detectDurations } from '../../domain/kitchen/durations';
 import { formatListQty } from '../../domain/kitchen/list';
 import { formatAmount, formatClock, formatDuration, scaleQty } from '../../domain/kitchen/quantity';
 import { i18n, loadLocale } from '../../i18n';
+import { parseRecipeHtml } from '../../../server/import';
 import { UNITS } from './add/draft';
 import { SEED_CUSTOM_RULES, SEED_PRESETS } from './seed/kitchen';
 import { SEED_LIBRARY } from './seed/recipes';
@@ -18,6 +19,8 @@ import {
   formatListQtyT,
   formatMinutes,
   ruleHintText,
+  servingUnitWord,
+  servingsCaption,
   timerLabel,
 } from './labels';
 
@@ -131,7 +134,25 @@ describe('English wording matches the domain', () => {
   it('rule hints, as written when the rule was made', () => {
     for (const rule of RULES) expect(ruleHintText(t, rule)).toBe(rule.hint);
   });
+
+  it('serving units as stored, and the servings caption as before', () => {
+    const seeded = RECIPES.flatMap((recipe) => recipe.servingUnit ?? []);
+    expect(seeded).toContain('slice');
+    // The seed's, the other words an import keeps (server/import/parse.ts), and one the translation file does not name.
+    const words = [...seeded, 'piece', 'cookie', 'muffin', 'bar', 'square', 'wedge'];
+    for (const unit of [...UNITS, ...words]) expect(servingUnitWord(t, unit)).toBe(unit);
+    for (const unit of words) expect(servingsCaption(t, unit)).toBe(`${unit}s`);
+    expect(servingsCaption(t, undefined)).toBe('servings');
+  });
 });
+
+/** The serving unit the importer keeps for a recipe that yields `recipeYield`. */
+function importedServingUnit(recipeYield: string): string {
+  const page = `<script type="application/ld+json">${JSON.stringify({ '@type': 'Recipe', name: 'Bake', recipeIngredient: ['2 eggs'], recipeYield })}</script>`;
+  const unit = parseRecipeHtml(page, 'https://example.com/bake')?.recipe.servingUnit;
+  if (unit === undefined) throw new Error(`no serving unit read from "${recipeYield}"`);
+  return unit;
+}
 
 describe('in Hebrew', () => {
   afterEach(async () => {
@@ -150,6 +171,34 @@ describe('in Hebrew', () => {
       '3 שעות ו-20 דק׳',
     ]);
     expect(formatMinutes(t, 80, true)).toBe('שעה ו-20');
+  });
+
+  it('names every serving unit an import keeps: per one, and in the plural under the stepper', async () => {
+    await loadLocale('he');
+    await i18n.changeLanguage('he');
+    const named = Object.fromEntries(
+      ['10 slices', '12 pieces', '24 cookies', '12 muffins', '16 bars', '16 squares'].map((recipeYield) => {
+        const unit = importedServingUnit(recipeYield);
+        return [unit, [servingUnitWord(t, unit), servingsCaption(t, unit)]];
+      }),
+    );
+    expect(named).toEqual({
+      slice: ['פרוסה', 'פרוסות'],
+      piece: ['חתיכה', 'חתיכות'],
+      cookie: ['עוגייה', 'עוגיות'],
+      muffin: ['מאפין', 'מאפינס'],
+      bar: ['חטיף', 'חטיפים'],
+      square: ['ריבוע', 'ריבועים'],
+    });
+  });
+
+  it('says "per slice" in Hebrew, and keeps a word it does not name as stored', async () => {
+    await loadLocale('he');
+    await i18n.changeLanguage('he');
+    expect(t('detail.stats.per', { unit: servingUnitWord(t, 'slice') })).toBe('לכל פרוסה');
+    expect(servingUnitWord(t, 'wedge')).toBe('wedge');
+    expect(servingsCaption(t, 'wedge')).toBe('wedge');
+    expect(servingsCaption(t, undefined)).toBe('מנות');
   });
 
   it('keeps a shaped number left to right, so "1½" does not read "½1"', async () => {
