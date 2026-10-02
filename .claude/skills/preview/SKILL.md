@@ -35,6 +35,6 @@ Run the commands from the repo root, the folder that holds this `.claude/`. Sess
 
 ## Gotchas
 
-- `vite preview` has no `/api/import`, so importing a recipe from a web address fails here. Everything else behaves as in production.
+- `vite preview` serves `/api/import` and `/api/search` through `vite.config.ts`, as production does. "Search online" needs `TAVILY_API_KEY` in `.env.local`; without it the screen falls back to the recipes that ship with the app. A preview server started before a change to `vite.config.ts` or `.env.local` needs a restart to see it: only `dist/` is read fresh on every request.
 - Don't use the app on the user's behalf with coordinate clicks. The pane can resize between a screenshot and a click, and a stray click writes to the test family's real data. If you have to interact, use refs from `find` or `read_page`, and prefer reading the page over clicking.
 - For a build with no sign-in, when the user asks for the demo, run `npx vite build --mode demo` instead of step 2 and serve it the same way. It runs on the localStorage demo backend.

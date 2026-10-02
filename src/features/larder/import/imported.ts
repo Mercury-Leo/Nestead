@@ -1,7 +1,7 @@
 import type { AnyRecipe, IngredientLine, Unit } from '../../../domain/types';
 import { estimateKcal } from '../../../domain/kitchen/calories';
 import { dietTags } from '../../../domain/kitchen/diet';
-import { parseIngredientLine, parseNumber } from '../../../domain/kitchen/parse';
+import { isIngredientHeading, parseIngredientLine, parseNumber } from '../../../domain/kitchen/parse';
 import { totalMinutes } from '../../../domain/kitchen/search';
 import { i18n } from '../../../i18n';
 import { formatMinutes } from '../labels';
@@ -13,7 +13,8 @@ import type { ImportedRecipe } from '../../../../server/import';
  */
 
 export function fromImported(imported: ImportedRecipe): AnyRecipe {
-  const ingredients = imported.ingredients.map((raw, index) => ({ ...parseIngredientLine(raw), id: `imp-i${index + 1}` }));
+  // Pages list headings ("For the sauce:", "תיבול:") among the ingredients; they are not ones to buy.
+  const ingredients = imported.ingredients.filter((raw) => !isIngredientHeading(raw)).map((raw, index) => ({ ...parseIngredientLine(raw), id: `imp-i${index + 1}` }));
   const recipe: AnyRecipe = {
     id: `import:${imported.url}`,
     title: imported.title,
@@ -101,12 +102,25 @@ export function whatWeRead(recipe: AnyRecipe, stated: { photo: boolean; servings
 const PANS = /\b(pan|skillet|pot|dish|tray|wok|tin|dutch oven|casserole)\b/i;
 
 /**
+ * True when most ingredient lines match nothing in the catalog, as with a
+ * recipe in a language the catalog does not know (Hebrew, for now). The diet
+ * and pantry checks see nothing in such lines, so "no nuts found" would mean
+ * only "no nuts recognised": the preview must not vouch for the recipe.
+ */
+export function mostlyUnrecognised(recipe: Pick<AnyRecipe, 'ingredients'>): boolean {
+  const unknown = recipe.ingredients.filter((line) => line.canonicalId === undefined).length;
+  return unknown * 2 > recipe.ingredients.length;
+}
+
+/**
  * Diet tags the engine vouches for, plus Weeknight and One-pan where they fit.
+ * No diet tags for a recipe it mostly could not read: an unrecognised line
+ * carries no flags, so every "-free" tag would pass unearned.
  * i18n: these become the recipe's stored tags, so they stay in English like
  * the diet engine's own (dietTags in domain/kitchen/diet.ts).
  */
 export function suggestedTags(recipe: AnyRecipe): { tag: string; preselected: boolean }[] {
-  const tags = dietTags(recipe).map((tag) => ({ tag, preselected: true }));
+  const tags = mostlyUnrecognised(recipe) ? [] : dietTags(recipe).map((tag) => ({ tag, preselected: true }));
   if (totalMinutes(recipe) > 0 && totalMinutes(recipe) <= 40) tags.push({ tag: 'Weeknight', preselected: false });
   if (recipe.equipment.filter((item) => PANS.test(item)).length === 1) tags.push({ tag: 'One-pan', preselected: false });
   return tags;

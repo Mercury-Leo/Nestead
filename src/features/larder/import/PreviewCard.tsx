@@ -23,7 +23,7 @@ import { StatusMarker } from '../recipe/StatusMarker';
 import { useKitchen } from '../KitchenContext';
 import { RecipePhoto } from '../recipe/RecipePhoto';
 import { recipeView } from '../recipe/recipeView';
-import { applyFixes, suggestedTags, whatWeRead } from './imported';
+import { applyFixes, mostlyUnrecognised, suggestedTags, whatWeRead } from './imported';
 import type { Fix } from './imported';
 import s from './ImportRecipe.module.css';
 
@@ -129,20 +129,29 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
             <MatchBar have={fit.have + fit.staple} total={fit.total} />
           </div>
 
-          {diet.ok ? (
-            <div className={s.dietOk}>
-              <Leaf size={20} strokeWidth={2} aria-hidden />
-              <span>
-                <strong>{t('import.preview.fits')}</strong>
-                <span className={s.dietSub}>{fitsProfileText(t, kitchen.profile)}</span>
-              </span>
-            </div>
-          ) : (
+          {/* A conflict found is always shown; a pass is only claimed for ingredients the app could read. */}
+          {!diet.ok ? (
             <div className={s.dietBad}>
               <AlertTriangle size={20} strokeWidth={2} aria-hidden />
               <span>
                 <strong>{t('import.preview.conflicts')}</strong>
                 <span className={s.dietSub}>{dietLabel(t, diet)}</span>
+              </span>
+            </div>
+          ) : mostlyUnrecognised(recipe) ? (
+            <div className={s.dietBad}>
+              <AlertTriangle size={20} strokeWidth={2} aria-hidden />
+              <span>
+                <strong>{t('import.preview.unchecked')}</strong>
+                <span className={s.dietSub}>{t('import.preview.uncheckedWhy')}</span>
+              </span>
+            </div>
+          ) : (
+            <div className={s.dietOk}>
+              <Leaf size={20} strokeWidth={2} aria-hidden />
+              <span>
+                <strong>{t('import.preview.fits')}</strong>
+                <span className={s.dietSub}>{fitsProfileText(t, kitchen.profile)}</span>
               </span>
             </div>
           )}
@@ -204,7 +213,10 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
               <div key={line.id} className={s.flag}>
                 <p className={s.flagTitle}>
                   <AlertTriangle size={17} strokeWidth={2.2} aria-hidden />{' '}
-                  <Trans i18nKey="import.preview.cantRead" values={{ item: line.raw ?? line.item }} />
+                  {/* One span, so the line's text and its quotes wrap as one in the flex row. */}
+                  <span>
+                    <Trans i18nKey="import.preview.cantRead" values={{ item: line.raw ?? line.item }} />
+                  </span>
                 </p>
                 <div className={s.flagFields}>
                   <input

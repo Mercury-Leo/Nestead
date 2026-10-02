@@ -4,9 +4,10 @@ import { buildRecipe } from './build';
 import type { RecipeSpec } from './build';
 
 /**
- * The offline "web index": recipes from around the web, bundled so search works
- * with no network and no API key. A real search provider can replace it behind
- * RecipeSearchProvider; ask before adding one, since it needs a key.
+ * The offline "web index": recipes bundled with the app, so the Search page has
+ * web recipes to rank against the pantry with no network and no API key.
+ * "Search online" on the import screen asks the real web (/api/search, see
+ * server/search) and falls back to this index where that is not available.
  */
 
 function web(spec: RecipeSpec): AnyRecipe {
@@ -249,7 +250,7 @@ export const WEB_INDEX: readonly AnyRecipe[] = [
 export interface RecipeSearchProvider {
   /** Everything the provider knows, for ranking against the pantry. */
   all(): readonly AnyRecipe[];
-  /** Free-text search, for "Search online" on the import screen. */
+  /** Free-text search: "Search online" on the import screen, where there is no online search. */
   search(query: string): Promise<AnyRecipe[]>;
 }
 

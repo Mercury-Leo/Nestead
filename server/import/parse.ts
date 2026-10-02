@@ -81,10 +81,22 @@ function imageOf(value: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * One line per ingredient. A page that packs its whole list into a single
+ * entry, as older mako.co.il recipes do ("½ כוס שמן<br>\r\n4 עגבניות…"), is
+ * split at each break; lists of several entries are taken as they are.
+ */
+function ingredientLines(value: unknown): string[] {
+  const entries: unknown[] = Array.isArray(value) ? value : typeof value === 'string' ? [value] : [];
+  const only = entries.length === 1 ? entries[0] : undefined;
+  const lines = typeof only === 'string' ? only.split(/<br\s*\/?>|<\/p>|<\/li>|\r?\n/i) : entries;
+  return lines.map(clean).filter((line) => line !== '');
+}
+
 function instructions(value: unknown): string[] {
   if (typeof value === 'string') {
     return value
-      .split(/\n+|(?<=\.)\s{2,}/)
+      .split(/<br\s*\/?>|\n+|(?<=\.)\s{2,}/i)
       .map(clean)
       .filter((step) => step !== '');
   }
@@ -92,7 +104,16 @@ function instructions(value: unknown): string[] {
   if (value !== null && typeof value === 'object') {
     const node = value as Record<string, unknown>;
     if (types(node).includes('HowToSection')) return instructions(node.itemListElement);
-    const text = clean(node.text ?? node.name);
+    const raw = node.text ?? node.name;
+    // One step holding the whole method, as older mako.co.il recipes give it:
+    // "…<br> 2. …<br> 3. …". Split it, without the numbers: the app numbers steps.
+    if (typeof raw === 'string' && /<br\s*\/?>/i.test(raw)) {
+      return raw
+        .split(/<br\s*\/?>/i)
+        .map((part) => clean(part).replace(/^\d+[.)]\s+/, ''))
+        .filter((step) => step !== '');
+    }
+    const text = clean(raw);
     return text === '' ? [] : [text];
   }
   return [];
@@ -218,9 +239,7 @@ export function parseRecipeHtml(html: string, url: string): { recipe: ImportedRe
   if (node === undefined) return null;
 
   const title = clean(node.name);
-  const ingredients = (Array.isArray(node.recipeIngredient) ? node.recipeIngredient : Array.isArray(node.ingredients) ? node.ingredients : [])
-    .map(clean)
-    .filter((line: string) => line !== '');
+  const ingredients = ingredientLines(Array.isArray(node.recipeIngredient) || typeof node.recipeIngredient === 'string' ? node.recipeIngredient : node.ingredients);
   const steps = instructions(node.recipeInstructions);
   if (title === '' || ingredients.length === 0) return null;
 

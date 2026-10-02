@@ -1,5 +1,5 @@
 # seed
-Kitchen data written by hand: the demo family's full kitchen, and the offline "web index" that search and import use in every build.
+Kitchen data written by hand: the demo family's full kitchen, and the offline "web index" that every build's Search page ranks, and that import's "Search online" falls back to where online search is not set up.
 
 ## Files
 | File | Responsibility |
@@ -14,7 +14,7 @@ Kitchen data written by hand: the demo family's full kitchen, and the offline "w
 ## How it works
 - `seedDemoKitchen()` runs only for a family without a diet profile. It writes the profile, `DEFAULT_STAPLES`, have-now items, the recipes oldest first, and the list, mapping seed slugs to new row ids (`seedKitchen.ts`).
 - Only `../../../auth/demoSession.tsx` calls it; opening the app with `?reset-kitchen` runs `clearKitchen()` first.
-- `offlineProvider.search()` keeps recipes whose title and ingredient names contain every typed word (`webIndex.ts`); `../KitchenContext.tsx` makes it the provider.
+- `offlineProvider.search()` keeps recipes whose title and ingredient names contain every typed word (`webIndex.ts`); `../KitchenContext.tsx` makes it the provider. Import calls it only when `/api/search` is missing or has no key (`../import/ImportRecipe.tsx`).
 - Recipes are written as a person would and parsed, so the seed exercises the real parser (`build.ts`).
 
 ## Connections

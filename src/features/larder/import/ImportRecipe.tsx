@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { AlertTriangle, Check, Link2, RefreshCw, Search as SearchIcon, WifiOff } from 'lucide-react';
@@ -7,6 +7,7 @@ import { BackArrow, Button, Segmented, TextField } from '../../../components/ui'
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import type { AnyRecipe } from '../../../domain/types';
 import type { ImportedRecipe } from '../../../../server/import';
+import type { WebRecipeHit } from '../../../../server/search';
 import { i18n } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
 import { RecipeList, RecipeRow } from '../recipe/RecipeCard';
@@ -15,12 +16,17 @@ import { fromImported } from './imported';
 import s from './ImportRecipe.module.css';
 import { PreviewCard } from './PreviewCard';
 import type { Preview } from './PreviewCard';
+import { searchOnline } from './webSearch';
+import { WebResults } from './WebResults';
 
 type Status =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'ok'; site: string }
   | { kind: 'error'; message: string; offline?: boolean; offerWrite?: boolean };
+
+/** Pages found online, or, where this build has no online search, the bundled index. */
+type Results = { kind: 'web'; query: string; hits: WebRecipeHit[] } | { kind: 'bundled'; query: string; recipes: AnyRecipe[] };
 
 function offline(): { message: string; offline: true } {
   return { message: i18n.t('import.offline'), offline: true };
@@ -52,19 +58,32 @@ export default function ImportRecipe(): JSX.Element {
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [preview, setPreview] = useState<Preview | null>(null);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<AnyRecipe[] | null>(null);
+  const [results, setResults] = useState<Results | null>(null);
+  const [searching, setSearching] = useState(false);
+  // The hit being read, by its URL.
+  const [opening, setOpening] = useState<string | null>(null);
+  // Counts searches, so an answer to an older one is dropped.
+  const searchRun = useRef(0);
+  const previewAt = useRef<HTMLDivElement>(null);
+  // Bumped when a result is chosen, to bring its preview into view.
+  const [reveal, setReveal] = useState(0);
 
-  const fetchRecipe = async (): Promise<void> => {
+  useEffect(() => {
+    if (reveal > 0) previewAt.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [reveal]);
+
+  /** Reads the recipe at `target` into the preview. True when there is one to show. */
+  const fetchRecipe = async (target: string): Promise<boolean> => {
     if (!navigator.onLine) {
       setStatus({ kind: 'error', ...offline() });
-      return;
+      return false;
     }
     setStatus({ kind: 'loading' });
     try {
       const response = await fetch('/api/import', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: target.trim() }),
       });
       const body = (await response.json().catch(() => ({ error: 'fetch-failed' }))) as {
         recipe?: ImportedRecipe;
@@ -74,7 +93,7 @@ export default function ImportRecipe(): JSX.Element {
       if (body.recipe === undefined) {
         setPreview(null);
         setStatus({ kind: 'error', ...errorMessage(body.error ?? 'not-found') });
-        return;
+        return false;
       }
       const missing = body.report?.missing ?? [];
       setPreview({
@@ -82,24 +101,48 @@ export default function ImportRecipe(): JSX.Element {
         stated: { photo: !missing.includes('photo'), servings: !missing.includes('servings'), times: !missing.includes('times') },
       });
       setStatus({ kind: 'ok', site: body.recipe.site });
+      return true;
     } catch {
       setPreview(null);
       setStatus({ kind: 'error', ...(navigator.onLine ? { message: errorMessage('fetch-failed').message } : offline()) });
+      return false;
     }
   };
 
   const runSearch = async (): Promise<void> => {
+    const text = query.trim();
+    if (text === '') return;
     if (!navigator.onLine) {
       setStatus({ kind: 'error', ...offline() });
       return;
     }
+    searchRun.current += 1;
+    const run = searchRun.current;
     setStatus({ kind: 'idle' });
-    setResults(await kitchen.provider.search(query));
+    setSearching(true);
+    const outcome = await searchOnline(text);
+    const found: Results | null =
+      outcome.kind === 'hits'
+        ? { kind: 'web', query: text, hits: outcome.hits }
+        : outcome.kind === 'unavailable'
+          ? { kind: 'bundled', query: text, recipes: await kitchen.provider.search(text) }
+          : null;
+    if (run !== searchRun.current) return;
+    setSearching(false);
+    setResults(found);
+    if (outcome.kind === 'failed') setStatus({ kind: 'error', message: t(outcome.limit ? 'import.error.searchLimit' : 'import.error.searchFailed') });
+  };
+
+  const openHit = async (hit: WebRecipeHit): Promise<void> => {
+    setOpening(hit.url);
+    const shown = await fetchRecipe(hit.url);
+    setOpening(null);
+    if (shown) setReveal((count) => count + 1);
   };
 
   const choose = (recipe: AnyRecipe): void => {
     setPreview({ recipe, stated: { photo: recipe.photoUrl !== undefined, servings: true, times: true } });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setReveal((count) => count + 1);
   };
 
   return (
@@ -146,7 +189,7 @@ export default function ImportRecipe(): JSX.Element {
             className={s.fetchRow}
             onSubmit={(event) => {
               event.preventDefault();
-              void fetchRecipe();
+              void fetchRecipe(url);
             }}
           >
             <TextField
@@ -183,8 +226,8 @@ export default function ImportRecipe(): JSX.Element {
               onChange={(event) => setQuery(event.target.value)}
               wrapClassName={s.urlField}
             />
-            <Button type="submit" variant="primary" size="lg" icon={SearchIcon}>
-              {t('import.search')}
+            <Button type="submit" variant="primary" size="lg" icon={SearchIcon} disabled={query.trim() === '' || searching}>
+              {searching ? t('import.searching') : t('import.search')}
             </Button>
           </form>
         )}
@@ -208,13 +251,16 @@ export default function ImportRecipe(): JSX.Element {
 
         {mode === 'search' && results !== null && (
           <div className={s.results}>
-            {results.length === 0 ? (
+            {results.kind === 'bundled' && <p className={s.muted}>{t('import.bundledNote')}</p>}
+            {(results.kind === 'web' ? results.hits.length : results.recipes.length) === 0 ? (
               <p className={s.muted}>
-                <Trans i18nKey="import.noneFound" values={{ query }} />
+                <Trans i18nKey="import.noneFound" values={{ query: results.query }} />
               </p>
+            ) : results.kind === 'web' ? (
+              <WebResults hits={results.hits} opening={opening} onChoose={(hit) => void openHit(hit)} />
             ) : (
               <RecipeList>
-                {results.map((recipe) => (
+                {results.recipes.map((recipe) => (
                   <RecipeRow key={recipe.id} view={recipeView(recipe, kitchen.pantry, kitchen.profile)} onChoose={() => choose(recipe)} />
                 ))}
               </RecipeList>
@@ -223,7 +269,9 @@ export default function ImportRecipe(): JSX.Element {
         )}
       </section>
 
-      {preview !== null && <PreviewCard key={preview.recipe.id} preview={preview} onSaved={(id) => navigate(recipePath({ id }), { replace: true })} />}
+      <div ref={previewAt} className={s.previewAt}>
+        {preview !== null && <PreviewCard key={preview.recipe.id} preview={preview} onSaved={(id) => navigate(recipePath({ id }), { replace: true })} />}
+      </div>
     </div>
   );
 }

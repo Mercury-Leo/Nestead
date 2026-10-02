@@ -2,7 +2,7 @@
 Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, diet, shopping list, cook mode). React 18, TypeScript strict, Vite 5, Vitest 2 + jsdom, react-router 6, i18next; Supabase or a localStorage demo backend.
 
 ## Commands
-- `npm run dev`: Vite, plus `/api/import` from `server/import/`. `vite preview` has no `/api/import` (`vite.config.ts`).
+- `npm run dev`: Vite, plus `/api/import` and `/api/search` from `server/`; `vite preview` mounts both too (`vite.config.ts`). Search needs `TAVILY_API_KEY` in `.env.local`.
 - `npm run build`: `tsc --noEmit && vite build`. Refuses unless `VITE_BACKEND=supabase` and both `VITE_SUPABASE_*` are set (`vite.config.ts`); demo build: `npx vite build --mode demo`.
 - `npm test`: every suite. With `.env.test` present it also runs live Supabase suites that delete rows in both test families.
 - One file: `npx vitest run src/features/board/recurrence.test.ts`.
@@ -15,7 +15,8 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 - Session: screens rely only on the `Session` type in `src/auth/session.tsx`, never on which session provides it.
 - Domain: `src/domain/` is pure and imports nothing outside itself; `types.ts` mirrors `supabase/schema.sql`.
 - Kitchen: screens read shared rows from `useKitchen()` and write through `src/features/larder/actions.ts`.
-- Import API: one `(Request) => Response` handler in `server/import/`, run by `vite.config.ts` in dev and `functions/api/import.ts` on Cloudflare.
+- Import API: one `(Request) => Response` handler in `server/import/`, run by `vite.config.ts` in dev and preview and `functions/api/import.ts` on Cloudflare.
+- Search API: the same shape in `server/search/` (`functions/api/search.ts`); it returns links on recipe sites the importer reads, and the one chosen goes through `/api/import`.
 - Text: UI strings come from `t()`, with keys typed from `src/i18n/locales/en.json`.
 
 ## Where things live
@@ -33,6 +34,7 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 | `src/features/larder/` | Kitchen: a folder per screen, `recipe/` shared UI, `seed/`, `timers/` | [README](src/features/larder/README.md) |
 | `src/hooks/`, `src/styles/` | Media query, direction, wake lock, pointer-drag helpers; `tokens.css` palette | none |
 | `server/import/` | Recipe import handler | [README](server/import/README.md) |
+| `server/search/` | Recipe search handler: Tavily, English and Hebrew recipe sites | [README](server/search/README.md) |
 | `supabase/` | Schema, migrations, CLI config | [README](supabase/README.md) |
 | `scripts/perf/` | Performance measurements: bundle, page load, interactions, database; results in `docs/PERFORMANCE.md` | [README](scripts/perf/README.md) |
 | `.claude/skills/` | Claude Code skills: `preview` builds the production bundle and opens it on port 4173 for the user to test, signed in | [SKILL.md](.claude/skills/preview/SKILL.md) |
@@ -48,11 +50,12 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 - English kept in code on purpose needs an `i18n:` comment, or `src/i18n/literals.test.ts` fails.
 - CSS modules everywhere except `src/styles/*.css`, `board.css` and `auth.css`, whose import order `src/main.tsx` sets.
 - Theme colours are tokens in `src/styles/tokens.css`, redefined for dark mode; components never branch on the theme.
-- Only the publishable key may go in a `VITE_*` variable: every `VITE_*` value ships in the bundle (`.env.example`).
+- Only the publishable key may go in a `VITE_*` variable: every `VITE_*` value ships in the bundle (`.env.example`). Server-only secrets such as `TAVILY_API_KEY` never take the prefix.
 
 ## Gotchas
 - `src/i18n/literals.test.ts` skips files by path (`domain/`, `data/`, `i18n/`, `/seed/`, …): moving a file can change what it checks.
-- `src/features/larder/seed/webIndex.ts` is production code (the offline search index), not demo data.
+- `src/features/larder/seed/webIndex.ts` is production code (the Search page's web recipes, and "Search online"'s fallback without a key), not demo data.
+- The parser reads Hebrew amounts, but the ingredient catalog knows English names only: a Hebrew recipe imports, but gets no pantry, diet or calorie checks, and the import preview says so (`mostlyUnrecognised()`).
 - Don't add `StrictMode`: `src/main.tsx` leaves it out so the demo seed does not run twice.
 - `index.html` reads the theme and locale preferences before React; keep its keys in step with `src/components/theme/theme.tsx` and `src/i18n/i18n.ts`.
 - Auth screens take the `Account` as a prop from `AccountSession`; never reach for a backend client in a screen.

@@ -25,7 +25,7 @@ same way the board was, without changing anything the core guarantees.
 | Auth            | Supabase Auth, one account per person | `src/auth/accountSession.tsx` over `src/data/supabase/supabaseAccount.ts` |
 | Auth (demo)     | None: pick a member per tab   | `src/auth/demoSession.tsx`                          |
 | Text            | i18next: English bundled, Hebrew fetched on first use | `src/i18n/`                 |
-| Hosting         | Cloudflare Pages               | static, plus one Pages Function: `/api/import`      |
+| Hosting         | Cloudflare Pages               | static, plus Pages Functions: `/api/import`, `/api/search` |
 
 The deploy workflow builds with `VITE_BACKEND=supabase`
 (`.github/workflows/deploy.yml`), and `npm run build` refuses anything else
@@ -126,7 +126,8 @@ src/
                              One folder per screen.
       timers/                Cook-mode timer engine and host.
       seed/                  The demo family's kitchen, and the offline web index
-                             that every build uses for search and import.
+                             every build ranks on Search; "Search online" falls
+                             back to it where online search is not set up.
   styles/
     tokens.css               The palette and type for the whole app.
     global.css               Un-scoped rules shared across features.
@@ -134,6 +135,9 @@ src/
 server/import/               Recipe import: guard (SSRF), fetchPage, parse,
                              handler; index.ts is the public surface.
 functions/api/import.ts      The same handler as a Cloudflare Pages Function.
+server/search/               Recipe search: Tavily, limited to the recipe sites
+                             in sites.ts; index.ts is the public surface.
+functions/api/search.ts      The same handler as a Cloudflare Pages Function.
 supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 ```
 
@@ -147,7 +151,8 @@ supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 [import](../src/features/larder/import/README.md), [pantry](../src/features/larder/pantry/README.md),
 [recipe](../src/features/larder/recipe/README.md), [search](../src/features/larder/search/README.md),
 [seed](../src/features/larder/seed/README.md), [timers](../src/features/larder/timers/README.md) ·
-[server/import](../server/import/README.md) · [supabase](../supabase/README.md).
+[server/import](../server/import/README.md) · [server/search](../server/search/README.md) ·
+[supabase](../supabase/README.md).
 
 Dependencies point one way: `features` use `components`, `hooks`, `i18n`, `data`
 and `domain`; `domain` imports nothing outside `domain/`. A screen does not reach
@@ -253,11 +258,23 @@ ticks them and raises the alert on whatever screen is open.
 **Recipe import** is `server/import/`, a `(Request) => Promise<Response>`
 handler with no dependencies. It runs as a Cloudflare Pages Function
 (`functions/api/import.ts`, deployed by the existing `wrangler pages deploy`)
-and as Vite dev-server middleware. It reads schema.org JSON-LD, falling back to
-microdata, and refuses non-http(s) URLs, private, loopback and link-local
-addresses (re-checked on every redirect), pages over 5 MB and anything slower
-than 10 seconds. Ingredient lines come back as text; the app parses them with
-the same parser it uses everywhere.
+and as Vite middleware under `npm run dev` and `vite preview`. It reads
+schema.org JSON-LD, falling back to microdata, and refuses non-http(s) URLs,
+private, loopback and link-local addresses (re-checked on every redirect),
+pages over 5 MB and anything slower than 10 seconds. Ingredient lines come back
+as text; the app parses them with the same parser it uses everywhere.
+
+**Recipe search** ("Search online") is `server/search/`, the same shape of
+handler, as `functions/api/search.ts` and the same Vite middleware. It asks
+Tavily's search API (free: 1,000 searches a month), limited to recipe sites the
+importer was checked against: English ones, or Hebrew ones when the query has
+Hebrew letters (`sites.ts`). It returns links, not recipes; the one a person
+picks goes through `/api/import` like a pasted link. The key is the server-only
+`TAVILY_API_KEY` (`.env.local` locally, a Pages secret in production). Without
+it the endpoint answers `not-configured` and the screen searches the bundled
+web index instead. The catalog knows English ingredient names only, so an
+imported Hebrew recipe is not checked against the pantry or diet; the preview
+says so (`mostlyUnrecognised()` in `features/larder/import/imported.ts`).
 
 **Screens load lazily.** The board is home, so each kitchen screen is its own
 chunk, fetched on first visit. An error boundary around the routes turns a

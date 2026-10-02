@@ -2,19 +2,29 @@
 import { lookup } from 'node:dns/promises';
 import type { IncomingMessage } from 'node:http';
 import { defineConfig, loadEnv } from 'vite';
-import type { Plugin } from 'vite';
+import type { Connect, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { createImportHandler } from './server/import';
+import { createSearchHandler } from './server/search';
 
 /**
- * /api/import in development: the same handler the Pages Function runs in
- * production, given Node's DNS so it can also refuse names that resolve to
- * private addresses.
+ * /api/import and /api/search under `npm run dev` and `vite preview`: the same
+ * handlers the Pages Functions run in production. Import is given Node's DNS,
+ * so it can also refuse names that resolve to private addresses. Search is
+ * given the Tavily key from .env.local; without a VITE_ prefix it stays out of
+ * the bundle.
  */
-function recipeImport(): Plugin {
-  const handler = createImportHandler({
-    resolveHost: async (host) => (await lookup(host, { all: true })).map((entry) => entry.address),
-  });
+function apiRoutes(tavilyKey: string | undefined): Plugin {
+  const routes = [
+    {
+      path: '/api/import',
+      failed: 'fetch-failed',
+      handler: createImportHandler({
+        resolveHost: async (host) => (await lookup(host, { all: true })).map((entry) => entry.address),
+      }),
+    },
+    { path: '/api/search', failed: 'search-failed', handler: createSearchHandler({ apiKey: tavilyKey }) },
+  ];
 
   const readBody = (req: IncomingMessage): Promise<Buffer> =>
     new Promise((resolve, reject) => {
@@ -24,13 +34,12 @@ function recipeImport(): Plugin {
       req.on('error', reject);
     });
 
-  return {
-    name: 'nestead-recipe-import',
-    configureServer(server) {
-      server.middlewares.use('/api/import', (req, res) => {
+  const mount = (middlewares: Connect.Server): void => {
+    for (const { path, failed, handler } of routes) {
+      middlewares.use(path, (req, res) => {
         void (async () => {
           const body = req.method === 'POST' ? new Uint8Array(await readBody(req)) : undefined;
-          const request = new Request(`http://localhost${req.originalUrl ?? req.url ?? '/api/import'}`, {
+          const request = new Request(`http://localhost${req.originalUrl ?? req.url ?? path}`, {
             method: req.method,
             headers: { 'content-type': req.headers['content-type'] ?? 'application/json' },
             body,
@@ -41,9 +50,19 @@ function recipeImport(): Plugin {
           res.end(await response.text());
         })().catch(() => {
           res.statusCode = 500;
-          res.end(JSON.stringify({ error: 'fetch-failed' }));
+          res.end(JSON.stringify({ error: failed }));
         });
       });
+    }
+  };
+
+  return {
+    name: 'nestead-api',
+    configureServer(server) {
+      mount(server.middlewares);
+    },
+    configurePreviewServer(server) {
+      mount(server.middlewares);
     },
   };
 }
@@ -77,9 +96,12 @@ function requireRealBackend(mode: string): void {
 
 export default defineConfig(({ command, mode }) => {
   if (command === 'build' && mode === 'production') requireRealBackend(mode);
+  // Every variable, for the server side only: envPrefix below still decides
+  // what reaches the bundle.
+  const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    plugins: [react(), recipeImport()],
+    plugins: [react(), apiRoutes(env.TAVILY_API_KEY)],
     build: {
       rollupOptions: {
         output: {

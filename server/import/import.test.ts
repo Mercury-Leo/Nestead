@@ -29,6 +29,36 @@ describe('parseRecipeHtml', () => {
     expect(parsed?.report.missing).toEqual(['calories']);
   });
 
+  it('splits an ingredient list packed into one entry, as older Mako recipes give it', () => {
+    const recipe = {
+      '@context': 'https://schema.org',
+      '@type': 'Recipe',
+      name: 'שקשוקה טריפוליטאית',
+      recipeIngredient: ['<p align="right">½ כוס שמן<br>\r\n4 עגבניות חתוכות לקוביות<br>\r\nקורט כמון<br>\r\n</p>'],
+      recipeInstructions: 'מטגנים את השום בשמן.',
+    };
+    const html = `<script type="application/ld+json">${JSON.stringify(recipe)}</script>`;
+    const parsed = parseRecipeHtml(html, 'https://www.mako.co.il/food-recipes/recipes_column-special/Recipe-4e6c628ea499c11004.htm');
+    expect(parsed?.recipe.ingredients).toEqual(['½ כוס שמן', '4 עגבניות חתוכות לקוביות', 'קורט כמון']);
+  });
+
+  it('splits a method packed into one step at its breaks, dropping the numbers', () => {
+    const recipe = {
+      '@type': 'Recipe',
+      name: 'שקשוקה טריפוליטאית',
+      recipeIngredient: ['4 ביצים'],
+      recipeInstructions: [{ '@type': 'HowToStep', name: 'null 1', text: 'מטגנים את השום בשמן כשתי דקות.<br> 2. מוסיפים את רסק העגבניות.<br> 3. שוברים את הביצים.<br>' }],
+    };
+    const parsed = parseRecipeHtml(`<script type="application/ld+json">${JSON.stringify(recipe)}</script>`, 'https://www.mako.co.il/food-recipes/x/Recipe-1.htm');
+    expect(parsed?.recipe.steps).toEqual(['מטגנים את השום בשמן כשתי דקות.', 'מוסיפים את רסק העגבניות.', 'שוברים את הביצים.']);
+  });
+
+  it('takes a list of several entries as it is', () => {
+    const recipe = { '@type': 'Recipe', name: 'Toast', recipeIngredient: ['2 slices\n  bread', '1 tbsp butter'] };
+    const parsed = parseRecipeHtml(`<script type="application/ld+json">${JSON.stringify(recipe)}</script>`, 'https://example.com/toast');
+    expect(parsed?.recipe.ingredients).toEqual(['2 slices bread', '1 tbsp butter']);
+  });
+
   it('falls back to microdata', () => {
     const html = `<div itemscope itemtype="https://schema.org/Recipe">
       <h1 itemprop="name">Toast</h1>

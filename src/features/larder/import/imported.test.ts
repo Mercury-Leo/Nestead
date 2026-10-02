@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseRecipeHtml } from '../../../../server/import';
-import { applyFixes, fromImported, suggestedTags, whatWeRead } from './imported';
+import { applyFixes, fromImported, mostlyUnrecognised, suggestedTags, whatWeRead } from './imported';
 
 const html = readFileSync(new URL('../../../../tests/fixtures/gnocchi.html', import.meta.url), 'utf8');
 const parsed = parseRecipeHtml(html, 'https://weeknightpan.co/recipes/crispy-skillet-gnocchi');
@@ -60,5 +60,52 @@ describe('imported gnocchi', () => {
     expect(fixed.ingredients[8]).toMatchObject({ qty: 1, unit: 'bunch', item: 'basil leaves' });
     expect(fixed.ingredients[8]?.needsFix).toBeUndefined();
     expect(fixed.tags).toEqual(['Vegetarian']);
+  });
+});
+
+describe('an imported recipe the catalog cannot read', () => {
+  // As foody.co.il gives it: coriander, which a "no cilantro" rule should catch, and butter.
+  const hebrew = fromImported({
+    url: 'https://foody.co.il/foody_recipe/x/',
+    site: 'foody.co.il',
+    title: 'רוטב שום וכוסברה',
+    ingredients: ['1 חבילה כוסברה', '5 שיני שום', '1 כוס שמן זית', '50 גרם חמאה', '1 כפית מלח דק'],
+    steps: ['טוחנים הכול יחד.'],
+    equipment: [],
+  });
+
+  it('is told apart from one it can', () => {
+    expect(mostlyUnrecognised(hebrew)).toBe(true);
+    expect(mostlyUnrecognised(recipe)).toBe(false);
+  });
+
+  it('gets no diet tags, since nothing in it was checked', () => {
+    expect(suggestedTags(hebrew).filter((tag) => tag.preselected)).toEqual([]);
+  });
+
+  it('reads Hebrew amounts and leaves the headings out', () => {
+    // 10dakot.co.il's shakshuka, as it imported on 2026-10-02: ten lines, two of them headings.
+    const shakshuka = fromImported({
+      url: 'https://www.10dakot.co.il/recipe/x/',
+      site: '10dakot.co.il',
+      title: 'מתכון לשקשוקה טעימה',
+      ingredients: [
+        'בצל גדול קצוץ',
+        '4 עגבניות בינוניות חתוכות לקוביות (רצוי להשתמש בעגבניות רכות)',
+        '1/2 גמבה חתוכה לקוביות',
+        '3-4 שיני שום כתושות',
+        'כף רסק עגבניות',
+        '4 ביצים',
+        'לשקשוקה חריפה (לא חובה):',
+        'פלפל חריף קצוץ או כפית פפריקה חריפה',
+        'תיבול:',
+        'כפית גדושה פפריקה מתוקה, מלח, פלפל שחור לפי הטעם',
+      ],
+      steps: ['מבשלים.'],
+      equipment: [],
+    });
+    expect(shakshuka.ingredients).toHaveLength(8);
+    expect(shakshuka.ingredients.filter((line) => line.needsFix).map((line) => line.raw)).toEqual(['בצל גדול קצוץ', 'פלפל חריף קצוץ או כפית פפריקה חריפה']);
+    expect(shakshuka.ingredients.map((line) => line.unit)).toEqual([null, null, null, 'clove', 'tbsp', null, null, 'tsp']);
   });
 });

@@ -44,7 +44,7 @@ horizontal swipe. Desktop keeps the side-by-side board.
 | Recipe          | `/recipe/:id`      | Scaled ingredients, have/staple/to-buy, steps with timers           |
 | Cook mode       | `/recipe/:id/cook` | Full screen, one step at a time, tap-to-start timers                |
 | Add / edit      | `/add`             | Write a recipe; `?edit=:id` edits one                               |
-| Import          | `/import`          | Read a recipe from a link, or pick one from the offline web index   |
+| Import          | `/import`          | Read a recipe from a link, or search recipe sites in English and Hebrew |
 | Pantry          | `/pantry`          | What you have now, and the staples assumed always present           |
 | Shopping list   | `/lists`           | Everything to buy, by shop: recipes' missing groceries by aisle, General, your own sections |
 | Diet profile    | `/profile`         | Rules every search and import is checked against                    |
@@ -68,6 +68,11 @@ unless `VITE_BACKEND=supabase` and both `VITE_SUPABASE_*` values are set, so a
 build without `.env.local` cannot ship demo mode by accident. For a deliberate
 demo build, run `npx vite build --mode demo`.
 
+"Search online" on the import screen needs a free [Tavily](https://tavily.com)
+key (1,000 searches a month, no card): `TAVILY_API_KEY` in `.env.local` for
+`npm run dev` and `vite preview`. It is server-only, so never give it a `VITE_`
+prefix. Without it, search falls back to the recipes that ship with the app.
+
 ## Stack
 
 | Concern         | Choice                             |
@@ -80,7 +85,7 @@ demo build, run `npx vite build --mode demo`.
 | Auth            | Supabase Auth, one account per person, family join code |
 | Auth (demo)     | None: pick a member, per tab       |
 | Text            | i18next: English, Hebrew           |
-| Hosting         | Cloudflare Pages, plus a Pages Function for `/api/import` |
+| Hosting         | Cloudflare Pages, plus Pages Functions for `/api/import` and `/api/search` |
 
 Runtime dependencies: `react`, `react-dom`, `@supabase/supabase-js`,
 `react-router-dom` (routes), `i18next` and `react-i18next` (translations),
@@ -128,14 +133,16 @@ src/
   main.tsx                   Entry point.
 server/import/               Recipe import: fetch a page, read schema.org data.
 functions/api/import.ts      The same, as a Cloudflare Pages Function.
+server/search/               Recipe search: find recipe pages the importer can read.
+functions/api/search.ts      The same, as a Cloudflare Pages Function.
 supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 docs/ARCHITECTURE.md         The long version, including the Supabase backend.
 docs/LARDER.md               The kitchen: design notes, decisions, deviations.
 CLAUDE.md                    The short guide for working in this repo.
 ```
 
-Each folder under `src/` (except `hooks/` and `styles/`), plus `server/import/`
-and `supabase/`, has a `README.md` with its files, how it works and its rules;
+Each folder under `src/` (except `hooks/` and `styles/`), plus `server/import/`,
+`server/search/` and `supabase/`, has a `README.md` with its files, how it works and its rules;
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) links them all.
 
 ## Writing a feature
@@ -173,6 +180,11 @@ Only the Supabase **publishable (anon)** key may go in a `VITE_*` variable —
 every `VITE_*` value is inlined into the public bundle. A secret (service-role)
 key must never appear in this repo.
 
+In production, online recipe search reads `TAVILY_API_KEY` as a secret on the
+Cloudflare Pages project (Settings → Variables and Secrets, or
+`npx wrangler pages secret put TAVILY_API_KEY --project-name nestead`), not
+from the build.
+
 ## Known limits
 
 - **The demo has no auth.** With the local backend, anyone who opens the app is
@@ -185,5 +197,8 @@ key must never appear in this repo.
 - **No offline use.** The app installs to a phone's home screen but has no
   service worker.
 - **No prices.** Shopping lists have quantities, not costs.
-- **Offline web search only.** "Search online" looks through a bundled index
-  of recipes. A real search provider needs an API key and is not wired up.
+- **Hebrew ingredients are only half understood.** Search finds Hebrew recipes
+  and the parser reads their amounts ("2 כוסות", "חצי כוס"), but the ingredient
+  catalog knows English names only, so a Hebrew recipe gets no pantry match,
+  diet check or calorie estimate. The import preview says it was not checked
+  rather than that it fits.
