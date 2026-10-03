@@ -5,7 +5,7 @@ tasks, and **Larder**, the family kitchen — recipes, a pantry, a diet profile,
 shopping list and a cook mode with timers. Everyone in the family sees the same
 board, pantry and list.
 
-The board is the home page; the kitchen sits beside it in the same sidebar (or
+The board is the home page; the kitchen and the other sections sit beside it in the same sidebar (or
 tab bar on a phone). Underneath both is the core: a family-scoped data layer,
 the session, the domain types, one place that picks the backend, and the
 contract tests that any backend has to pass.
@@ -110,7 +110,7 @@ else: timers, drag and drop, sheets and the import parser are hand-written.
 
 ```
 src/
-  app/                       Shell, navigation (sidebar and tab bar), routes.
+  app/                       Shell, sections and navigation (sidebar, tab bar, More), routes.
   auth/                      SessionProvider / useSession, demo and Supabase
                              sessions, invite links; screens/ for sign-in.
   data/                      Collection/DataStore/Account, the row cache,

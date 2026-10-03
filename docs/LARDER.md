@@ -55,7 +55,9 @@ placeholder, stars, badges, match bar, status marker, step text).
 
 - **Routes.** `/` is the board, so the library is `/library`.
 - **Tab bar.** Six tabs, not five: Board, Lists, Library, Search, Pantry,
-  Profile. Member switching and sign-out stay on the board page.
+  Profile. Member switching and sign-out stay on the board page. Since
+  2026-10-04 the bar holds sections (four pinned, then More) and the Larder's
+  pages are pills; see `src/app/README.md`.
 - **The shopping list is for everything, not only food**, so it sits with the
   board, above the "Larder" heading, and its screen lives in `features/lists/`.
   It is split by where things are bought: **Supermarket**, where recipes put

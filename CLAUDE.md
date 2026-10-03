@@ -23,7 +23,7 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 ## Where things live
 | Folder | What | Guide |
 | --- | --- | --- |
-| `src/app/` | Shell, sidebar and tab bar, routes | [README](src/app/README.md) |
+| `src/app/` | Shell, sections (sidebar, tab bar with More, page pills), routes | [README](src/app/README.md) |
 | `src/auth/` | Demo session and `AccountSession` (any backend), sign-in, invite links | [README](src/auth/README.md) |
 | `src/data/` | `DataStore` and `Account` interfaces, contract, cache, local and Supabase backends | [README](src/data/README.md) |
 | `src/domain/` | Types, ordering, pure kitchen logic | [README](src/domain/README.md) |

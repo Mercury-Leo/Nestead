@@ -72,7 +72,8 @@ src/
   app/
     App.tsx                  The signed-in app: KitchenProvider around the Shell.
     Shell.tsx                The frame: sidebar or tab bar, the page, timers.
-    Nav.tsx                  Sidebar and TabBar, from one list of nav items.
+    Nav.tsx                  Sidebar, TabBar, More and page pills, from sections.ts.
+    sections.ts              Every section and its pages; which is lit; pin rules.
     AppRoutes.tsx            Every route; kitchen screens load lazily.
   auth/
     session.tsx              SessionProvider / useSession: the Session shape.
