@@ -87,6 +87,12 @@
   gap: 12px;
 }
 
+.aiModel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .codeRow {
   display: flex;
   flex-wrap: wrap;

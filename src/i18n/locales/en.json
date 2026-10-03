@@ -179,6 +179,39 @@
       "changing": "Changing…",
       "body": "The current code and invite link stop working straight away. Everyone already in the family stays in; only people who have not joined yet will need the new code or link.",
       "failed": "Could not change the code"
+    },
+    "ai": {
+      "title": "AI assistant",
+      "demo": "AI reading needs a signed-in family.",
+      "free": "Using free AI · {{left, number}} of {{limit, number}} left today",
+      "add": "Add family OpenRouter key",
+      "keyLine": "Key …{{hint}} · added by {{name}}, {{date}}",
+      "formerMember": "a former member",
+      "replace": "Replace",
+      "remove": "Remove",
+      "model": "Model",
+      "modelFree": "Free models",
+      "modelChosen": "A model I choose",
+      "modelId": "OpenRouter model id",
+      "modelHelp": "<a>Models that support structured outputs</a>",
+      "modelInvalid": "That isn’t an OpenRouter model id, like google/gemini-2.5-flash.",
+      "saveModel": "Save model",
+      "failed": "That didn’t work. Try again.",
+      "keySheet": {
+        "title": "Family OpenRouter key",
+        "label": "OpenRouter API key",
+        "get": "<a>Get a key at openrouter.ai/keys</a>",
+        "limit": "Set a credit limit on this key in OpenRouter. Nestead doesn’t cap a family key: everyone in the family can use it.",
+        "save": "Save key",
+        "saving": "Saving…",
+        "cancel": "Cancel"
+      },
+      "removeSheet": {
+        "title": "Remove the family key?",
+        "body": "Free AI is used again: 5 reads per person per day.",
+        "keep": "Keep it",
+        "removing": "Removing…"
+      }
     }
   },
   "kitchen": {

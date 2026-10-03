@@ -7,6 +7,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { ThemeToggle } from '../../components/theme/ThemeToggle';
 import { Button, SelectButton, Sheet } from '../../components/ui';
 import { LOCALES, formatNumber, useLocale } from '../../i18n';
+import { AiCard } from './AiCard';
 import s from './FamilyPage.module.css';
 
 /**
@@ -155,6 +156,8 @@ export function FamilyPage(): JSX.Element {
             ))}
           </ul>
         </section>
+
+        <AiCard />
 
         {/* Theme and language belong to this device, which the heading says for both. */}
         <section className={s.card} aria-labelledby="device-title">

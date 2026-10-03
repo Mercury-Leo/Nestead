@@ -180,6 +180,39 @@
       "changing": "בהחלפה…",
       "body": "הקוד וקישור ההזמנה הנוכחיים יפסיקו לעבוד מיד. מי שכבר במשפחה נשארים בה; רק מי שעוד לא הצטרפו יצטרכו את הקוד או הקישור החדשים.",
       "failed": "לא הצלחנו להחליף את הקוד"
+    },
+    "ai": {
+      "title": "עוזר AI",
+      "demo": "קריאה עם AI דורשת משפחה מחוברת.",
+      "free": "AI חינמי · נשארו {{left, number}} מתוך {{limit, number}} היום",
+      "add": "הוספת מפתח OpenRouter משפחתי",
+      "keyLine": "מפתח …{{hint}} · נוסף על ידי {{name}}, {{date}}",
+      "formerMember": "מי שכבר לא במשפחה",
+      "replace": "החלפה",
+      "remove": "הסרה",
+      "model": "מודל",
+      "modelFree": "מודלים חינמיים",
+      "modelChosen": "מודל לבחירתי",
+      "modelId": "מזהה מודל ב־OpenRouter",
+      "modelHelp": "<a>מודלים שתומכים בפלט מובנה</a>",
+      "modelInvalid": "זה לא מזהה מודל של OpenRouter, כמו google/gemini-2.5-flash.",
+      "saveModel": "שמירת מודל",
+      "failed": "זה לא הצליח. נסו שוב.",
+      "keySheet": {
+        "title": "מפתח OpenRouter משפחתי",
+        "label": "מפתח API של OpenRouter",
+        "get": "<a>מקבלים מפתח ב־openrouter.ai/keys</a>",
+        "limit": "הגדירו למפתח מגבלת קרדיט ב־OpenRouter. Nestead לא מגביל מפתח משפחתי: כל בני המשפחה יכולים להשתמש בו.",
+        "save": "שמירת מפתח",
+        "saving": "שומר…",
+        "cancel": "ביטול"
+      },
+      "removeSheet": {
+        "title": "להסיר את המפתח המשפחתי?",
+        "body": "חוזרים ל־AI החינמי: 5 קריאות לאדם ביום.",
+        "keep": "להשאיר",
+        "removing": "מסיר…"
+      }
     }
   },
   "kitchen": {
