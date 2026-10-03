@@ -101,7 +101,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
             <SourceBadge kind="web" className={s.photoBadge} />
           </div>
           <div>
-            <p className={s.site}>{site}</p>
+            {site !== '' && <p className={s.site}>{site}</p>}
             <h2 id="preview-title" className={s.title} dir="auto">
               {recipe.title}
             </h2>

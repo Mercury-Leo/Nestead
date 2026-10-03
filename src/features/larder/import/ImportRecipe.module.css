@@ -62,6 +62,33 @@
   flex: 1 1 260px;
 }
 
+/* ------------------------------------------------------------- paste text -- */
+
+.textForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.textArea {
+  width: 100%;
+  min-height: 200px;
+  padding: 12px 16px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  resize: vertical;
+}
+
+.textArea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
 .ok,
 .fail {
   display: flex;
@@ -88,6 +115,12 @@
 
 .fail a {
   color: inherit;
+}
+
+/* "Read it with AI", on a line of its own under the failure it follows. */
+.offer {
+  display: block;
+  margin-top: 8px;
 }
 
 .results {

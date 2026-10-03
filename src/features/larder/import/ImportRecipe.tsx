@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Link2, RefreshCw, Search as SearchIcon, WifiOff } from 'lucide-react';
+import { AlertTriangle, Check, Link2, RefreshCw, Search as SearchIcon, Sparkles, WifiOff } from 'lucide-react';
+import { aiErrorMessage, extractRecipe } from '../../../ai/client';
+import type { AiInput } from '../../../ai/client';
+import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
 import { BackArrow, Button, Segmented, TextField } from '../../../components/ui';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
-import type { AnyRecipe } from '../../../domain/types';
+import type { AiStatus, AnyRecipe } from '../../../domain/types';
 import type { ImportedRecipe } from '../../../../server/import';
 import type { WebRecipeHit } from '../../../../server/search';
 import { i18n } from '../../../i18n';
@@ -21,9 +24,10 @@ import { WebResults } from './WebResults';
 
 type Status =
   | { kind: 'idle' }
-  | { kind: 'loading' }
+  | { kind: 'loading'; ai?: boolean }
   | { kind: 'ok'; site?: string; ai?: boolean }
-  | { kind: 'error'; message: string; offline?: boolean; offerWrite?: boolean };
+  // offerAi: the page the importer found no recipe in, which "Read it with AI" can read.
+  | { kind: 'error'; message: string; offline?: boolean; offerWrite?: boolean; offerAi?: string };
 
 /** Pages found online, or, where this build has no online search, the bundled index. */
 type Results = { kind: 'web'; query: string; hits: WebRecipeHit[] } | { kind: 'bundled'; query: string; recipes: AnyRecipe[] };
@@ -53,8 +57,11 @@ export default function ImportRecipe(): JSX.Element {
   const kitchen = useKitchen();
   const navigate = useNavigate();
   const desktop = useIsDesktop();
-  const [mode, setMode] = useState<'link' | 'search'>('link');
+  // Set for real accounts only: demo mode has no AI to read with.
+  const { ai } = useSession();
+  const [mode, setMode] = useState<'link' | 'search' | 'text'>('link');
   const [url, setUrl] = useState('');
+  const [pasted, setPasted] = useState('');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [preview, setPreview] = useState<Preview | null>(null);
   const [query, setQuery] = useState('');
@@ -67,10 +74,21 @@ export default function ImportRecipe(): JSX.Element {
   const previewAt = useRef<HTMLDivElement>(null);
   // Bumped when a result is chosen, to bring its preview into view.
   const [reveal, setReveal] = useState(0);
+  // The family's free reads left or its own key, shown under the paste box.
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
+  // Counts AI reads, so each one starts a fresh preview.
+  const [reads, setReads] = useState(0);
 
   useEffect(() => {
     if (reveal > 0) previewAt.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [reveal]);
+
+  const refreshAiStatus = useCallback(() => {
+    void ai?.status().then(setAiStatus, () => setAiStatus(null));
+  }, [ai]);
+  useEffect(() => {
+    if (mode === 'text') refreshAiStatus();
+  }, [mode, refreshAiStatus]);
 
   /** Reads the recipe at `target` into the preview. True when there is one to show. */
   const fetchRecipe = async (target: string): Promise<boolean> => {
@@ -92,7 +110,9 @@ export default function ImportRecipe(): JSX.Element {
       };
       if (body.recipe === undefined) {
         setPreview(null);
-        setStatus({ kind: 'error', ...errorMessage(body.error ?? 'not-found') });
+        // AI cannot read a page that could not be fetched, only one with no recipe data in it.
+        const code = body.error ?? 'not-found';
+        setStatus({ kind: 'error', ...errorMessage(code), ...(code === 'not-found' && ai !== undefined ? { offerAi: target.trim() } : {}) });
         return false;
       }
       const missing = body.report?.missing ?? [];
@@ -107,6 +127,31 @@ export default function ImportRecipe(): JSX.Element {
       setStatus({ kind: 'error', ...(navigator.onLine ? { message: errorMessage('fetch-failed').message } : offline()) });
       return false;
     }
+  };
+
+  /** One AI read of pasted text or a page, into the same preview an import fills. */
+  const readWithAi = async (input: AiInput): Promise<void> => {
+    if (ai === undefined) return;
+    setStatus({ kind: 'loading', ai: true });
+    const outcome = await extractRecipe(ai, input);
+    refreshAiStatus();
+    if (outcome.kind === 'error') {
+      setPreview(null);
+      const { message, offerWrite } = aiErrorMessage(outcome.code, {
+        input: 'text' in input ? 'text' : 'url',
+        ...(outcome.scope !== undefined ? { scope: outcome.scope } : {}),
+      });
+      setStatus({ kind: 'error', message, ...(offerWrite === true ? { offerWrite } : {}), ...(outcome.code === 'offline' ? { offline: true } : {}) });
+      return;
+    }
+    const missing = outcome.report.missing;
+    setReads((count) => count + 1);
+    setPreview({
+      recipe: fromImported(outcome.recipe),
+      stated: { photo: !missing.includes('photo'), servings: !missing.includes('servings'), times: !missing.includes('times'), ai: true },
+    });
+    setStatus({ kind: 'ok', ai: true, ...(outcome.recipe.site !== undefined ? { site: outcome.recipe.site } : {}) });
+    setReveal((count) => count + 1);
   };
 
   const runSearch = async (): Promise<void> => {
@@ -145,6 +190,14 @@ export default function ImportRecipe(): JSX.Element {
     setReveal((count) => count + 1);
   };
 
+  // What the next read costs: the family's own key, or one of the free reads left today.
+  const aiLine =
+    aiStatus === null
+      ? null
+      : aiStatus.key !== undefined
+        ? t('import.aiFamilyKey')
+        : t('import.aiFree', { left: aiStatus.free.left, limit: aiStatus.free.limit });
+
   return (
     <div>
       {desktop && (
@@ -180,6 +233,7 @@ export default function ImportRecipe(): JSX.Element {
             options={[
               { value: 'link', label: t('import.pasteLink') },
               { value: 'search', label: t('import.searchOnline') },
+              ...(ai !== undefined ? [{ value: 'text' as const, label: t('import.pasteText') }] : []),
             ]}
           />
         </div>
@@ -205,10 +259,10 @@ export default function ImportRecipe(): JSX.Element {
               wrapClassName={s.urlField}
             />
             <Button type="submit" variant={status.kind === 'ok' ? 'secondary' : 'primary'} size="lg" icon={RefreshCw} disabled={url.trim() === '' || status.kind === 'loading'}>
-              {status.kind === 'loading' ? t('import.fetching') : status.kind === 'ok' ? t('import.fetchAgain') : t('import.fetch')}
+              {status.kind === 'loading' ? t(status.ai === true ? 'import.reading' : 'import.fetching') : status.kind === 'ok' ? t('import.fetchAgain') : t('import.fetch')}
             </Button>
           </form>
-        ) : (
+        ) : mode === 'search' ? (
           <form
             className={s.fetchRow}
             onSubmit={(event) => {
@@ -230,12 +284,45 @@ export default function ImportRecipe(): JSX.Element {
               {searching ? t('import.searching') : t('import.search')}
             </Button>
           </form>
+        ) : (
+          <form
+            className={s.textForm}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void readWithAi({ text: pasted });
+            }}
+          >
+            <label className="visually-hidden" htmlFor="import-text">
+              {t('import.textLabel')}
+            </label>
+            <textarea
+              id="import-text"
+              className={s.textArea}
+              dir="auto"
+              maxLength={20_000}
+              rows={10}
+              placeholder={t('import.textPlaceholder')}
+              value={pasted}
+              onChange={(event) => setPasted(event.target.value)}
+            />
+            <p className={s.muted}>
+              {aiLine} {t('import.aiSent')}
+            </p>
+            <Button type="submit" variant="primary" size="lg" icon={Sparkles} disabled={pasted.trim() === '' || status.kind === 'loading'}>
+              {status.kind === 'loading' ? t('import.reading') : t('import.readWithAi')}
+            </Button>
+          </form>
         )}
 
         <div aria-live="polite">
           {status.kind === 'ok' && (
             <p className={s.ok}>
-              <Check size={18} strokeWidth={2.4} aria-hidden /> {t('import.found', { site: status.site ?? '' })}
+              <Check size={18} strokeWidth={2.4} aria-hidden />{' '}
+              {status.ai === true
+                ? status.site !== undefined
+                  ? t('import.readByAiFrom', { site: status.site })
+                  : t('import.readByAi')
+                : t('import.found', { site: status.site ?? '' })}
             </p>
           )}
           {status.kind === 'error' && (
@@ -244,6 +331,13 @@ export default function ImportRecipe(): JSX.Element {
               <span>
                 {status.message}
                 {status.offerWrite === true && <Trans i18nKey="import.writeYourself" components={{ link: <Link to="/add" /> }} />}
+                {status.offerAi !== undefined && (
+                  <span className={s.offer}>
+                    <Button variant="secondary" icon={Sparkles} onClick={() => void readWithAi({ url: status.offerAi as string })}>
+                      {t('import.readItWithAi')}
+                    </Button>
+                  </span>
+                )}
               </span>
             </p>
           )}
@@ -270,7 +364,7 @@ export default function ImportRecipe(): JSX.Element {
       </section>
 
       <div ref={previewAt} className={s.previewAt}>
-        {preview !== null && <PreviewCard key={preview.recipe.id} preview={preview} onSaved={(id) => navigate(recipePath({ id }), { replace: true })} />}
+        {preview !== null && <PreviewCard key={`${preview.recipe.id}:${reads}`} preview={preview} onSaved={(id) => navigate(recipePath({ id }), { replace: true })} />}
       </div>
     </div>
   );
