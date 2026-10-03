@@ -39,10 +39,48 @@ function signIn(label: 'family-a' | 'family-b'): Promise<TestSession> {
 
 const FAKE = 'v1:AAAAAAAAAAAAAAAA:BBBBBBBBBBBBBBBBBBBBBBBB';
 
-async function applied(session: TestSession): Promise<boolean> {
-  const { error } = await session.client.rpc('family_ai_status');
-  return error === null;
+/**
+ * Whether an error from calling family_ai_status() says the function is not
+ * there, i.e. the migration is not applied yet. Only that skips the live suite:
+ * any other error (a function that raises, a user who lost their family, a
+ * network failure) is a real failure and must show as one.
+ *
+ * A missing function reaches the client as PostgREST's PGRST202 or, worded
+ * differently, "Could not find the function ...". 42883 (undefined_function)
+ * counts only when it names family_ai_status itself: the same code from inside
+ * the function, for a helper it calls, is a regression, not a missing migration.
+ */
+function migrationMissing(error: { code?: string; message?: string } | null): boolean {
+  if (error === null) return false;
+  const message = error.message ?? '';
+  return (
+    error.code === 'PGRST202' ||
+    /could not find the function/i.test(message) ||
+    (error.code === '42883' && /family_ai_status/.test(message))
+  );
 }
+
+describe('migrationMissing', () => {
+  it('is true when family_ai_status is not there', () => {
+    expect(migrationMissing({ code: 'PGRST202', message: 'Could not find the function public.family_ai_status without parameters in the schema cache' })).toBe(true);
+    expect(migrationMissing({ code: 'PGRST202', message: '' })).toBe(true);
+    expect(migrationMissing({ code: '42883', message: 'function public.family_ai_status() does not exist' })).toBe(true);
+    expect(migrationMissing({ message: 'Could not find the function public.family_ai_status' })).toBe(true);
+  });
+
+  it('is false for every other error, so it fails rather than skips', () => {
+    expect(migrationMissing({ code: 'P0001', message: 'You do not belong to a family' })).toBe(false);
+    expect(migrationMissing({ message: 'TypeError: fetch failed' })).toBe(false);
+    expect(migrationMissing({ code: '', message: 'FetchError: request timed out' })).toBe(false);
+    expect(migrationMissing({ code: '42501', message: 'permission denied for function family_ai_status' })).toBe(false);
+    // The function exists but a helper it calls does not: a regression.
+    expect(migrationMissing({ code: '42883', message: 'function current_family_id() does not exist' })).toBe(false);
+  });
+
+  it('is false when there is no error', () => {
+    expect(migrationMissing(null)).toBe(false);
+  });
+});
 
 if (!configured) {
   describe('family AI settings: supabase', () => {
@@ -52,9 +90,15 @@ if (!configured) {
   });
 } else {
   describe('family AI settings: supabase', () => {
+    // 30 s: a slow run must not be cut off before finally has removed the fake
+    // key from the production family.
     it('stores, shows, claims and clears a family key without spending a free read', async (ctx) => {
       const a = await signIn('family-a');
-      if (!(await applied(a))) ctx.skip();
+      const status = await a.client.rpc('family_ai_status');
+      if (migrationMissing(status.error)) ctx.skip();
+      // Any other error is a real failure, not a skip. Its message only: an
+      // error's details can carry a row.
+      expect(status.error?.message ?? null).toBeNull();
 
       const account = createSupabaseAccount(a.client);
       try {
@@ -89,6 +133,6 @@ if (!configured) {
       } finally {
         await account.clearAiKey();
       }
-    });
+    }, 30_000);
   });
 }
