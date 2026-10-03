@@ -32,20 +32,6 @@
   list-style: none;
 }
 
-.navGroupStart {
-  margin-top: 14px;
-}
-
-.navGroup {
-  margin-block: 0 6px;
-  margin-inline: 14px 0;
-  color: var(--ink-3);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
 .navItem {
   display: flex;
   gap: 12px;
@@ -86,11 +72,48 @@
   font-weight: 500;
 }
 
+.sideNav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Sections never pinned (Family) sit at the foot of the sidebar. */
+.navFoot {
+  margin-top: auto;
+}
+
+/* A section header while you're in one of its pages. */
+.navOpen {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.navOpen svg {
+  color: var(--accent);
+}
+
+.subNav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.subItem {
+  min-height: 44px;
+  padding-inline-start: 26px;
+  font-size: 15px;
+}
+
 .dietCard {
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  margin-top: auto;
+  margin-top: 8px;
   padding: 14px;
   border-radius: 16px;
   background: var(--side-card);
