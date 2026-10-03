@@ -148,7 +148,7 @@ export function Search(): JSX.Element {
             i18nKey="search.noResults.moreHidden"
             count={outcome.hidden.length}
             values={{ things: formatList(hiddenThings) }}
-            components={{ link: <Link to="/profile" /> }}
+            components={{ a: <Link to="/profile" /> }}
           />
         </p>
       )}

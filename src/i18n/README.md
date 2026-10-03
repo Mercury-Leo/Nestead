@@ -32,6 +32,7 @@ Translation and locale: the i18next instance, the provider that owns language an
 - Nothing flags a key the source no longer uses: when a string goes, delete its key (every plural form) from both locale files yourself. `i18n.test.ts` only fails when `he.json` keeps a key `en.json` dropped.
 - English copy is British, and Intl formats English as `en-GB` (`LOCALES` in `i18n.ts`).
 - Values are not escaped (`escapeValue: false`), and `<Trans>` parses an interpolated value for `<0>`-style tags. Text from outside the app (a page, a model, a person) goes into `<Trans>` as a child of a named slot, `<item/>` in the string with `components={{ item: <bdi>{text}</bdi> }}`, never as a value (`import.preview.cantRead`, `../features/larder/import/PreviewCard.tsx`).
+- A link in a string is `<a>…</a>`, with `components={{ a: <Link to=… /> }}` or `a: <a href=… />`, never `<link>`: `<Trans>` parses strings with html-parse-stringify, which treats `link`, like `br` or `img`, as an HTML void element, so the words land after an empty anchor (`board.invite`, `import.writeYourself`).
 
 ## Tests
-`i18n.test.ts`: every key the source uses exists, plural forms, each locale file matches `en.json` (keys, placeholders, tags), `index.html` agrees with the provider, right-to-left formatting. `literals.test.ts`: the untranslated-text net and a check that it still catches strays.
+`i18n.test.ts`: every key the source uses exists, plural forms, no string wraps words in an HTML void element such as `<link>`, each locale file matches `en.json` (keys, placeholders, tags), `index.html` agrees with the provider, right-to-left formatting. `literals.test.ts`: the untranslated-text net and a check that it still catches strays.

@@ -352,3 +352,14 @@ describe('Read it with AI', () => {
     expect(buttonNamed(page, i18n.t('import.readItWithAi'))).toBeUndefined();
   });
 });
+
+describe('a link with no recipe in it', () => {
+  it('offers to write the recipe yourself, the words being the link', async () => {
+    stubFetch({ '/api/import': { body: { error: 'not-found' }, status: 422 } });
+    const page = await render(<ImportRecipe />, session());
+    await fetchLink(page, LINK);
+    await until(() => (page.textContent ?? '').includes(i18n.t('import.error.notFound')));
+
+    expect(page.querySelector('a[href="/add"]')?.textContent).toBe('write it yourself');
+  });
+});

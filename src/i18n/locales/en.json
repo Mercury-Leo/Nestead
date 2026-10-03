@@ -97,7 +97,7 @@
     "title": "Board",
     "iAm": "I am",
     "family": "Family",
-    "invite": "Just you so far. Share code <code>{{code}}</code> or an <link>invite link</link>.",
+    "invite": "Just you so far. Share code <code>{{code}}</code> or an <a>invite link</a>.",
     "filter": {
       "search": "Search tasks",
       "mine": "Mine",
@@ -472,8 +472,8 @@
     "showAnyway": "Show anyway",
     "noResults": {
       "title": "No recipes match",
-      "moreHidden_one": "{{count, number}} more hidden by your diet (<bdi>{{things}}</bdi>). <link>Review profile</link>",
-      "moreHidden_other": "{{count, number}} more hidden by your diet (<bdi>{{things}}</bdi>). <link>Review profile</link>"
+      "moreHidden_one": "{{count, number}} more hidden by your diet (<bdi>{{things}}</bdi>). <a>Review profile</a>",
+      "moreHidden_other": "{{count, number}} more hidden by your diet (<bdi>{{things}}</bdi>). <a>Review profile</a>"
     },
     "active": {
       "label": "Active filters",
@@ -626,7 +626,7 @@
     "timerFinished": "{{time}} timer finished"
   },
   "add": {
-    "missing": "That recipe isn’t in the library any more. <link>Back to the library</link>",
+    "missing": "That recipe isn’t in the library any more. <a>Back to the library</a>",
     "headingEdit": "Edit recipe",
     "headingAdd": "Add a recipe",
     "headingNew": "New recipe",
@@ -707,7 +707,7 @@
       "searchFailed": "The search didn’t go through — try again in a moment.",
       "searchLimit": "Online search has used up this month’s free searches — you can still paste a link."
     },
-    "writeYourself": " — <link>write it yourself</link>",
+    "writeYourself": " — <a>write it yourself</a>",
     "importBy": "Import by",
     "pasteLink": "Paste a link",
     "searchOnline": "Search online",

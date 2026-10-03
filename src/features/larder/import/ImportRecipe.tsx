@@ -339,7 +339,7 @@ export default function ImportRecipe(): JSX.Element {
               {status.offline === true ? <WifiOff size={18} strokeWidth={2.2} aria-hidden /> : <AlertTriangle size={18} strokeWidth={2.2} aria-hidden />}
               <span>
                 {status.message}
-                {status.offerWrite === true && <Trans i18nKey="import.writeYourself" components={{ link: <Link to="/add" /> }} />}
+                {status.offerWrite === true && <Trans i18nKey="import.writeYourself" components={{ a: <Link to="/add" /> }} />}
                 {status.offerAi !== undefined && (
                   <span className={s.offer}>
                     <Button variant="secondary" icon={Sparkles} onClick={() => void readWithAi({ url: status.offerAi as string })}>

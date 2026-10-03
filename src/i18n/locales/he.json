@@ -98,7 +98,7 @@
     "title": "לוח",
     "iAm": "אני",
     "family": "משפחה",
-    "invite": "בינתיים רק אתם כאן. שתפו את הקוד <code>{{code}}</code> או <link>קישור הזמנה</link>.",
+    "invite": "בינתיים רק אתם כאן. שתפו את הקוד <code>{{code}}</code> או <a>קישור הזמנה</a>.",
     "filter": {
       "search": "חיפוש משימות",
       "mine": "שלי",
@@ -493,9 +493,9 @@
     "showAnyway": "להציג בכל זאת",
     "noResults": {
       "title": "אין מתכונים מתאימים",
-      "moreHidden_one": "עוד מתכון אחד הוסתר בגלל התזונה (<bdi>{{things}}</bdi>). <link>לבדיקת הפרופיל</link>",
-      "moreHidden_two": "עוד {{count, number}} הוסתרו בגלל התזונה (<bdi>{{things}}</bdi>). <link>לבדיקת הפרופיל</link>",
-      "moreHidden_other": "עוד {{count, number}} הוסתרו בגלל התזונה (<bdi>{{things}}</bdi>). <link>לבדיקת הפרופיל</link>"
+      "moreHidden_one": "עוד מתכון אחד הוסתר בגלל התזונה (<bdi>{{things}}</bdi>). <a>לבדיקת הפרופיל</a>",
+      "moreHidden_two": "עוד {{count, number}} הוסתרו בגלל התזונה (<bdi>{{things}}</bdi>). <a>לבדיקת הפרופיל</a>",
+      "moreHidden_other": "עוד {{count, number}} הוסתרו בגלל התזונה (<bdi>{{things}}</bdi>). <a>לבדיקת הפרופיל</a>"
     },
     "active": {
       "label": "מסננים פעילים",
@@ -653,7 +653,7 @@
     "timerFinished": "הטיימר של {{time}} הסתיים"
   },
   "add": {
-    "missing": "המתכון הזה כבר לא בספרייה. <link>חזרה לספרייה</link>",
+    "missing": "המתכון הזה כבר לא בספרייה. <a>חזרה לספרייה</a>",
     "headingEdit": "עריכת מתכון",
     "headingAdd": "הוספת מתכון",
     "headingNew": "מתכון חדש",
@@ -735,7 +735,7 @@
       "searchFailed": "החיפוש לא הצליח — כדאי לנסות שוב עוד רגע.",
       "searchLimit": "החיפושים החינמיים ברשת לחודש הזה נגמרו — עדיין אפשר להדביק קישור."
     },
-    "writeYourself": " — <link>לכתוב אותו בעצמכם</link>",
+    "writeYourself": " — <a>לכתוב אותו בעצמכם</a>",
     "importBy": "ייבוא לפי",
     "pasteLink": "הדבקת קישור",
     "searchOnline": "חיפוש ברשת",

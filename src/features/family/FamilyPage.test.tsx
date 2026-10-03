@@ -131,6 +131,8 @@ describe('the board while you are the only member', () => {
     const invite = page.querySelector('.invite');
     expect(invite?.querySelector('code')?.textContent).toBe('K7Q2MX');
     expect(invite?.querySelector('a')?.getAttribute('href')).toBe('/family');
+    // The words are the link itself, not an empty link beside them.
+    expect(invite?.querySelector('a')?.textContent).toBe('invite link');
   });
 
   it('says nothing about inviting once someone has joined', async () => {

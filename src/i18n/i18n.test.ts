@@ -74,6 +74,17 @@ describe('translations', () => {
     expect(nested.filter((key) => !has(key))).toEqual([]);
   });
 
+  it('wraps no words in an HTML void element, which <Trans> would leave empty', () => {
+    // html-parse-stringify's void list: "<link>words</link>" renders an empty link with the words after it.
+    // Other locales keep English's tags (tested below), so en.json speaks for them.
+    const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+    const wrapped = flatten(en).filter((key) => {
+      const value = i18n.getResource('en', 'translation', key) as string;
+      return [...value.matchAll(/<\/(\w+)\s*>/g)].some((match) => VOID.has(match[1] as string));
+    });
+    expect(wrapped).toEqual([]);
+  });
+
   it('gives every plural both English forms', () => {
     const plurals = [...KEYS].filter((key) => PLURAL.test(key)).map((key) => key.replace(PLURAL, ''));
     const incomplete = [...new Set(plurals)].filter((key) => !KEYS.has(`${key}_one`) || !KEYS.has(`${key}_other`));

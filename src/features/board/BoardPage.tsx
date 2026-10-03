@@ -56,7 +56,7 @@ export function BoardPage(): JSX.Element {
           <Trans
             i18nKey="board.invite"
             values={{ code: inviteCode }}
-            components={{ code: <code className="code" />, link: <Link to="/family" /> }}
+            components={{ code: <code className="code" />, a: <Link to="/family" /> }}
           />
         </p>
       )}

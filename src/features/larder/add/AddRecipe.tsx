@@ -40,7 +40,7 @@ export default function AddRecipe(): JSX.Element {
   if (editId !== null && editing === undefined) {
     return (
       <p className="centred">
-        <Trans i18nKey="add.missing" components={{ link: <Link to="/library" /> }} />
+        <Trans i18nKey="add.missing" components={{ a: <Link to="/library" /> }} />
       </p>
     );
   }
