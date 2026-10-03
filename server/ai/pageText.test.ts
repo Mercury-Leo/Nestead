@@ -61,4 +61,61 @@ describe('pageText', () => {
     expect(pageText('<meta property="og:image" content="data:image/png;base64,AAAA">', URL_).image).toBeUndefined();
     expect(pageText(`<meta property="og:image" content="https://example.com/${'a'.repeat(2100)}.jpg">`, URL_).image).toBeUndefined();
   });
+
+  // Regression tests for spec §5.6 fixes
+  it('performance: handles 50k unclosed <a tags', () => {
+    const html = '<a '.repeat(50_000);
+    const start = Date.now();
+    pageText(html, URL_);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(1000);
+  });
+
+  it('performance: handles 50k unclosed <meta tags', () => {
+    const html = '<meta '.repeat(50_000);
+    const start = Date.now();
+    pageText(html, URL_);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(1000);
+  });
+
+  it('preserves text with stray < followed by non-letter', () => {
+    const html = '<p>Bake at < 180 C for 10 min</p><p>next</p>';
+    expect(pageText(html, URL_).text).toBe('Bake at < 180 C for 10 min\nnext');
+  });
+
+  it('skips empty og:image content and tries twitter:image', () => {
+    expect(pageText('<meta property="og:image" content="">', URL_).image).toBeUndefined();
+    const both = '<meta property="og:image" content=""><meta name="twitter:image" content="https://example.com/img.jpg">';
+    expect(pageText(both, URL_).image).toBe('https://example.com/img.jpg');
+  });
+
+  it('skips whitespace-only og:image content', () => {
+    expect(pageText('<meta property="og:image" content="  ">', URL_).image).toBeUndefined();
+  });
+
+  it('handles script tag with nested script-like content correctly', () => {
+    const html = '<script>var s="<script src=x>"</script><p>Recipe</p>';
+    expect(pageText(html, URL_).text).toBe('Recipe');
+  });
+
+  it('handles head without close tag and treats body tag as boundary', () => {
+    const html = '<head><meta property="og:image" content="https://example.com/img.jpg"><body><p>Text</p></body>';
+    const result = pageText(html, URL_);
+    expect(result.text).toBe('Text');
+    expect(result.image).toBe('https://example.com/img.jpg');
+  });
+
+  it('handles dropped element without matching close tag', () => {
+    const html = '<p hidden>secret<p>visible</p><p>more</p>';
+    expect(pageText(html, URL_).text).toBe('visible\nmore');
+  });
+
+  it('uses first article tag when it has enough text', () => {
+    const html = `<body><nav>${long('menu')}</nav><article><h1>Soup</h1><p>${long('stir')}</p></article><footer>foot</footer></body>`;
+    const { text } = pageText(html, URL_);
+    expect(text.startsWith('Soup')).toBe(true);
+    expect(text).not.toContain('menu');
+    expect(text).not.toContain('foot');
+  });
 });
