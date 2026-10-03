@@ -1,4 +1,5 @@
 import type {
+  AiStatus,
   Base,
   BoardColumn,
   DietProfile,
@@ -122,6 +123,21 @@ export interface Account {
   rotateJoinCode(): Promise<string>;
   /** The name of the family behind a join code, null if none; answers signed out too. */
   inviteFamilyName(code: string): Promise<string | null>;
+
+  /**
+   * AI reading. The backend must ensure that only members of a family read or
+   * change its AI settings; that no call returns the plaintext OpenRouter key,
+   * and the encrypted key only through the server's claim, for the caller's own
+   * family; that free reads are counted atomically per user per UTC day and for
+   * the whole app; and that the plaintext key is never stored.
+   */
+  /** The signed-in user's access token, for Nestead's own /api/ai routes; null when signed out. */
+  accessToken(): Promise<string | null>;
+  /** The family's AI settings as any member may see them. */
+  aiStatus(): Promise<AiStatus>;
+  clearAiKey(): Promise<void>;
+  /** Null goes back to the free models. */
+  setAiModel(model: string | null): Promise<void>;
 
   /** The family's rows, uncached: the caller wraps it in withCache(). */
   openStore(familyId: string): DataStore;

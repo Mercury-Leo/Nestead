@@ -1,4 +1,4 @@
-import { act } from 'react';
+import { act, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createLocalStore } from '../data/local/localStore';
@@ -93,6 +93,10 @@ function fakeAccount(options: { recovery?: boolean } = {}) {
       return family.joinCode;
     },
     inviteFamilyName: async (code) => [...families.values()].find((row) => row.joinCode === code)?.name ?? null,
+    accessToken: async () => (userId === null ? null : `token-${userId}`),
+    aiStatus: async () => ({ free: { used: 0, limit: 5, left: 5 } }),
+    clearAiKey: async () => {},
+    setAiModel: async () => {},
     openStore: (familyId) => ({ ...createLocalStore(familyId), members: memberCollection(members.filter((row) => row.familyId === familyId)) }),
   };
 
@@ -124,18 +128,26 @@ function SignedIn(): JSX.Element {
   );
 }
 
+/** Shows what Session.ai reaches: the account's token, once it has answered. */
+function AiToken(): JSX.Element {
+  const { ai } = useSession();
+  const [token, setToken] = useState('none yet');
+  useEffect(() => {
+    void ai?.token().then((value) => setToken(String(value)));
+  }, [ai]);
+  return <p>token: {token}</p>;
+}
+
 let unmount: (() => void) | null = null;
 
-async function render(account: Account): Promise<HTMLElement> {
+async function render(account: Account, screen: JSX.Element = <SignedIn />): Promise<HTMLElement> {
   const host = document.createElement('div');
   document.body.append(host);
   const root = createRoot(host);
   await act(async () => {
     root.render(
       <LocaleProvider>
-        <AccountSession account={account}>
-          <SignedIn />
-        </AccountSession>
+        <AccountSession account={account}>{screen}</AccountSession>
       </LocaleProvider>,
     );
   });
@@ -198,6 +210,15 @@ describe('AccountSession on another backend', () => {
     await act(async () => page.querySelector<HTMLButtonElement>('button[type="button"]')!.click());
     await settle();
     expect(page.textContent).toContain('Sam in The Levis with CODE2');
+  });
+
+  it('reaches the account through the session for AI calls', async () => {
+    const fake = fakeAccount();
+    fake.inFamily('u-sam', 'Sam', 'The Levis');
+    const page = await render(fake.account, <AiToken />);
+    await act(async () => fake.signInAs('u-sam'));
+    await settle();
+    expect(page.textContent).toContain('token: token-u-sam');
   });
 
   it('holds a password-reset link on choosing a new password', async () => {

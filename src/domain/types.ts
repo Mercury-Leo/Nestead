@@ -276,3 +276,27 @@ export interface ListGroup extends Base {
   /** Set on the row that holds Supermarket's or General's position. */
   builtin?: 'supermarket' | 'general';
 }
+
+/**
+ * What family_ai_status() returns, as any member may see it: never the key or
+ * its ciphertext. family_ai_settings and ai_usage have no row type here on
+ * purpose: no client can read them (supabase/schema.sql).
+ */
+export interface AiStatus {
+  /** Absent when the family has no key of its own and reads on the free models. */
+  key?: {
+    /** The last four characters of the key, to tell keys apart. */
+    hint: string;
+    /** Absent: the free models. */
+    model?: string;
+    /** Absent when the member who added the key has left. */
+    setByName?: string;
+    /** ISO timestamp. */
+    updatedAt: string;
+  };
+  /**
+   * The signed-in member's free reads today (UTC). `left` is the lesser of
+   * their own and the app's remaining reads.
+   */
+  free: { used: number; limit: number; left: number };
+}

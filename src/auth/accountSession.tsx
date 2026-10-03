@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Trans } from 'react-i18next';
 import type { Account, DataStore, Family } from '../data/types';
@@ -163,6 +163,16 @@ function Ready({
     setFamily(await account.readFamily(initialFamily.id));
   }, [account, initialFamily.id]);
 
+  const ai = useMemo(
+    () => ({
+      token: () => account.accessToken(),
+      status: () => account.aiStatus(),
+      clearKey: () => account.clearAiKey(),
+      setModel: (model: string | null) => account.setAiModel(model),
+    }),
+    [account],
+  );
+
   if (me === null) {
     return (
       <p className="centred">
@@ -172,7 +182,7 @@ function Ready({
   }
 
   return (
-    <SessionContext.Provider value={{ store, me, members, family, rotateJoinCode, refreshFamily, signOut }}>
+    <SessionContext.Provider value={{ store, me, members, family, rotateJoinCode, refreshFamily, ai, signOut }}>
       {children}
     </SessionContext.Provider>
   );

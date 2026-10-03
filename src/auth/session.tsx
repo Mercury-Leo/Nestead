@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { supabaseAccount } from '../data/supabase/supabaseAccount';
 import type { DataStore, Family } from '../data/types';
-import type { Member } from '../domain/types';
+import type { AiStatus, Member } from '../domain/types';
 import { AccountSession } from './accountSession';
 import { DemoSession } from './demoSession';
 
@@ -37,6 +37,17 @@ export interface Session {
    * publication, so a code rotated by someone else only shows up this way.
    */
   refreshFamily?: () => Promise<void>;
+  /**
+   * Real auth only: AI recipe reading. The token is for Nestead's own /api/ai
+   * routes (src/ai/client.ts); the rest reads and changes the family's AI
+   * settings, never the key itself.
+   */
+  ai?: {
+    token: () => Promise<string | null>;
+    status: () => Promise<AiStatus>;
+    clearKey: () => Promise<void>;
+    setModel: (model: string | null) => Promise<void>;
+  };
   /** Demo mode only: with real auth you cannot choose to be someone else. */
   setMe?: (memberId: string) => void;
 }

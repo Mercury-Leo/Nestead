@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Account, Family } from '../types';
+import { toAiStatus } from './aiStatus';
 import { getRememberMe, getSupabaseClient, setRememberMe, takeLinkError, takeRecoveryLink } from './supabaseClient';
 import { createSupabaseStore } from './supabaseStore';
 
@@ -115,6 +116,25 @@ export function createSupabaseAccount(client: SupabaseClient = getSupabaseClient
       const { data, error } = await client.rpc('invite_family_name', { code });
       fail(error);
       return typeof data === 'string' ? data : null;
+    },
+
+    async accessToken() {
+      // getSession() refreshes an expired session before answering.
+      const { data } = await client.auth.getSession();
+      return data.session?.access_token ?? null;
+    },
+    async aiStatus() {
+      const { data, error } = await client.rpc('family_ai_status');
+      fail(error);
+      return toAiStatus(data);
+    },
+    async clearAiKey() {
+      const { error } = await client.rpc('clear_family_ai_key');
+      fail(error);
+    },
+    async setAiModel(model) {
+      const { error } = await client.rpc('set_family_ai_model', { model });
+      fail(error);
     },
 
     openStore: (familyId) => createSupabaseStore(familyId, client),
