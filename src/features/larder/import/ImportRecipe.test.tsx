@@ -260,6 +260,20 @@ describe('Paste text', () => {
     expect(previewTitle(page)).toBeUndefined();
   });
 
+  it('asks the person to sign in again, and is not left reading, when the token cannot be had', async () => {
+    const fetch = stubFetch({});
+    const broken: FamilyAi = { ...freeAi, token: async () => { throw new Error('refresh failed'); } };
+    const page = await render(<ImportRecipe />, session(broken));
+    await choosePasteText(page);
+    await act(async () => typeInto(page.querySelector('textarea')!, 'Pancakes: 2 eggs, 1 cup flour.'));
+    await act(async () => buttonNamed(page, i18n.t('import.readWithAi'))!.click());
+
+    await until(() => (page.textContent ?? '').includes(i18n.t('ai.error.unauthorized')));
+    expect(fetch).not.toHaveBeenCalled();
+    expect(buttonNamed(page, i18n.t('import.reading'))).toBeUndefined();
+    expect(buttonNamed(page, i18n.t('import.readWithAi'))!.disabled).toBe(false);
+  });
+
   it('shows a line it cannot read a quantity in as the text it is, markup and all', async () => {
     // What a model wrote is never markup: not for React, and not for <Trans> either.
     const lines = ['<0>x</0> basil', '<_x>y</_x> salt', '<1/> pepper'];
