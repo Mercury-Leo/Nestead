@@ -118,4 +118,75 @@ describe('pageText', () => {
     expect(text).not.toContain('menu');
     expect(text).not.toContain('foot');
   });
+
+  // Fix round 2: one linear pass that never loses visible text to a tag that does not close.
+  it('drops only the opening tag of a hidden element that never closes', () => {
+    expect(pageText('<div hidden>secret<p>visible</p><p>more</p>', URL_).text).toBe('secret\nvisible\nmore');
+    expect(pageText('<p>a</p><span hidden>secret <b>x</b><p>visible</p><p>more</p>', URL_).text).toBe('a\nsecret x\nvisible\nmore');
+  });
+
+  it('does not take a void element inside a hidden one for an opener', () => {
+    expect(pageText('<b hidden>secret<br>leak</b><p>after</p>', URL_).text).toBe('after');
+    expect(pageText('<i hidden>secret<img src=a>leak</i><p>after</p>', URL_).text).toBe('after');
+    expect(pageText('<a hidden>secret<area>leak</a><p>after</p>', URL_).text).toBe('after');
+  });
+
+  it('keeps a stray < or > as text', () => {
+    expect(pageText('<p>Bake at < 180 C and > 100 F</p>', URL_).text).toBe('Bake at < 180 C and > 100 F');
+    expect(pageText('<p>I <3 this and 5 > 4</p>', URL_).text).toBe('I <3 this and 5 > 4');
+    expect(pageText('<p>a <b and <i>c</i></p>', URL_).text).toBe('a <b and c');
+  });
+
+  it('collapses a no-break space like any other space', () => {
+    const nbsp = String.fromCharCode(0xa0);
+    expect(pageText(`<p>a${nbsp}${nbsp}b</p><p>${nbsp}</p>`, URL_).text).toBe('a b');
+  });
+
+  it('drops a hidden list item with the list nested in it', () => {
+    const html = '<ul><li hidden>secret<ul><li>deep</li></ul></li><li>visible</li></ul>';
+    expect(pageText(html, URL_).text).toBe('- visible');
+  });
+
+  it('keeps the text between a container that closes an unclosed hidden paragraph and the next paragraph', () => {
+    const html = '<div><p hidden>secret</div><span>visible</span><p>more</p>';
+    expect(pageText(html, URL_).text).toBe('secret\nvisible\nmore');
+  });
+
+  it('reads tags in any case, and a closing tag only when the name ends there', () => {
+    expect(pageText('<P>A</P><SCRIPT>x</SCRIPT><P>B</P>', URL_).text).toBe('A\nB');
+    expect(pageText('<script>a</scripty>b</script ><p>c</p>', URL_).text).toBe('c');
+  });
+
+  it('finds the closing tag after letters that change length when lower-cased', () => {
+    expect(pageText('<p>İİİ</p><style>İ{}</style><p>after</p>', URL_).text).toBe('İİİ\nafter');
+  });
+
+  it('drops the rest of the page after a comment, script or style that never ends', () => {
+    expect(pageText('<p>a</p><!-- b <p>c</p>', URL_).text).toBe('a');
+    expect(pageText('<p>a</p><script>b <p>c</p>', URL_).text).toBe('a');
+  });
+
+  it('skips a hidden main when choosing the region', () => {
+    const html = `<body><div hidden><main>${long('secret')}</main></div><nav>menu</nav><main>${long('real')}</main></body>`;
+    const { text } = pageText(html, URL_);
+    expect(text.startsWith('real')).toBe(true);
+    expect(text).not.toContain('secret');
+  });
+
+  it('uses the first article when main is missing and drops head at body', () => {
+    const html = `<head><title>Soup</title><body><nav>menu</nav><article>${long('stir')}</article>`;
+    const { text } = pageText(html, URL_);
+    expect(text.startsWith('stir')).toBe(true);
+    expect(text).not.toContain('Soup');
+  });
+
+  it.each(['<a ', '<meta ', '<svg>', '<div hidden>', '<p hidden>x', '<head></head>', '<!--', '<script>'])(
+    'reads 50k repeats of %s in under a second',
+    (piece) => {
+      const html = piece.repeat(50_000);
+      const start = performance.now();
+      pageText(html, URL_);
+      expect(performance.now() - start).toBeLessThan(1000);
+    },
+  );
 });
