@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
 import { StoreError, postgrestStore, toClaim } from './store';
+import { strictFetch } from './testing';
 
 const TOKEN = 'eyJmember.token.sig';
 const reply = (body: unknown, status = 200): Response => new Response(body === undefined ? '' : JSON.stringify(body), { status });
@@ -11,15 +12,6 @@ function store(answer: Response | Error) {
     return answer;
   });
   return { fetch, store: postgrestStore({ url: 'https://proj.supabase.co/', key: 'sb_publishable_x', token: TOKEN, fetch, timeoutMs: 1000 }) };
-}
-
-// Fetch that throws Illegal invocation if called as a bound method (this !== undefined && this !== globalThis)
-// Only works when called unbound: const doFetch = fetch; doFetch(...)
-function strictFetch(answer: () => Response): typeof fetch {
-  return function (this: unknown) {
-    if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
-    return Promise.resolve(answer());
-  } as unknown as typeof fetch;
 }
 
 describe('postgrestStore', () => {

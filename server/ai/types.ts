@@ -57,4 +57,10 @@ export interface AiOptions {
   timeouts?: Partial<{ model: number; key: number; rpc: number; page: number }>;
   /** Defaults to one JSON line on console.info. Never given a key, token, text or output. */
   log?: (entry: AiLogEntry) => void;
+  /**
+   * Told once, when the handler is made, which OPENROUTER_FREE_MODELS entries
+   * it dropped (not a valid `:free` model id), by id. Defaults to console.warn.
+   * Never given a key, token, text or output.
+   */
+  warn?: (message: string) => void;
 }

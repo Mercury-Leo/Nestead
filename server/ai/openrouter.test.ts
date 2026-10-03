@@ -1,19 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
 import { MAX_COMPLETION_TOKENS, OPENROUTER, callChat, chatBody, chatError, checkKey, freeModelList, isModelId } from './openrouter';
+import { strictFetch } from './testing';
 
 const reply = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const completion = (content: unknown, finish = 'stop', extra: Record<string, unknown> = {}) =>
   ({ model: 'meta-llama/llama-3.3-70b-instruct:free', choices: [{ finish_reason: finish, message: { role: 'assistant', content } }], ...extra });
-
-// Fetch that throws Illegal invocation if called as a bound method (this !== undefined && this !== globalThis)
-// Only works when called unbound: const doFetch = fetch; doFetch(...)
-function strictFetch(answer: () => Response): typeof fetch {
-  return function (this: unknown) {
-    if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
-    return Promise.resolve(answer());
-  } as unknown as typeof fetch;
-}
 
 describe('model ids', () => {
   it('accepts plain vendor/model ids, with or without :free', () => {
