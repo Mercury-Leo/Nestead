@@ -197,6 +197,7 @@
       "modelInvalid": "That isn’t an OpenRouter model id, like google/gemini-2.5-flash.",
       "saveModel": "Save model",
       "failed": "That didn’t work. Try again.",
+      "retry": "Retry",
       "keySheet": {
         "title": "Family OpenRouter key",
         "label": "OpenRouter API key",

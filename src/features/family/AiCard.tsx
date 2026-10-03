@@ -19,10 +19,13 @@ import s from './FamilyPage.module.css';
 const MODEL_ID = /^[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9._-]*(:free)?$/;
 const isModelId = (id: string): boolean => id.length <= 100 && MODEL_ID.test(id) && !id.startsWith('openrouter/');
 
+/** What the card knows: nothing yet, that the read failed, or the family's AI settings. A failed read is never "no key". */
+type View = { kind: 'loading' } | { kind: 'failed' } | { kind: 'ready'; status: AiStatus };
+
 export function AiCard(): JSX.Element {
   const { t } = useTranslation();
   const { ai } = useSession();
-  const [status, setStatus] = useState<AiStatus | null>(null);
+  const [view, setView] = useState<View>({ kind: 'loading' });
   const [sheet, setSheet] = useState<'key' | 'remove' | null>(null);
   const [key, setKey] = useState('');
   const [busy, setBusy] = useState(false);
@@ -34,11 +37,11 @@ export function AiCard(): JSX.Element {
     if (ai === undefined) return;
     try {
       const next = await ai.status();
-      setStatus(next);
+      setView({ kind: 'ready', status: next });
       setModelMode(next.key?.model !== undefined ? 'chosen' : 'free');
       setModelId(next.key?.model ?? '');
     } catch {
-      setStatus(null);
+      setView({ kind: 'failed' });
     }
   }, [ai]);
 
@@ -78,6 +81,7 @@ export function AiCard(): JSX.Element {
       setError(aiErrorMessage(outcome.code, { input: 'key' }).message);
       return;
     }
+    setKey(''); // Not left to the dialog's close event.
     setSheet(null);
     await refresh();
   };
@@ -110,15 +114,32 @@ export function AiCard(): JSX.Element {
     }
   };
 
-  const familyKey = status?.key;
+  const familyKey = view.kind === 'ready' ? view.status.key : undefined;
   return (
     <section className={s.card} aria-labelledby="ai-title">
       <h2 id="ai-title" className={s.cardTitle}>
         {t('family.ai.title')}
       </h2>
-      {familyKey === undefined ? (
+      {view.kind === 'loading' && <p className={s.muted}>{t('common.loading')}</p>}
+      {view.kind === 'failed' && (
         <>
-          {status !== null && <p className={s.muted}>{t('family.ai.free', { left: status.free.left, limit: status.free.limit })}</p>}
+          <p className={s.muted}>{t('family.ai.failed')}</p>
+          <div>
+            <Button
+              icon={RefreshCw}
+              onClick={() => {
+                setView({ kind: 'loading' });
+                void refresh();
+              }}
+            >
+              {t('family.ai.retry')}
+            </Button>
+          </div>
+        </>
+      )}
+      {view.kind === 'ready' && familyKey === undefined && (
+        <>
+          <p className={s.muted}>{t('family.ai.free', { left: view.status.free.left, limit: view.status.free.limit })}</p>
           <div>
             <Button
               variant="primary"
@@ -132,7 +153,8 @@ export function AiCard(): JSX.Element {
             </Button>
           </div>
         </>
-      ) : (
+      )}
+      {view.kind === 'ready' && familyKey !== undefined && (
         <>
           <p className={s.muted}>
             {t('family.ai.keyLine', {
@@ -243,6 +265,7 @@ export function AiCard(): JSX.Element {
           label={t('family.ai.keySheet.label')}
           showLabel
           type="password"
+          disabled={busy}
           autoComplete="off"
           spellCheck={false}
           dir="ltr"

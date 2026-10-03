@@ -267,6 +267,8 @@ describe('saving the family key', () => {
     // The request is still unanswered: the field and the page already forget the key.
     await until(() => fetch.mock.calls.length === 1);
     expect(keyField().value).toBe('');
+    // Nothing more can be typed while the key is being checked.
+    expect(keyField().disabled).toBe(true);
     expect(keyIsNowhere()).toBe(true);
     expect(openSheet()?.textContent).toContain(i18n.t('family.ai.keySheet.saving'));
 
@@ -280,6 +282,30 @@ describe('saving the family key', () => {
     await until(() => cardText(page).includes('Key …a3f2'));
     expect(keyIsNowhere()).toBe(true);
     expect(page.textContent).not.toContain(KEY);
+  });
+
+  it('empties the key itself once it is saved, without waiting for the dialog to close', async () => {
+    let current: AiStatus = { free: FREE };
+    const answer = pending();
+    const fetch = stubFetch({ '/api/ai/key': answer.reply });
+    const page = await render(<FamilyPage />, withAi(current, [], { status: async () => current }));
+    await click(cardButton(page, i18n.t('family.ai.add')));
+    await act(async () => typeInto(keyField(), KEY));
+    await click(sheetButton(i18n.t('family.ai.keySheet.save')));
+    await until(() => fetch.mock.calls.length === 1);
+
+    // The field is disabled, so this cannot happen from the keyboard; if text reached the state anyway, success must not keep it.
+    const late = 'sk-or-v1-typed-while-checking';
+    await act(async () => typeInto(keyField(), late));
+    current = withKey();
+    await act(async () => answer.answer({ body: { saved: true } }));
+    await until(() => openSheet() === null);
+    await until(() => cardButton(page, i18n.t('family.ai.replace')) !== undefined);
+
+    await click(cardButton(page, i18n.t('family.ai.replace')));
+    expect(keyField().disabled).toBe(false);
+    expect(keyField().value).toBe('');
+    expect(document.body.innerHTML).not.toContain(late);
   });
 
   it('says why OpenRouter refused the key, empties the field and keeps the sheet open', async () => {
@@ -449,5 +475,123 @@ describe('choosing the model', () => {
     await click(cardButton(page, i18n.t('family.ai.saveModel')));
     await until(() => cardText(page).includes(i18n.t('family.ai.failed')));
     expect(page.textContent).not.toContain('violates');
+  });
+});
+
+describe('when the status is not known', () => {
+  const noStatusYet = (): Promise<AiStatus> => new Promise<AiStatus>(() => {});
+
+  it('shows no Add button, or anything to press, while the status is loading', async () => {
+    const page = await render(<FamilyPage />, withAi(withKey(), [], { status: noStatusYet }));
+    expect(card(page).querySelector('h2')?.textContent).toBe(i18n.t('family.ai.title'));
+    expect(cardText(page)).toContain(i18n.t('common.loading'));
+    expect(card(page).querySelector('button')).toBeNull();
+    expect(cardText(page)).not.toContain('left today');
+  });
+
+  it('says it could not tell, with Retry and no Add, then shows the right layout after Retry', async () => {
+    let down = true;
+    const page = await render(
+      <FamilyPage />,
+      withAi(withKey(), [], {
+        status: async () => {
+          if (down) throw new Error('rpc failed: permission denied for family_ai_keys');
+          return withKey();
+        },
+      }),
+    );
+    await until(() => cardText(page).includes(i18n.t('family.ai.failed')));
+    expect(cardButton(page, i18n.t('family.ai.retry'))).toBeDefined();
+    expect(cardButton(page, i18n.t('family.ai.add'))).toBeUndefined();
+    expect(cardButton(page, i18n.t('family.ai.remove'))).toBeUndefined();
+    expect(cardText(page)).not.toContain('permission denied');
+
+    down = false;
+    await click(cardButton(page, i18n.t('family.ai.retry')));
+    await until(() => cardButton(page, i18n.t('family.ai.remove')) !== undefined);
+    expect(cardText(page)).toContain('Key …a3f2');
+    expect(cardText(page)).not.toContain(i18n.t('family.ai.failed'));
+    expect(cardButton(page, i18n.t('family.ai.add'))).toBeUndefined();
+  });
+
+  it('shows loading, not Retry, while Retry waits, and Add only once a family without a key is confirmed', async () => {
+    let answer: (status: AiStatus) => void = () => {};
+    let attempt = 0;
+    const page = await render(
+      <FamilyPage />,
+      withAi({ free: FREE }, [], {
+        status: () => {
+          attempt += 1;
+          if (attempt === 1) return Promise.reject(new Error('offline'));
+          return new Promise<AiStatus>((resolve) => {
+            answer = resolve;
+          });
+        },
+      }),
+    );
+    await until(() => cardButton(page, i18n.t('family.ai.retry')) !== undefined);
+    await click(cardButton(page, i18n.t('family.ai.retry')));
+    expect(cardText(page)).toContain(i18n.t('common.loading'));
+    expect(card(page).querySelector('button')).toBeNull();
+
+    await act(async () => answer({ free: FREE }));
+    await until(() => cardButton(page, i18n.t('family.ai.add')) !== undefined);
+    expect(cardText(page)).toContain('Using free AI · 4 of 5 left today');
+  });
+
+  /** Runs `doIt` once the card is showing `first`, with every later status() failing, and expects the failed layout. */
+  async function failsAfter(first: AiStatus, ready: (page: HTMLElement) => boolean, doIt: (page: HTMLElement) => Promise<void>): Promise<HTMLElement> {
+    let down = false;
+    const page = await render(
+      <FamilyPage />,
+      withAi(first, [], {
+        status: async () => {
+          if (down) throw new Error('offline');
+          return first;
+        },
+      }),
+    );
+    await until(() => ready(page));
+    down = true;
+    await doIt(page);
+    await until(() => cardButton(page, i18n.t('family.ai.retry')) !== undefined);
+    expect(cardText(page)).toContain(i18n.t('family.ai.failed'));
+    expect(cardButton(page, i18n.t('family.ai.add'))).toBeUndefined();
+    expect(cardButton(page, i18n.t('family.ai.remove'))).toBeUndefined();
+    return page;
+  }
+
+  it('does not fall back to the no-key layout when the refresh after saving a key fails', async () => {
+    stubFetch({ '/api/ai/key': { body: { saved: true } } });
+    await failsAfter(
+      { free: FREE },
+      (page) => cardButton(page, i18n.t('family.ai.add')) !== undefined,
+      async (page) => {
+        await click(cardButton(page, i18n.t('family.ai.add')));
+        await act(async () => typeInto(keyField(), KEY));
+        await click(sheetButton(i18n.t('family.ai.keySheet.save')));
+        await until(() => openSheet() === null);
+      },
+    );
+  });
+
+  it('does not fall back to the no-key layout when the refresh after removing the key fails', async () => {
+    await failsAfter(
+      withKey(),
+      (page) => cardButton(page, i18n.t('family.ai.remove')) !== undefined,
+      async (page) => {
+        await click(cardButton(page, i18n.t('family.ai.remove')));
+        await click(sheetButton(i18n.t('family.ai.remove')));
+        await until(() => openSheet() === null);
+      },
+    );
+  });
+
+  it('does not fall back to the no-key layout when the refresh after saving the model fails', async () => {
+    await failsAfter(
+      withKey(),
+      (page) => cardButton(page, i18n.t('family.ai.saveModel')) !== undefined,
+      (page) => click(cardButton(page, i18n.t('family.ai.saveModel'))),
+    );
   });
 });

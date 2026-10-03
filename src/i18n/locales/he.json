@@ -198,6 +198,7 @@
       "modelInvalid": "זה לא מזהה מודל של OpenRouter, כמו google/gemini-2.5-flash.",
       "saveModel": "שמירת מודל",
       "failed": "זה לא הצליח. נסו שוב.",
+      "retry": "ניסיון חוזר",
       "keySheet": {
         "title": "מפתח OpenRouter משפחתי",
         "label": "מפתח API של OpenRouter",
