@@ -4,26 +4,36 @@ import type { IncomingMessage } from 'node:http';
 import { defineConfig, loadEnv } from 'vite';
 import type { Connect, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { createAiHandler } from './server/ai';
 import { createImportHandler } from './server/import';
 import { createSearchHandler } from './server/search';
 
 /**
- * /api/import and /api/search under `npm run dev` and `vite preview`: the same
- * handlers the Pages Functions run in production. Import is given Node's DNS,
- * so it can also refuse names that resolve to private addresses. Search is
- * given the Tavily key from .env.local; without a VITE_ prefix it stays out of
- * the bundle.
+ * /api/import, /api/search and /api/ai under `npm run dev` and `vite preview`:
+ * the same handlers the Pages Functions run in production. Import and AI are
+ * given Node's DNS, so they can also refuse names that resolve to private
+ * addresses. Search is given the Tavily key from .env.local and AI its own keys
+ * and secret; without a VITE_ prefix they stay out of the bundle. AI reaches
+ * Supabase through the project the app itself uses.
  */
-function apiRoutes(tavilyKey: string | undefined): Plugin {
+function apiRoutes(env: Record<string, string>): Plugin {
+  const resolveHost = async (host: string): Promise<string[]> => (await lookup(host, { all: true })).map((entry) => entry.address);
   const routes = [
+    { path: '/api/import', failed: 'fetch-failed', handler: createImportHandler({ resolveHost }) },
+    { path: '/api/search', failed: 'search-failed', handler: createSearchHandler({ apiKey: env.TAVILY_API_KEY }) },
     {
-      path: '/api/import',
-      failed: 'fetch-failed',
-      handler: createImportHandler({
-        resolveHost: async (host) => (await lookup(host, { all: true })).map((entry) => entry.address),
+      path: '/api/ai',
+      failed: 'unavailable',
+      // Locally the function reaches Supabase through the same project the app uses.
+      handler: createAiHandler({
+        resolveHost,
+        openRouterKey: env.OPENROUTER_API_KEY,
+        freeModels: env.OPENROUTER_FREE_MODELS,
+        keySecret: env.AI_KEY_SECRET,
+        supabaseUrl: env.VITE_SUPABASE_URL,
+        supabaseKey: env.VITE_SUPABASE_ANON_KEY,
       }),
     },
-    { path: '/api/search', failed: 'search-failed', handler: createSearchHandler({ apiKey: tavilyKey }) },
   ];
 
   const readBody = (req: IncomingMessage): Promise<Buffer> =>
@@ -39,9 +49,13 @@ function apiRoutes(tavilyKey: string | undefined): Plugin {
       middlewares.use(path, (req, res) => {
         void (async () => {
           const body = req.method === 'POST' ? new Uint8Array(await readBody(req)) : undefined;
+          const authorization = req.headers.authorization;
           const request = new Request(`http://localhost${req.originalUrl ?? req.url ?? path}`, {
             method: req.method,
-            headers: { 'content-type': req.headers['content-type'] ?? 'application/json' },
+            headers: {
+              'content-type': req.headers['content-type'] ?? 'application/json',
+              ...(typeof authorization === 'string' ? { authorization } : {}),
+            },
             body,
           });
           const response = await handler(request);
@@ -101,7 +115,7 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    plugins: [react(), apiRoutes(env.TAVILY_API_KEY)],
+    plugins: [react(), apiRoutes(env)],
     build: {
       rollupOptions: {
         output: {
