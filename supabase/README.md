@@ -34,4 +34,5 @@ The Postgres schema for the real backend, the migrations for projects that alrea
 - `tasks.column_id` is `on delete restrict`: a column that still has tasks cannot be deleted (`schema.sql`).
 - Declare a setting in `config.toml` only to own it: `supabase config push` overwrites every property the file declares (`config.toml`).
 - Test the AI functions with `../tests/sql/familyAi.test.ts` (PGlite), never against the live project: claiming there spends the app's real free reads.
+- A failed check constraint's detail holds the whole row, and PostgREST passes details to the caller. So `set_family_ai_model()` tests the model by the table's own rule before it updates, and raises a bare `Invalid model` (`check_violation`), never the row with the stored ciphertext. Keep the function's rule and the table's check the same, in `schema.sql` and in the migration. (`store_family_ai_key()`'s check errors show only the row being written, the caller's own values.)
 - Open question: `schema.sql` says it "has NOT been applied to any project", yet the live suites pass against a project with these tables.

@@ -716,19 +716,28 @@ begin
 end;
 $fn$;
 
--- Null or blank goes back to the free models.
+-- Null or blank goes back to the free models. The model is checked here first,
+-- by the same rule as the table's check: a failed check constraint's detail
+-- holds the whole row, ciphertext included, and PostgREST passes details on.
 create function set_family_ai_model(model text)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $fn$
+declare
+  chosen text := nullif(trim(set_family_ai_model.model), '');
 begin
   if current_family_id() is null then
     raise exception 'You do not belong to a family';
   end if;
+  if chosen is not null and not (chosen ~ '^[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9._-]*(:free)?$'
+                                 and chosen not like 'openrouter/%'
+                                 and length(chosen) <= 100) then
+    raise exception 'Invalid model' using errcode = 'check_violation';
+  end if;
   update family_ai_settings
-     set model = nullif(trim(set_family_ai_model.model), '')
+     set model = chosen
    where family_id = current_family_id();
   if not found then
     raise exception 'No family key';

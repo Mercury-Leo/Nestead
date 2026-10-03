@@ -260,10 +260,29 @@ describe('check constraints', () => {
     await addMember(FAMILY_A, user(1));
     await as(user(1), 'select store_family_ai_key($1, $2)', [CIPHERTEXT, 'a3f2']);
     await as(user(1), 'select set_family_ai_model($1)', ['google/gemini-2.5-flash']);
-    for (const model of ['openai/gpt-4o:online', 'openrouter/auto', '~a/b', 'no-vendor', 'a/' + 'b'.repeat(99)]) {
-      await expect(as(user(1), 'select set_family_ai_model($1)', [model]), model).rejects.toThrow(/family_ai_settings_model_check/);
+    for (const model of ['openai/gpt-4o:online', 'openrouter/auto', '~a/b', 'no-vendor', 'a/' + 'b'.repeat(99), ' A/b ', 'a/b\t']) {
+      await expect(as(user(1), 'select set_family_ai_model($1)', [model]), model).rejects.toThrow(/^Invalid model$/);
     }
     expect(await status(user(1))).toMatchObject({ model: 'google/gemini-2.5-flash' });
+  });
+
+  it('refuses a bad model in its own words, with no detail that could show the stored ciphertext', async () => {
+    await addMember(FAMILY_A, user(1));
+    await as(user(1), 'select store_family_ai_key($1, $2)', [CIPHERTEXT, 'a3f2']);
+    // PostgREST passes a Postgres error's message, detail and hint on to the browser.
+    const error = await as(user(1), 'select set_family_ai_model($1)', ['openrouter/auto']).then(
+      () => null,
+      (caught: unknown) => caught as { message?: string; code?: string; detail?: string; hint?: string },
+    );
+    expect(error?.message).toBe('Invalid model');
+    expect(error?.code).toBe('23514');
+    for (const field of [error?.detail, error?.hint]) expect(field ?? '').not.toContain(CIPHERTEXT);
+  });
+
+  it('keeps the table check behind the function', async () => {
+    await addMember(FAMILY_A, user(1));
+    await as(user(1), 'select store_family_ai_key($1, $2)', [CIPHERTEXT, 'a3f2']);
+    await expect(db.query(`update family_ai_settings set model = 'openrouter/auto'`)).rejects.toThrow(/family_ai_settings_model_check/);
   });
 
   it('accepts a :free model and a 100-character id', async () => {
