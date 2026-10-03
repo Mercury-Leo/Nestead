@@ -22,7 +22,7 @@ import { WebResults } from './WebResults';
 type Status =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'ok'; site: string }
+  | { kind: 'ok'; site?: string; ai?: boolean }
   | { kind: 'error'; message: string; offline?: boolean; offerWrite?: boolean };
 
 /** Pages found online, or, where this build has no online search, the bundled index. */
@@ -235,7 +235,7 @@ export default function ImportRecipe(): JSX.Element {
         <div aria-live="polite">
           {status.kind === 'ok' && (
             <p className={s.ok}>
-              <Check size={18} strokeWidth={2.4} aria-hidden /> {t('import.found', { site: status.site })}
+              <Check size={18} strokeWidth={2.4} aria-hidden /> {t('import.found', { site: status.site ?? '' })}
             </p>
           )}
           {status.kind === 'error' && (

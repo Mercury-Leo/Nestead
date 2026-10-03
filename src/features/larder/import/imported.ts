@@ -1,4 +1,4 @@
-import type { AnyRecipe, IngredientLine, Unit } from '../../../domain/types';
+import type { AnyRecipe, IngredientLine, RecipeSource, Unit } from '../../../domain/types';
 import { estimateKcal } from '../../../domain/kitchen/calories';
 import { dietTags } from '../../../domain/kitchen/diet';
 import { isIngredientHeading, parseIngredientLine, parseNumber } from '../../../domain/kitchen/parse';
@@ -15,10 +15,13 @@ import type { ImportedRecipe } from '../../../../server/import';
 export function fromImported(imported: ImportedRecipe): AnyRecipe {
   // Pages list headings ("For the sauce:", "תיבול:") among the ingredients; they are not ones to buy.
   const ingredients = imported.ingredients.filter((raw) => !isIngredientHeading(raw)).map((raw, index) => ({ ...parseIngredientLine(raw), id: `imp-i${index + 1}` }));
+  // Pasted text has no page: the recipe is the family's own, as one typed in would be.
+  const source: RecipeSource =
+    imported.url !== undefined && imported.site !== undefined ? { kind: 'web', url: imported.url, site: imported.site } : { kind: 'mine' };
   const recipe: AnyRecipe = {
-    id: `import:${imported.url}`,
+    id: imported.url !== undefined ? `import:${imported.url}` : 'import:text',
     title: imported.title,
-    source: { kind: 'web', url: imported.url, site: imported.site },
+    source,
     servings: imported.servings ?? 4,
     prepMin: imported.prepMin ?? 0,
     cookMin: imported.cookMin ?? 0,
@@ -74,10 +77,12 @@ export interface ReadLine {
 }
 
 /** "What we read": the checklist under the preview. */
-export function whatWeRead(recipe: AnyRecipe, stated: { photo: boolean; servings: boolean; times: boolean }): ReadLine[] {
+export function whatWeRead(recipe: AnyRecipe, stated: { photo: boolean; servings: boolean; times: boolean; ai?: boolean }): ReadLine[] {
   const t = i18n.t;
   // The title and photo are on show beside this list, so only a missing photo is mentioned.
   const lines: ReadLine[] = [];
+  // A model read it: say so before anything else, so the person checks it against the original.
+  if (stated.ai === true) lines.push({ ok: false, text: t('import.read.byAi') });
   if (stated.servings) lines.push({ ok: true, text: t('import.read.servings', { count: recipe.servings }) });
   lines.push(
     stated.times

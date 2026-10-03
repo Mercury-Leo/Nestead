@@ -708,6 +708,7 @@
       "suggestedTags": "Suggested tags"
     },
     "read": {
+      "byAi": "Read by AI: check it against the original before saving.",
       "times": "Prep {{prep}} · cook {{cook}}",
       "noTimes": "No times: add them before saving",
       "ingredients_one": "{{count, number}} ingredient",

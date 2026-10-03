@@ -2,7 +2,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseRecipeHtml } from '../../../../server/import';
+import type { ImportedRecipe } from '../../../../server/import';
 import { applyFixes, fromImported, mostlyUnrecognised, suggestedTags, whatWeRead } from './imported';
+import { i18n } from '../../../i18n';
 
 const html = readFileSync(new URL('../../../../tests/fixtures/gnocchi.html', import.meta.url), 'utf8');
 const parsed = parseRecipeHtml(html, 'https://weeknightpan.co/recipes/crispy-skillet-gnocchi');
@@ -136,5 +138,32 @@ describe('an imported recipe in another language', () => {
       'red-chili',
       'paprika',
     ]);
+  });
+});
+
+describe('a recipe read from pasted text', () => {
+  const pasted: ImportedRecipe = {
+    title: 'Lentil soup',
+    ingredients: ['1 cup brown lentils', '1 onion'],
+    steps: ['Simmer for 30 minutes.'],
+    equipment: [],
+  };
+
+  it('has no page, so it is the family\'s own', () => {
+    const recipe = fromImported(pasted);
+    expect(recipe.id).toBe('import:text');
+    expect(recipe.source).toEqual({ kind: 'mine' });
+  });
+
+  it('says it was read by AI only when it was', () => {
+    const recipe = fromImported(pasted);
+    const flag = i18n.t('import.read.byAi');
+    expect(whatWeRead(recipe, { photo: false, servings: false, times: false }).map((line) => line.text)).not.toContain(flag);
+    expect(whatWeRead(recipe, { photo: false, servings: false, times: false, ai: true })[0]).toEqual({ ok: false, text: flag });
+  });
+
+  it('matches a pasted Hebrew recipe\'s lines through the parser', () => {
+    const recipe = fromImported({ title: 'מרק עדשים', ingredients: ['1 כוס עדשים', '1 בצל'], steps: [], equipment: [] });
+    expect(recipe.ingredients.map((line) => line.canonicalId)).toEqual(['brown-lentils', 'yellow-onion']);
   });
 });

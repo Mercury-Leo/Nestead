@@ -1,8 +1,10 @@
 /** The shapes recipe import sends and accepts. The app reads ImportedRecipe too. */
 
 export interface ImportedRecipe {
-  url: string;
-  site: string;
+  /** The page the recipe was read from; absent for pasted text, which has none. */
+  url?: string;
+  /** The page's host without "www."; absent for pasted text. */
+  site?: string;
   title: string;
   description?: string;
   image?: string;

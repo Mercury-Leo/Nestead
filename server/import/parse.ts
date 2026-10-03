@@ -226,7 +226,7 @@ function fromMicrodata(html: string): Record<string, unknown> | undefined {
   };
 }
 
-function siteOf(url: string): string {
+export function siteOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {

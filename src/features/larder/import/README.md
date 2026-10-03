@@ -27,7 +27,8 @@ Bring in a recipe from a link or from an online search (`/import`), check it aga
 ## Rules & gotchas
 - Keep imports from `server/import` and `server/search` type-only (`import type`), or server code enters the app bundle.
 - `/api/import` and `/api/search` exist under `npm run dev`, `vite preview` and in production (`../../../../vite.config.ts`); search needs `TAVILY_API_KEY`, and without it falls back to the bundled index.
-- An imported recipe's id is `import:<url>` until it is saved (`imported.ts`).
+- An imported recipe's id is `import:<url>` until it is saved; a recipe without a URL (pasted text read by AI) gets the id `import:text` and the source `{ kind: 'mine' }` (`imported.ts`).
+- `whatWeRead()` puts 'Read by AI' first when `stated.ai` is set, so the person checks it against the original before saving.
 
 ## Tests
 `imported.test.ts`, on `tests/fixtures/gnocchi.html`: every line parsed and the handful of basil flagged, the calorie estimate, "What we read" (counts, then what to check), suggested tags, a typed fix applied; an Arabic recipe told apart as unrecognised, with no diet tags, and the same recipe in Hebrew read and tagged; 10dakot's shakshuka with its amounts, items and headings. `webSearch.test.ts`: hits, unavailable (no endpoint, no key), a used-up allowance and other failures.

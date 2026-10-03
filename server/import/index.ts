@@ -17,5 +17,6 @@
 
 export { checkUrl, isPrivateAddress } from './guard';
 export { createImportHandler, handleImport } from './handler';
-export { decodeEntities, detectEquipment, isoMinutes, parseRecipeHtml } from './parse';
+export { fetchPage } from './fetchPage';
+export { decodeEntities, detectEquipment, isoMinutes, parseRecipeHtml, siteOf } from './parse';
 export type { ImportError, ImportOptions, ImportReport, ImportedRecipe } from './types';

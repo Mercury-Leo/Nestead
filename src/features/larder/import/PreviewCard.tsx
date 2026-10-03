@@ -31,7 +31,7 @@ import s from './ImportRecipe.module.css';
 
 export interface Preview {
   recipe: AnyRecipe;
-  stated: { photo: boolean; servings: boolean; times: boolean };
+  stated: { photo: boolean; servings: boolean; times: boolean; ai?: boolean };
 }
 
 export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (id: string) => void }): JSX.Element {
