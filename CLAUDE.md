@@ -55,7 +55,7 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 ## Gotchas
 - `src/i18n/literals.test.ts` skips files by path (`domain/`, `data/`, `i18n/`, `/seed/`, …): moving a file can change what it checks.
 - `src/features/larder/seed/webIndex.ts` is production code (the Search page's web recipes, and "Search online"'s fallback without a key), not demo data.
-- The parser reads Hebrew amounts, but the ingredient catalog knows English names only: a Hebrew recipe imports, but gets no pantry, diet or calorie checks, and the import preview says so (`mostlyUnrecognised()`).
+- Hebrew ingredient names live apart from the catalog, in `src/domain/kitchen/hebrewNames.ts`, keyed by catalog id: a new catalog item needs its Hebrew names there too. A recipe whose lines mostly match nothing (another language) gets no diet verdict in the import preview (`mostlyUnrecognised()`).
 - Don't add `StrictMode`: `src/main.tsx` leaves it out so the demo seed does not run twice.
 - `index.html` reads the theme and locale preferences before React; keep its keys in step with `src/components/theme/theme.tsx` and `src/i18n/i18n.ts`.
 - Auth screens take the `Account` as a prop from `AccountSession`; never reach for a backend client in a screen.

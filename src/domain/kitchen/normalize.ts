@@ -1,4 +1,5 @@
 import { CATALOG } from './catalog';
+import { HEBREW_NAMES } from './hebrewNames';
 
 /**
  * Turning free text ("2 bone-in, skin-on chicken thighs") into a catalog id
@@ -105,15 +106,21 @@ export function singularize(word: string): string {
   return word;
 }
 
-/** Lower case, no accents, no brackets or punctuation, no descriptors, singular. */
+/**
+ * Lower case, no accents, no brackets or punctuation, no descriptors, singular.
+ * Hebrew letters stay, without vowel points, and a geresh goes like an
+ * apostrophe, so "צ׳ילי" and "צ'ילי" read the same.
+ */
 export function normalizeText(text: string): string {
   return text
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
+    .replace(/־/g, ' ')
+    .replace(/[֑-ׇ]/g, '')
     .toLowerCase()
-    .replace(/[’']/g, '')
+    .replace(/[’'׳״]/g, '')
     .replace(/\([^)]*\)/g, ' ')
-    .replace(/[^a-z0-9\s-]/g, ' ')
+    .replace(/[^a-z0-9א-ת\s-]/g, ' ')
     .split(/\s+/)
     .filter((word) => word !== '' && word !== '-' && !DESCRIPTORS.has(word))
     .map(singularize)
@@ -136,16 +143,26 @@ function phraseIndex(): Map<string, string> {
       if (key !== '' && !built.has(key)) built.set(key, item.id);
     }
   }
+  // Hebrew names, for the items the catalog has (hebrewNames.ts).
+  for (const item of CATALOG) {
+    for (const name of HEBREW_NAMES[item.id] ?? []) {
+      const key = normalizeText(name);
+      if (key !== '' && !built.has(key)) built.set(key, item.id);
+    }
+  }
   index = built;
   return built;
 }
+
+const HEBREW = /[א-ת]/;
 
 /**
  * The catalog id for a piece of ingredient text, or undefined.
  *
  * Tries the whole phrase, then shorter and shorter runs of words. At each
  * length the rightmost run wins, because English puts the noun last: "chicken
- * stock" is stock, not chicken.
+ * stock" is stock, not chicken. In Hebrew the leftmost wins, because Hebrew
+ * puts it first: "ציר עוף" is stock too.
  */
 export function canonicalId(text: string): string | undefined {
   const normalized = normalizeText(text);
@@ -156,8 +173,11 @@ export function canonicalId(text: string): string | undefined {
   if (whole !== undefined) return whole;
 
   const words = normalized.split(' ');
+  const fromLeft = HEBREW.test(normalized);
   for (let length = words.length - 1; length >= 1; length -= 1) {
-    for (let start = words.length - length; start >= 0; start -= 1) {
+    const last = words.length - length;
+    for (let step = 0; step <= last; step += 1) {
+      const start = fromLeft ? step : last - step;
       const hit = lookup.get(words.slice(start, start + length).join(' '));
       if (hit !== undefined) return hit;
     }

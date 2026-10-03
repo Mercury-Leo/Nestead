@@ -120,8 +120,8 @@ const QTY_RE = new RegExp(`^(${NUMBER})(?:\\s*(?:-|–|—|to)\\s*(${NUMBER}))?\
 /*
  * Hebrew amounts: "2 כוסות קמח", "חצי כוס סוכר", "3-4 שיני שום". Hebrew has no
  * "a", so a unit in the singular with no number is one: "כף רסק עגבניות" is a
- * tablespoon of tomato paste. Item names stay as written; normalize.ts reads
- * Latin letters only, so they match nothing in the catalog yet.
+ * tablespoon of tomato paste. Item names stay as written; normalize.ts matches
+ * them to catalog items through hebrewNames.ts.
  */
 
 const HEBREW_UNITS: Record<string, { unit: Exclude<Unit, null>; one?: true }> = {
@@ -384,11 +384,11 @@ export function parseIngredientLine(raw: string): IngredientLine {
 
 /**
  * A heading over ingredients rather than one of them: "Ingredients", "For the
- * sauce:", "תיבול:". A line that ends in a colon and has no number is one.
+ * sauce:", "תיבול", "לרוטב:". A line that ends in a colon and has no number is one.
  */
 export function isIngredientHeading(line: string): boolean {
   const text = line.trim();
-  return /^(ingredients|מצרכים|רכיבים|for the .*):?$/i.test(text) || (/:$/.test(text) && !/\d/.test(text));
+  return /^(ingredients|for the .*|מצרכים|רכיבים|תיבול|לתיבול|לרוטב|להגשה|לקישוט|לבצק|למלית|לציפוי|לטיגון):?$/i.test(text) || (/:$/.test(text) && !/\d/.test(text));
 }
 
 /** Reads a pasted block: one ingredient per line, blank lines and headings skipped. */

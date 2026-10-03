@@ -197,8 +197,9 @@ from the build.
 - **No offline use.** The app installs to a phone's home screen but has no
   service worker.
 - **No prices.** Shopping lists have quantities, not costs.
-- **Hebrew ingredients are only half understood.** Search finds Hebrew recipes
-  and the parser reads their amounts ("2 כוסות", "חצי כוס"), but the ingredient
-  catalog knows English names only, so a Hebrew recipe gets no pantry match,
-  diet check or calorie estimate. The import preview says it was not checked
-  rather than that it fits.
+- **Two languages of ingredients.** The catalog matches English and Hebrew
+  names (`src/domain/kitchen/hebrewNames.ts`); a recipe in any other language
+  imports as written but gets no pantry match, diet check or calorie estimate,
+  and the import preview says it was not checked rather than that it fits.
+  Hebrew products the catalog has no item for (silan, baharat, pearl barley)
+  stay unmatched too, and catalog names still show in English.

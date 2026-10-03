@@ -8,6 +8,7 @@ Pure TypeScript shared by every layer: the entity types, board ordering, and the
 | `position.ts` (+ `position.test.ts`) | `positionBetween()`, `comparePosition()`, `POSITION_STEP` (1000). |
 | `kitchen/catalog.ts` | `CATALOG`: each ingredient's section, diet flags, calories, carbs and unit weights, the water dry grains take up, which lines are cooking water; `catalogItem()`. |
 | `kitchen/normalize.ts` | `normalizeText()`, `singularize()`, `canonicalId()`, `exactCatalogId()`, `containsPhrase()`. |
+| `kitchen/hebrewNames.ts` (+ `hebrewNames.test.ts`) | `HEBREW_NAMES`: the Hebrew names of catalog items, by id, for matching. |
 | `kitchen/parse.ts` | `parseIngredientLine()` (English and Hebrew amounts), `parseIngredientBlock()`, `isIngredientHeading()`, `parseNumber()`, `localId()`. |
 | `kitchen/quantity.ts` | `scaleQty()`, `formatAmount()`, `formatDuration()`, `formatClock()` and friends. |
 | `kitchen/durations.ts` | `detectDurations()`: times in step text, and what to call each timer. |
@@ -25,6 +26,7 @@ Pure TypeScript shared by every layer: the entity types, board ordering, and the
 - `NewRow<T>` omits `Base`; the store fills `id`, `familyId`, `createdAt` and `updatedAt` (`types.ts`).
 - A moved row takes the midpoint of its neighbours, so one move writes one row; ties sort by `createdAt`, then `id` (`position.ts`).
 - Free text reaches the catalog through one normaliser, `canonicalId()` (`kitchen/normalize.ts`), used by the parser, pantry fit, diet checks and search.
+- Hebrew text matches through `HEBREW_NAMES` (`kitchen/hebrewNames.ts`), indexed after the English names and aliases. `canonicalId()` reads a Hebrew phrase from its first word and English from its last, since Hebrew puts the noun first: "ציר עוף" and "chicken stock" are both stock.
 - The parser reads Hebrew amounts as well as English: units ("2 כוסות", "3-4 שיני"), number words ("חצי", "שתי", "שלושת רבעי"), "and a half" ("כוס וחצי"), "one" after the noun ("ביצה אחת"), a singular unit alone as one ("כף רסק" is a tablespoon), and Walla's right-to-left "1/2 1" as 1½ (`kitchen/parse.ts`).
 - List planners return a `ListPlan` of creates, updates and removes; `../features/larder/actions.ts` applies it (`kitchen/list.ts`).
 - Calories per 100 g spread a recipe's calories, stated or estimated, over what the finished dish weighs: its ingredients, plus the water dry rice, pasta and grains take up beyond the water and stock the recipe lists. Water that boils off is not taken away, so long simmers read low (`kitchen/calories.ts`).
@@ -41,7 +43,7 @@ Imports nothing outside `domain/`. Used by `../data/`, `../auth/`, `../features/
 - `ListGroup` rows with `builtin` only hold a built-in section's place; rows without `position` sort at 1000, 2000, then 3000 onwards (`kitchen/list.ts`).
 - Read presets through `presetOn()` or `activePresets()`, never `presets[id]`, and write them through `withPreset()`: an unset peanut allergy follows the nut allergy (`kitchen/diet.ts`).
 - Lines keep the `canonicalId` they were parsed with, so a new catalog item (peanut oil, satay sauce) reaches a saved recipe only once it is edited and saved again (`kitchen/calories.ts` `catalogFor()`).
-- `normalizeText()` keeps Latin letters only, so a Hebrew item name gets no `canonicalId`: no pantry match, diet flag or calorie value until the catalog has Hebrew names. Its amount is still read.
+- A new catalog item needs its Hebrew names in `kitchen/hebrewNames.ts` too, or Hebrew recipes never match it. A name stands for the product itself, not for something with the same diet flags: the item decides what merges on the shopping list and what counts as in the pantry. `hebrewNames.test.ts` fails on an id the catalog lacks and on a name given to two items.
 
 ## Tests
-`position.test.ts`; `kitchen/kitchen.test.ts` (parser, normaliser, scaling, durations, diet with peanuts apart from tree nuts, calories per serving and per 100 g, list quantities, search tokens); `kitchen/parseHebrew.test.ts` (Hebrew amounts, headings, English unchanged); `kitchen/groupOrder.test.ts`. Numbers checked against the seed are in `../features/larder/seed/seed.test.ts`.
+`position.test.ts`; `kitchen/kitchen.test.ts` (parser, normaliser, scaling, durations, diet with peanuts apart from tree nuts, calories per serving and per 100 g, list quantities, search tokens); `kitchen/parseHebrew.test.ts` (Hebrew amounts, headings, English unchanged); `kitchen/hebrewNames.test.ts` (each name's item exists and has it alone, real Hebrew lines, a Hebrew recipe's diet check and calories); `kitchen/groupOrder.test.ts`. Numbers checked against the seed are in `../features/larder/seed/seed.test.ts`.

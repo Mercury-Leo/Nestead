@@ -273,9 +273,11 @@ Hebrew letters (`sites.ts`). It returns links, not recipes; the one a person
 picks goes through `/api/import` like a pasted link. The key is the server-only
 `TAVILY_API_KEY` (`.env.local` locally, a Pages secret in production). Without
 it the endpoint answers `not-configured` and the screen searches the bundled
-web index instead. The catalog knows English ingredient names only, so an
-imported Hebrew recipe is not checked against the pantry or diet; the preview
-says so (`mostlyUnrecognised()` in `features/larder/import/imported.ts`).
+web index instead. Hebrew lines match the catalog through
+`domain/kitchen/hebrewNames.ts`, read from their first word since Hebrew puts
+the noun first; a recipe in a language the catalog has no names for is not
+checked against the pantry or diet, and the preview says so
+(`mostlyUnrecognised()` in `features/larder/import/imported.ts`).
 
 **Screens load lazily.** The board is home, so each kitchen screen is its own
 chunk, fetched on first visit. An error boundary around the routes turns a

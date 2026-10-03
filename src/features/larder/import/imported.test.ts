@@ -63,8 +63,17 @@ describe('imported gnocchi', () => {
   });
 });
 
-describe('an imported recipe the catalog cannot read', () => {
-  // As foody.co.il gives it: coriander, which a "no cilantro" rule should catch, and butter.
+describe('an imported recipe in another language', () => {
+  // Arabic: the catalog has English and Hebrew names only.
+  const arabic = fromImported({
+    url: 'https://example.com/garlic-sauce',
+    site: 'example.com',
+    title: 'صلصة الثوم والكزبرة',
+    ingredients: ['1 ربطة كزبرة', '5 فصوص ثوم', '1 كوب زيت زيتون', '50 غرام زبدة', '1 ملعقة صغيرة ملح'],
+    steps: ['يطحن كل شيء معا.'],
+    equipment: [],
+  });
+  // The same sauce as foody.co.il gives it: coriander, which a "no cilantro" rule should catch, and butter.
   const hebrew = fromImported({
     url: 'https://foody.co.il/foody_recipe/x/',
     site: 'foody.co.il',
@@ -74,13 +83,23 @@ describe('an imported recipe the catalog cannot read', () => {
     equipment: [],
   });
 
-  it('is told apart from one it can', () => {
-    expect(mostlyUnrecognised(hebrew)).toBe(true);
+  it('is told apart when the catalog cannot read it', () => {
+    expect(mostlyUnrecognised(arabic)).toBe(true);
+    expect(mostlyUnrecognised(hebrew)).toBe(false);
     expect(mostlyUnrecognised(recipe)).toBe(false);
   });
 
-  it('gets no diet tags, since nothing in it was checked', () => {
-    expect(suggestedTags(hebrew).filter((tag) => tag.preselected)).toEqual([]);
+  it('gets no diet tags when nothing in it was checked', () => {
+    expect(suggestedTags(arabic).filter((tag) => tag.preselected)).toEqual([]);
+  });
+
+  it('gets the diet tags a Hebrew recipe earns, now that its lines are read', () => {
+    const tags = suggestedTags(hebrew)
+      .filter((tag) => tag.preselected)
+      .map((tag) => tag.tag);
+    expect(tags).toContain('Vegetarian');
+    expect(tags).toContain('Gluten-free');
+    expect(tags).not.toContain('Dairy-free');
   });
 
   it('reads Hebrew amounts and leaves the headings out', () => {
@@ -107,5 +126,15 @@ describe('an imported recipe the catalog cannot read', () => {
     expect(shakshuka.ingredients).toHaveLength(8);
     expect(shakshuka.ingredients.filter((line) => line.needsFix).map((line) => line.raw)).toEqual(['בצל גדול קצוץ', 'פלפל חריף קצוץ או כפית פפריקה חריפה']);
     expect(shakshuka.ingredients.map((line) => line.unit)).toEqual([null, null, null, 'clove', 'tbsp', null, null, 'tsp']);
+    expect(shakshuka.ingredients.map((line) => line.canonicalId)).toEqual([
+      'yellow-onion',
+      'tomato',
+      'red-bell-pepper',
+      'garlic',
+      'tomato-paste',
+      'eggs',
+      'red-chili',
+      'paprika',
+    ]);
   });
 });

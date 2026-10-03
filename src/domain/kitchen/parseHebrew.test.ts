@@ -62,8 +62,8 @@ describe('parseIngredientLine in Hebrew', () => {
     expect(read('כוסברה קצוצה')).toMatchObject({ qty: null, unit: null, item: 'כוסברה קצוצה' });
   });
 
-  it('matches no catalog item yet: the catalog has English names only', () => {
-    expect(read('2 כוסות קמח').canonicalId).toBeUndefined();
+  it('matches catalog items through their Hebrew names (hebrewNames.ts)', () => {
+    expect(read('2 כוסות קמח').canonicalId).toBe('all-purpose-flour');
   });
 
   it('reads English as it did', () => {
@@ -75,7 +75,7 @@ describe('parseIngredientLine in Hebrew', () => {
 
 describe('isIngredientHeading', () => {
   it('knows a heading in either language', () => {
-    for (const line of ['Ingredients', 'For the sauce:', 'מצרכים', 'תיבול:', 'לשקשוקה חריפה (לא חובה):']) {
+    for (const line of ['Ingredients', 'For the sauce:', 'מצרכים', 'תיבול:', 'תיבול', 'לרוטב', 'להגשה:', 'לשקשוקה חריפה (לא חובה):']) {
       expect(isIngredientHeading(line)).toBe(true);
     }
     for (const line of ['2 cups flour', 'Salt, to taste', 'For 4 servings:', 'כוס קמח', '1 כף סוכר:']) {
