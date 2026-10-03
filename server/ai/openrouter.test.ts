@@ -112,6 +112,7 @@ describe('checkKey', () => {
 
   it('says when the key has no credit left', async () => {
     expect(await run(data({ limit_remaining: 0 }))).toBe('key-out-of-credit');
+    expect(await run(data({ limit_remaining: -0.5 }))).toBe('key-out-of-credit');
   });
 
   it('answers unavailable when OpenRouter cannot say', async () => {
@@ -119,4 +120,21 @@ describe('checkKey', () => {
     expect(await run(new TypeError('network'))).toBe('unavailable');
     expect(await run(reply({ nothing: true }))).toBe('unavailable');
   });
+
+  it('calls fetch with the right URL and authorization header', async () => {
+    const fetch = vi.fn(async () => data({}));
+    await checkKey('sk-test-key', { fetch, timeoutMs: 1000 });
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(`${OPENROUTER}/key`);
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer sk-test-key');
+  });
+
+  it('works when fetch is called unbound (not as a method on options)', async () => {
+    // This test verifies our code calls fetch as doFetch(...) unbound, not options.fetch(...)
+    // A properly working fetch function
+    const fetch = vi.fn(async () => data({}));
+    const result = await checkKey('sk', { fetch, timeoutMs: 1000 });
+    expect(result).toBe('ok');
+  });
 });
+

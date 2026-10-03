@@ -18,20 +18,20 @@ export type AiError =
 /** Who hit the quota: the family's free reads per day, or the app's per day. */
 export type QuotaScope = 'user' | 'app';
 
-/** When read() claims a read, what it found: a key to use, a quota, or nothing. */
+/** What claim_ai_request() answers: whether the user can read, and if so, free or with a family key. */
 export type ClaimResult =
   | { mode: 'no-family' }
   | { mode: 'quota-exceeded'; scope: QuotaScope }
   | { mode: 'free' }
   | { mode: 'family'; familyId: string; ciphertext: string; model: string | null };
 
-/** Where read() gets the claim, key, and token for the read, and logs one completed read. */
+/** Implements the claim and key-save routes: /api/ai/extract and /api/ai/key. */
 export interface AiStore {
-  /** Asks what read() can do: free, family key, or quota reached. */
+  /** Called once per read in /api/ai/extract: counts a free read or hands back the family's encrypted key. */
   claim(): Promise<ClaimResult | 'unauthorized'>;
-  /** Fetches the family's key to decrypt, if mode is family. */
+  /** Called in /api/ai/key: returns the member's family id, or null when not in a family, or 'unauthorized'. */
   familyId(): Promise<string | null | 'unauthorized'>;
-  /** Stores a key once the user verifies it works. */
+  /** Called after verifying a key: stores the server-made ciphertext and hint. */
   storeKey(ciphertext: string, hint: string): Promise<'unauthorized' | undefined>;
 }
 
@@ -43,7 +43,7 @@ export interface AiLogEntry {
   model?: string;
 }
 
-/** read() and checkKey(). Builds the store for one request's token; tests pass their own. Without it, the PostgREST store from supabaseUrl and supabaseKey. */
+/** Options for the routes and checkKey. */
 export interface AiOptions {
   openRouterKey?: string;
   freeModels?: string;
@@ -52,6 +52,7 @@ export interface AiOptions {
   supabaseKey?: string;
   fetch?: typeof fetch;
   resolveHost?: (host: string) => Promise<string[]>;
+  /** Builds the store for one request's token; tests pass their own. Without it, the PostgREST store from supabaseUrl and supabaseKey. */
   store?: (token: string) => AiStore;
   timeouts?: Partial<{ model: number; key: number; rpc: number; page: number }>;
   /** Defaults to one JSON line on console.info. Never given a key, token, text or output. */

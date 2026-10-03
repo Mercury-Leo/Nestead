@@ -65,8 +65,9 @@ interface Choice {
 export async function callChat(key: string, body: Record<string, unknown>, options: { fetch: typeof fetch; timeoutMs: number }): Promise<ChatOutcome> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs);
+  const doFetch = options.fetch;
   try {
-    const response = await options.fetch(`${OPENROUTER}/chat/completions`, {
+    const response = await doFetch(`${OPENROUTER}/chat/completions`, {
       method: 'POST',
       signal: controller.signal,
       headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
@@ -111,8 +112,9 @@ export type KeyCheck = 'ok' | 'key-invalid' | 'key-out-of-credit' | 'unavailable
 export async function checkKey(key: string, options: { fetch: typeof fetch; timeoutMs: number }): Promise<KeyCheck> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs);
+  const doFetch = options.fetch;
   try {
-    const response = await options.fetch(`${OPENROUTER}/key`, { signal: controller.signal, headers: { authorization: `Bearer ${key}` } });
+    const response = await doFetch(`${OPENROUTER}/key`, { signal: controller.signal, headers: { authorization: `Bearer ${key}` } });
     if (response.status === 401) return 'key-invalid';
     if (!response.ok) return 'unavailable';
     const body = (await response.json()) as { data?: unknown };
