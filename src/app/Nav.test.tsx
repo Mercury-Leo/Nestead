@@ -172,6 +172,18 @@ describe('the tab bar', () => {
     expect(link(bar(host), i18n.t('nav.board'))).toBeDefined();
   });
 
+  it('pins a section back from Edit bar', async () => {
+    const host = await render(<TabBar />, '/');
+    await click(moreButton(host));
+    await click(sheetButton(i18n.t('nav.editBar')));
+    await click(sheetButton(i18n.t('nav.lists')));
+    expect(link(bar(host), i18n.t('nav.lists'))).toBeUndefined();
+    await click(sheetButton(i18n.t('nav.lists')));
+    expect(link(bar(host), i18n.t('nav.lists'))).toBeDefined();
+    expect(sheetButton(i18n.t('nav.lists'))?.getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelector('dialog')?.textContent).toContain(i18n.t('nav.pinnedCount', { pinned: 3, max: 4 }));
+  });
+
   it('refuses to unpin the last section, and says so', async () => {
     const host = await render(<TabBar />, '/');
     await click(moreButton(host));

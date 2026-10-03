@@ -228,9 +228,7 @@
   padding: 0;
   border: 0;
   background: none;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
 }
 
@@ -239,8 +237,8 @@
 .pills {
   display: flex;
   gap: 8px;
-  margin: -8px -16px 16px;
-  padding: 0 16px 2px;
+  margin: -14px -16px 10px;
+  padding: 6px 16px;
   overflow-x: auto;
   scrollbar-width: none;
 }

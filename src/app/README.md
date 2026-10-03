@@ -21,7 +21,7 @@ The signed-in app's frame: the shell around every screen, the sidebar and tab ba
 - Routes and screens are listed in the [root README](../../README.md#the-kitchen-larder); why screens load lazily is in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#the-kitchen-larder).
 
 ## Connections
-- Uses: `../auth/session.tsx`, `../data/useCollection.ts`, `../components/` (Brand, ErrorBoundary, ui, theme), every screen in `../features/`, `../features/larder/KitchenContext.tsx`, `../features/larder/timers/TimerHost.tsx`, `../i18n/`.
+- Uses: `../auth/session.tsx`, `../data/useCollection.ts`, `../data/local/localStore.ts` (preference helpers, for `navPins`), `../components/` (Brand, ErrorBoundary, ui, theme), every screen in `../features/`, `../features/larder/KitchenContext.tsx`, `../features/larder/timers/TimerHost.tsx`, `../i18n/`.
 - Used by: `../main.tsx`.
 
 ## Adding a section

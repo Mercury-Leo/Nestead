@@ -33,7 +33,7 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 
 ## Connections
 - Uses: `../domain/types.ts`; `@supabase/supabase-js` in `supabase/` only.
-- Used by: `../auth/` (the `Account`, building the store), every screen through `useCollection`, and `local/localStore.ts`'s preference helpers in `../components/theme/`, `../i18n/`, `../features/board/`, `../features/lists/`, `../features/larder/timers/`.
+- Used by: `../auth/` (the `Account`, building the store), every screen through `useCollection`, and `local/localStore.ts`'s preference helpers in `../components/theme/`, `../i18n/`, `../features/board/`, `../features/lists/`, `../features/larder/timers/`, `../app/` (nav pins).
 
 ## Rules & gotchas
 - New backend work goes through the interfaces: add a method to `DataStore` or `Account` in `types.ts`, implement it in the adapter folder, and call it through the interface. Screens, `../auth/` and `../features/` never import an adapter, a backend SDK, or name a table or RPC. A rule the backend must enforce goes in the interface's doc comment.

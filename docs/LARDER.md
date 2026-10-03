@@ -54,7 +54,7 @@ placeholder, stars, badges, match bar, status marker, step text).
 ## Where it differs from the Larder brief
 
 - **Routes.** `/` is the board, so the library is `/library`.
-- **Tab bar.** Six tabs, not five: Board, Lists, Library, Search, Pantry,
+- **Tab bar.** The bar had six tabs, not five: Board, Lists, Library, Search, Pantry,
   Profile. Member switching and sign-out stay on the board page. Since
   2026-10-04 the bar holds sections (four pinned, then More) and the Larder's
   pages are pills; see `src/app/README.md`.
