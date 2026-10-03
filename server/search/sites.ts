@@ -1,11 +1,19 @@
 /**
  * The recipe sites a search looks in, by the language of the query.
  *
- * Each one was checked (2026-09-30) by importing real recipe pages with
- * ../import: it answers the importer's fetch and publishes schema.org recipe
- * data, so any hit can be read. Sites that turn the importer away are left out,
- * since their hits could never be imported: Allrecipes, Serious Eats, Simply
- * Recipes and EatingWell answer 402, Taste of Home 403.
+ * A site is listed once the importer's fetch gets real recipe pages from it
+ * (no 402 or 403), and either
+ *   - its pages carry schema.org recipe data ../import reads, or
+ *   - a saved page from it, reduced by ../ai/pageText.ts and given a model
+ *     answer, passes ../ai/validate.ts: then a hit that /api/import answers
+ *     not-found is read with AI instead (checked by hand when the site is added).
+ * Each entry below was checked the first way (2026-09-30). A site added the
+ * second way says so in a comment with its date.
+ *
+ * Sites that turn the importer away stay out whatever their data, since AI
+ * cannot read a page we cannot fetch either: Allrecipes, Serious Eats, Simply
+ * Recipes and EatingWell answer 402, Taste of Home 403. Tavily's own copy of a
+ * page is never used to get round that.
  *
  * `recipePage` matches the path of a single recipe, so the same site's
  * collections, articles and category pages are dropped from the results.

@@ -29,9 +29,10 @@ Recipe search for "Search online": find recipe pages on the web, in English or H
 ## Rules & gotchas
 - The key is server-only: `TAVILY_API_KEY`. A `VITE_*` name would inline it into the public bundle.
 - Browser code imports only types from here (`import type`), as with `../import/`.
-- A site goes in `sites.ts` only after the importer has read real recipe pages from it. Allrecipes, Serious Eats, Simply Recipes and EatingWell answer the importer with 402, Taste of Home with 403, so they are left out: their hits could never be imported.
+- A site is listed once the importer's fetch gets real recipe pages from it (no 402 or 403), either because the page has schema.org recipe data, or because AI can read it. Sites that refuse our fetch stay out: their hits could never be imported.
+- Tavily's page text (`content`, `include_raw_content`) is never used to read a recipe; `/api/ai/extract` fetches the page itself.
 - Tavily's free plan is 1,000 searches a month. Like `/api/import`, the endpoint is public, so anyone who finds it can spend the month's searches; on the free plan that stops search until the 1st, and bills nothing.
 - Answers never include the key or Tavily's own error text.
 
 ## Tests
-`search.test.ts`: English and Hebrew planning; filtering to single recipe pages, including percent-encoded Hebrew paths and Mako's nested sections; titles cleaned, on real titles from a live search; the cap of 12; the request sent to Tavily; each error, with the key never in a response.
+`search.test.ts`: English and Hebrew planning; filtering to single recipe pages, including percent-encoded Hebrew paths and Mako's nested sections; titles cleaned, on real titles from a live search; the cap of 12; the request sent to Tavily; each error, with the key never in a response; the site lists never include sites that refuse our fetch, and Tavily is never asked for page text.

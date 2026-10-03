@@ -237,3 +237,18 @@ describe('createSearchHandler', () => {
     expect(await response.json()).toEqual({ error: 'timeout' });
   });
 });
+
+describe('the site lists', () => {
+  it('never list a site that refuses our fetch: AI cannot read a page we cannot fetch', () => {
+    const refusing = ['allrecipes.com', 'seriouseats.com', 'simplyrecipes.com', 'eatingwell.com', 'tasteofhome.com'];
+    const listed = [...ENGLISH_SITES, ...HEBREW_SITES].map((entry) => entry.domain);
+    for (const domain of refusing) expect(listed).not.toContain(domain);
+  });
+
+  it('ask Tavily for links only, never for page text', async () => {
+    const fetch = tavily([]);
+    await createSearchHandler({ apiKey: KEY, fetch })(get('soup'));
+    const body = JSON.parse((fetch.mock.calls[0]![1] as RequestInit).body as string) as Record<string, unknown>;
+    expect(body).not.toHaveProperty('include_raw_content');
+  });
+});
