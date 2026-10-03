@@ -11,7 +11,7 @@ Recipe presentation shared by the kitchen screens and the shopping list: cards, 
 | `MatchBlock.tsx` (+ `MatchBlock.module.css`) | `MatchBar` (a segment per ingredient, have against to buy) and `NeedLine` ("Need: …", every name). |
 | `StatusMarker.tsx` (+ `StatusMarker.module.css`) | The have, staple or to-buy marker beside an ingredient. |
 | `badges.tsx` (+ `badges.module.css`) | `SourceBadge`, `WarningBadge`, `BuyPill`, `EstTag`. |
-| `StepText.tsx` | Step text with detected times swapped for chips; `chipKey()`. |
+| `StepText.tsx` (+ `StepText.test.tsx`) | Step text with detected times swapped for chips; `chipKey()`. |
 | `recipeView.ts` | `recipeView()` works out fit, diet, rating, total time, kcal and to-buy once; `recipePath()`, `siteOf()`. |
 | `servings.ts` | `useServings()`, `servingsFor()`, `scaledAmount()`. |
 | `kcalBasis.ts` | `useKcalBasis()`, `readKcalBasis()`: calories per serving or per 100 g, a device preference. |
@@ -37,5 +37,9 @@ Recipe presentation shared by the kitchen screens and the shopping list: cards, 
 - Don't wrap a card in one link again: the toggle would become a control nested in it.
 - Both branches of `hasPhoto()` must work: without a photo the card has no image area and the row no thumbnail (`RecipeCard.tsx`).
 - `chipKey()` is the step index plus the time's character offset in the text; running timers are found by it (`StepText.tsx`, `../timers/store.ts`).
+- `StepText` makes no links and renders steps as React text only: a step can come from a web page or an AI read, so a URL or markup in it stays plain text (spec section 5.5). `StepText.test.tsx` pins it.
 - The rating shown is the family's `userRating` if set, else `sourceRating` (`displayRating()` in `../../../domain/kitchen/search.ts`).
 - `servingUnit` is stored in English: show it through `servingUnitWord()` or `servingsCaption()` (`../labels.ts`), never as stored.
+
+## Tests
+`StepText.test.tsx`: a URL in a step renders as plain text with no link (its time still a chip), and markup in a step as the text it is.
