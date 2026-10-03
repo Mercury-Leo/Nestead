@@ -14,6 +14,7 @@ Recipe presentation shared by the kitchen screens and the shopping list: cards, 
 | `StepText.tsx` | Step text with detected times swapped for chips; `chipKey()`. |
 | `recipeView.ts` | `recipeView()` works out fit, diet, rating, total time, kcal and to-buy once; `recipePath()`, `siteOf()`. |
 | `servings.ts` | `useServings()`, `servingsFor()`, `scaledAmount()`. |
+| `kcalBasis.ts` | `useKcalBasis()`, `readKcalBasis()`: calories per serving or per 100 g, a device preference. |
 | `equipment.ts` | `equipmentIcon()`: an icon from what the equipment's name mentions. |
 
 ## How it works
@@ -21,13 +22,14 @@ Recipe presentation shared by the kitchen screens and the shopping list: cards, 
 - `recipePath()` URL-encodes the id, because web ids contain a colon (`recipeView.ts`).
 - A card's calories name the serving unit through `servingUnitWord()`: "280 kcal/slice", in Hebrew "280 קק״ל/פרוסה"; a word the translation file does not name shows as stored (`recipeView.ts`, `../labels.ts`).
 - Chosen servings live in a module-level map for the page's lifetime, so cook mode follows the detail page and a reload starts over (`servings.ts`).
+- Per serving or per 100 g is kept on the device under the preference `kcalBasis`, like the theme, so every recipe page opens the way it was last set. Only the recipe page offers it; cards, sorting and the calorie filter stay per serving (`kcalBasis.ts`, `../detail/RecipeDetail.tsx`).
 - `StepText` renders each time through a callback: a quiet label on the detail page, a timer chip in cook mode (`StepText.tsx`).
 - A card shows the title, one meta line (time, rating, to buy), the fit bar and any diet warning; tags, description, calories, "You have 9/10", the need list and the source sit behind its toggle. Open or shut is per card and never saved (`RecipeCard.tsx`).
 - The title is the link (or, with `onChoose`, the button); the photo repeats it outside the tab order and the accessibility tree, and the toggle is a sibling button with `aria-expanded` and `aria-controls` (`RecipeCard.tsx`).
 - Grids fill as many columns as fit (240px minimum, 196px when dense: two columns beside Search's filters at 1024px and 1280px, three at 1440px) and start-align their items, so an open card never stretches its row (`RecipeCard.module.css`).
 
 ## Connections
-- Uses: `../../../components/ui` (`PhotoPlaceholder.tsx` and `badges.tsx` import `ui/cx` directly), `../../../domain/kitchen/` (diet, fit, search, quantity, durations), `../labels.ts`, `../../../auth/session.tsx` (`RecipePhoto.tsx`), `../../../i18n/`.
+- Uses: `../../../components/ui` (`PhotoPlaceholder.tsx` and `badges.tsx` import `ui/cx` directly), `../../../domain/kitchen/` (diet, fit, search, quantity, durations), `../labels.ts`, `../../../auth/session.tsx` (`RecipePhoto.tsx`), `../../../data/local/localStore.ts` (the device preference in `kcalBasis.ts`), `../../../i18n/`.
 - Used by: `../add/`, `../cook/`, `../detail/`, `../import/`, `../library/`, `../pantry/`, `../profile/`, `../search/`, `../../lists/ShoppingList.tsx`.
 
 ## Rules & gotchas

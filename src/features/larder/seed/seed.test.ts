@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DietProfile, ListItem, PantryItem } from '../../../domain/types';
+import { kcalPer100g } from '../../../domain/kitchen/calories';
 import { checkDiet } from '../../../domain/kitchen/diet';
 import { pantryFit, pantryIndex } from '../../../domain/kitchen/fit';
 import {
@@ -98,6 +99,22 @@ describe('diet on the seed', () => {
     const halal = { presets: { ...SEED_PRESETS, halal: true }, custom: [] };
     expect(checkDiet(byTitle('Chicken & Chorizo Paella'), halal).reasons).toEqual(['Contains pork']);
     expect(checkDiet(byTitle('Wild Mushroom Risotto'), halal).reasons).toEqual(['Contains alcohol']);
+  });
+});
+
+describe('calories per 100 g on the seed', () => {
+  it('every recipe gets a believable figure', () => {
+    for (const recipe of [...SEED_LIBRARY, ...WEB_INDEX]) {
+      const per100 = kcalPer100g(recipe);
+      expect(per100, recipe.title).not.toBeNull();
+      expect(per100, recipe.title).toBeGreaterThanOrEqual(40);
+      expect(per100, recipe.title).toBeLessThanOrEqual(300);
+    }
+  });
+
+  it('counts the water rice cooked on the side takes up', () => {
+    // 4 × 520 kcal; 1152 g of ingredients, and 450 g of water for 250 g of rice.
+    expect(kcalPer100g(byTitle('Sesame Chicken Rice Bowls'))).toBe(130);
   });
 });
 

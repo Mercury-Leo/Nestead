@@ -104,6 +104,16 @@ placeholder, stars, badges, match bar, status marker, step text).
 - **Additions not in the brief:** deleting a recipe (from its edit page, with a
   confirmation); "Save to library" on a web recipe's page; an error boundary
   with a Reload button.
+- **Calories per 100 g** (September 2026). The recipe page's calorie details
+  switch between per serving and per 100 g, remembered on the device. The
+  figure spreads the recipe's calories over the finished dish's estimated
+  weight: its ingredients plus the water dry rice, pasta and grains take up,
+  with nothing taken off for water that boils away. Cards, sorting and the
+  calorie filter stay per serving.
+- **Peanuts apart from nuts** (September 2026). The brief's nut allergy
+  covered peanuts and tree nuts; peanuts now have their own allergy switch.
+  A profile saved before the split keeps peanuts covered until the family sets
+  that switch, so nobody loses a warning they had.
 - **Not built:** offline use (there is no service worker; the app does install
   to a home screen through `public/manifest.webmanifest`), Playwright
   end-to-end tests and the screenshot comparison. Verified instead by unit tests

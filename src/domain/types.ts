@@ -205,6 +205,7 @@ export type PresetId =
   | 'glutenFree'
   | 'dairyFree'
   | 'nutAllergy'
+  | 'peanutAllergy'
   | 'eggAllergy'
   | 'shellfishAllergy'
   | 'halal'

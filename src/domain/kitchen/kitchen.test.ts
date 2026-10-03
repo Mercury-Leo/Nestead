@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AnyRecipe, IngredientLine } from '../types';
-import { estimateKcal } from './calories';
-import { checkDiet, dietTags, fitsProfileLine, parseCustomRule } from './diet';
+import { dishGrams, estimateKcal, kcalPer100g } from './calories';
+import { checkDiet, dietTags, fitsProfileLine, parseCustomRule, presetOn, withPreset } from './diet';
 import { detectDurations } from './durations';
 import { formatListQty } from './list';
 import { canonicalId, singularize } from './normalize';
@@ -196,15 +196,38 @@ describe('detectDurations', () => {
 });
 
 describe('diet engine', () => {
-  it('flags nuts and a custom sesame rule', () => {
+  it('flags peanuts and a custom sesame rule', () => {
     const sesame = parseCustomRule('Sesame allergy');
     expect(sesame?.hint).toBe('Also matches tahini and sesame oil');
     const check = checkDiet(recipeOf(['4 tbsp peanut butter', '1 tbsp toasted sesame oil', '250 g rice noodles']), {
-      presets: { nutAllergy: true },
+      presets: { peanutAllergy: true },
       custom: sesame === null ? [] : [sesame],
     });
     expect(check.ok).toBe(false);
     expect(check.reasons).toEqual(['Contains peanuts, sesame']);
+  });
+
+  it('keeps peanuts and tree nuts apart', () => {
+    const nuts = { presets: { nutAllergy: true, peanutAllergy: false }, custom: [] };
+    const peanuts = { presets: { peanutAllergy: true }, custom: [] };
+    const walnuts = recipeOf(['50 g walnuts']);
+    expect(checkDiet(walnuts, nuts).reasons).toEqual(['Contains tree nuts']);
+    expect(checkDiet(walnuts, peanuts).ok).toBe(true);
+    for (const raw of ['4 tbsp peanut butter', '2 tbsp peanut oil', '2 tbsp groundnut oil', '100 ml satay sauce', '3 tbsp peanut sauce']) {
+      expect(checkDiet(recipeOf([raw]), peanuts).reasons, raw).toEqual(['Contains peanuts']);
+      expect(checkDiet(recipeOf([raw]), nuts).ok, raw).toBe(true);
+    }
+  });
+
+  it('a nut allergy set before peanuts had their own switch still covers them', () => {
+    const before = { presets: { nutAllergy: true }, custom: [] };
+    expect(presetOn(before, 'peanutAllergy')).toBe(true);
+    expect(checkDiet(recipeOf(['4 tbsp peanut butter']), before).reasons).toEqual(['Contains peanuts']);
+    // Any switch writes peanuts down as they showed.
+    expect(withPreset({ nutAllergy: true }, 'nutAllergy', false)).toEqual({ nutAllergy: false, peanutAllergy: true });
+    expect(withPreset({ nutAllergy: true }, 'peanutAllergy', false)).toEqual({ nutAllergy: true, peanutAllergy: false });
+    expect(withPreset({}, 'nutAllergy', true)).toEqual({ nutAllergy: true, peanutAllergy: false });
+    expect(presetOn({ presets: { nutAllergy: true, peanutAllergy: false } }, 'peanutAllergy')).toBe(false);
   });
 
   it('cilantro rules know coriander leaves but not ground coriander', () => {
@@ -247,10 +270,11 @@ describe('diet engine', () => {
     expect(dietTags(recipeOf(['500 g potato gnocchi', '125 g mozzarella', '400 g cherry tomatoes']))).toEqual(['Vegetarian']);
     expect(
       fitsProfileLine({
-        presets: { nutAllergy: true },
+        presets: { nutAllergy: true, peanutAllergy: false },
         custom: [parseCustomRule('Sesame allergy'), parseCustomRule('No cilantro')].filter((r) => r !== null),
       }),
     ).toBe('No nuts, sesame or cilantro found');
+    expect(fitsProfileLine({ presets: { nutAllergy: true, peanutAllergy: true }, custom: [] })).toBe('No nuts or peanuts found');
   });
 });
 
@@ -263,6 +287,30 @@ describe('calorie estimate', () => {
 
   it('gives up when too little is understood', () => {
     expect(estimateKcal(recipeOf(['1 mystery thing', '2 unknowable items', '100 g rice']))).toBeNull();
+  });
+});
+
+describe('calories per 100 g', () => {
+  const withKcal = (lines: string[], kcalPerServing: number | undefined, servings = 4): AnyRecipe => ({ ...recipeOf(lines, servings), kcalPerServing });
+
+  it("spreads the recipe's calories over what goes in", () => {
+    // 4 × 300 kcal over 1 kg.
+    expect(kcalPer100g(withKcal(['500 g potato gnocchi', '400 g crushed tomatoes', '100 g mozzarella'], 300))).toBe(120);
+  });
+
+  it('adds the water dry pasta and rice take up when the recipe does not list it', () => {
+    // 400 g spaghetti takes up 520 g of water: 1600 kcal over 1320 g.
+    const pasta = withKcal(['400 g spaghetti', '400 g crushed tomatoes'], 400);
+    expect(dishGrams(pasta)).toBeCloseTo(1320);
+    expect(kcalPer100g(pasta)).toBe(120);
+    // Rice cooked in the recipe's own stock adds nothing; half the water listed, the rest is added.
+    expect(dishGrams(recipeOf(['300 g arborio rice', '1.2 l vegetable stock']))).toBeCloseTo(1500);
+    expect(dishGrams(recipeOf(['300 g long-grain rice', '200 ml water']))).toBeCloseTo(840);
+  });
+
+  it('needs calories and enough lines it can weigh', () => {
+    expect(kcalPer100g(withKcal(['500 g potato gnocchi'], undefined))).toBeNull();
+    expect(kcalPer100g(withKcal(['1 mystery thing', '2 unknowable items', '100 g rice'], 200))).toBeNull();
   });
 });
 

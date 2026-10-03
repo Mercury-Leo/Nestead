@@ -6,7 +6,7 @@ Kitchen data written by hand: the demo family's full kitchen, and the offline "w
 | --- | --- |
 | `build.ts` | `buildRecipe(spec)`: turns a hand-written `RecipeSpec` into a recipe, parsing ingredients with the app's parser. |
 | `recipes.ts` | `SEED_LIBRARY`: the demo family's 9 recipes. |
-| `kitchen.ts` | `SEED_HAVE` (34 items), `SEED_PRESETS`, `SEED_CUSTOM_RULES`, `SEED_LIST`, `SEED_OWN`, `listRow()`. |
+| `kitchen.ts` | `SEED_HAVE` (34 items), `SEED_PRESETS` (nut and peanut allergies), `SEED_CUSTOM_RULES`, `SEED_LIST`, `SEED_OWN`, `listRow()`. |
 | `seedKitchen.ts` | `seedDemoKitchen()` and `clearKitchen()`. |
 | `webIndex.ts` | `WEB_INDEX` (7 recipes), the `RecipeSearchProvider` interface and `offlineProvider`. |
 | `seed.test.ts` | Kitchen logic checked against the seed's own numbers. |
@@ -28,4 +28,4 @@ Kitchen data written by hand: the demo family's full kitchen, and the offline "w
 - A web recipe's id is its slug, and its URL is `https://<site>/recipes/<slug>` (`build.ts`).
 
 ## Tests
-`seed.test.ts`: the seed pantry, library fit, diet, search, scaling, the shopping list, list sections and things added by hand.
+`seed.test.ts`: the seed pantry, library fit, diet, calories per 100 g (a believable figure for every recipe), search, scaling, the shopping list, list sections and things added by hand.

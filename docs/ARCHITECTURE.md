@@ -244,9 +244,10 @@ board. The demo family gets the full seed instead (`seedDemoKitchen()`).
 
 **Pure logic lives in `src/domain/kitchen/`**, with no React and no storage:
 the ingredient catalog (about 280 items with store section, diet flags, calories,
-carbs and unit weights), the ingredient-line parser, pantry fit, the diet engine,
-scaling and formatting, timer detection in step text, calorie estimates, the
-shopping-list merge and search. All of it is unit-tested, including the numbers
+carbs, unit weights and the water dry grains take up), the ingredient-line
+parser, pantry fit, the diet engine, scaling and formatting, timer detection in
+step text, calorie estimates per serving and per 100 g, the shopping-list merge
+and search. All of it is unit-tested, including the numbers
 the design shows, computed from the seed rather than typed in.
 
 **Cook-mode timers are per device**, in `features/larder/timers/store.ts`, kept

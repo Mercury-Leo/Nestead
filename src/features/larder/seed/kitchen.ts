@@ -21,7 +21,7 @@ export const SEED_HAVE: readonly string[] = [
   'Smoked paprika', 'Ground cumin', 'Dried oregano', 'Bay leaves', 'Cinnamon',
 ];
 
-export const SEED_PRESETS: Partial<Record<PresetId, boolean>> = { nutAllergy: true };
+export const SEED_PRESETS: Partial<Record<PresetId, boolean>> = { nutAllergy: true, peanutAllergy: true };
 
 export const SEED_CUSTOM_RULES: readonly CustomDietRule[] = [
   {

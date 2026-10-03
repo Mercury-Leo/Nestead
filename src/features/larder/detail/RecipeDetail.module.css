@@ -232,6 +232,18 @@
   color: var(--ink);
 }
 
+/* Per serving or per 100 g beside the icon; how that figure was reached goes under the switch. */
+.statDetails .kcalRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+  justify-items: start;
+}
+
+.kcalNote {
+  grid-column: 2;
+}
+
 .actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

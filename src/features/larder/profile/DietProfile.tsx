@@ -7,7 +7,7 @@ import { PageHeader } from '../../../components/PageHeader';
 import { Button, RadioList, TextField, cx } from '../../../components/ui';
 import { WarningBadge } from '../recipe/badges';
 import type { DietProfile, PresetId } from '../../../domain/types';
-import { checkDiet, parseCustomRule, PRESETS } from '../../../domain/kitchen/diet';
+import { checkDiet, parseCustomRule, presetOn, PRESETS, withPreset } from '../../../domain/kitchen/diet';
 import type { Preset } from '../../../domain/kitchen/diet';
 import { formatNumber } from '../../../i18n';
 import { useKitchen } from '../KitchenContext';
@@ -54,7 +54,8 @@ export function DietProfilePage(): JSX.Element {
     }
   };
 
-  const toggle = (id: PresetId): void => save({ presets: { ...presets, [id]: presets[id] !== true } });
+  const on = (id: PresetId): boolean => presetOn(profile, id);
+  const toggle = (id: PresetId): void => save({ presets: withPreset(presets, id, !on(id)) });
 
   const addRule = (): void => {
     const rule = parseCustomRule(draft);
@@ -64,7 +65,7 @@ export function DietProfilePage(): JSX.Element {
   };
 
   const group = (name: Preset['group']): Preset[] => PRESETS.filter((preset) => preset.group === name);
-  const allergiesOn = group('allergy').filter((preset) => presets[preset.id] === true).length;
+  const allergiesOn = group('allergy').filter((preset) => on(preset.id)).length;
 
   const conflicts = kitchen.recipes
     .map((recipe) => ({ recipe, diet: checkDiet(recipe, profile) }))
@@ -73,7 +74,7 @@ export function DietProfilePage(): JSX.Element {
   const tiles = (name: Preset['group']): JSX.Element => (
     <div className={s.tiles}>
       {group(name).map((preset) => (
-        <Tile key={preset.id} preset={preset} on={presets[preset.id] === true} onToggle={() => toggle(preset.id)} />
+        <Tile key={preset.id} preset={preset} on={on(preset.id)} onToggle={() => toggle(preset.id)} />
       ))}
     </div>
   );

@@ -24,7 +24,8 @@ export const PRESETS: readonly Preset[] = [
   { id: 'lowCarb', name: 'Low-carb', rule: 'About 20 g net carbs or less per serving', group: 'style', excludes: [] },
   { id: 'glutenFree', name: 'Gluten-free', rule: 'No wheat, barley or rye', group: 'allergy', excludes: ['gluten'], noun: 'gluten' },
   { id: 'dairyFree', name: 'Dairy-free', rule: 'No milk, butter, cheese or yogurt', group: 'allergy', excludes: ['dairy'], noun: 'dairy' },
-  { id: 'nutAllergy', name: 'Nut allergy', rule: 'Peanuts and tree nuts, including nut oils', group: 'allergy', excludes: ['peanut', 'treeNut'], noun: 'nuts' },
+  { id: 'nutAllergy', name: 'Nut allergy', rule: 'Tree nuts, including nut oils', group: 'allergy', excludes: ['treeNut'], noun: 'nuts' },
+  { id: 'peanutAllergy', name: 'Peanut allergy', rule: 'Peanuts, peanut butter and peanut oil', group: 'allergy', excludes: ['peanut'], noun: 'peanuts' },
   { id: 'eggAllergy', name: 'Egg allergy', rule: 'No eggs or egg-based sauces', group: 'allergy', excludes: ['egg'], noun: 'eggs' },
   { id: 'shellfishAllergy', name: 'Shellfish allergy', rule: 'No shrimp, crab, lobster or mussels', group: 'allergy', excludes: ['shellfish'], noun: 'shellfish' },
   { id: 'halal', name: 'Halal', rule: 'No pork or alcohol; halal meat only', group: 'religious', excludes: ['pork', 'alcohol'], noun: 'pork' },
@@ -55,9 +56,28 @@ const ANIMAL_KINDS: DietFlag[] = ['meat', 'poultry', 'pork', 'fish', 'shellfish'
 
 const LOW_CARB_LIMIT = 20;
 
+/**
+ * Whether a preset is on. Peanuts used to come under the nut allergy, so a
+ * profile that has never set peanuts either way keeps them covered while its
+ * nut allergy is on.
+ */
+export function presetOn(profile: Pick<DietProfile, 'presets'> | null | undefined, id: PresetId): boolean {
+  if (profile == null) return false;
+  if (id === 'peanutAllergy' && profile.presets.peanutAllergy === undefined) return profile.presets.nutAllergy === true;
+  return profile.presets[id] === true;
+}
+
+/**
+ * The presets with one switched. Peanuts are written down as they showed, so
+ * switching the nut allergy never takes the peanut allergy with it.
+ */
+export function withPreset(presets: DietProfile['presets'], id: PresetId, on: boolean): DietProfile['presets'] {
+  return { ...presets, peanutAllergy: presetOn({ presets }, 'peanutAllergy'), [id]: on };
+}
+
 export function activePresets(profile: Pick<DietProfile, 'presets'> | null | undefined): Preset[] {
   if (profile == null) return [];
-  return PRESETS.filter((preset) => profile.presets[preset.id] === true);
+  return PRESETS.filter((preset) => presetOn(profile, preset.id));
 }
 
 /** The chips shown in the sidebar and on search: presets, then own rules. */

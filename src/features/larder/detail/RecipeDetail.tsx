@@ -4,10 +4,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import { BookmarkPlus, Check, ChevronDown, Clock, ExternalLink, Flame, Pencil, Play, ShoppingBag, Soup, Timer } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
-import { BackArrow, Button, ButtonLink, EmptyState, Stepper, cx } from '../../../components/ui';
+import { BackArrow, Button, ButtonLink, EmptyState, Segmented, Stepper, cx } from '../../../components/ui';
 import { RatingInput, Stars } from '../recipe/Rating';
 import { EstTag, SourceBadge, WarningBadge } from '../recipe/badges';
 import type { AnyRecipe, IngredientLine } from '../../../domain/types';
+import { kcalPer100g } from '../../../domain/kitchen/calories';
 import { checkDiet } from '../../../domain/kitchen/diet';
 import { detectDurations } from '../../../domain/kitchen/durations';
 import { pantryFit } from '../../../domain/kitchen/fit';
@@ -20,6 +21,8 @@ import { dietLabel, formatMinutes, servingUnitWord, servingsCaption } from '../l
 import { useHint } from '../hints';
 import { useKitchen } from '../KitchenContext';
 import { RecipePhoto } from '../recipe/RecipePhoto';
+import { useKcalBasis } from '../recipe/kcalBasis';
+import type { KcalBasis } from '../recipe/kcalBasis';
 import { recipePath } from '../recipe/recipeView';
 import { scaledAmount, useServings } from '../recipe/servings';
 import { equipmentIcon } from '../recipe/equipment';
@@ -94,6 +97,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
   const desktop = useIsDesktop();
   const navigate = useNavigate();
   const [servings, setServings] = useServings(recipe);
+  const [kcalBasis, setKcalBasis] = useKcalBasis();
   const [busy, setBusy] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const statsId = useId();
@@ -179,8 +183,11 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
     </div>
   );
 
-  // Time, calories and what to buy on one line; how each was worked out behind the toggle.
+  // Time, calories and what to buy on one line; how each was worked out behind the
+  // toggle, where calories switch between per serving and per 100 g.
   const kcal = recipe.kcalPerServing;
+  const per100 = kcalPer100g(recipe);
+  const shown100 = kcalBasis === '100g' ? per100 : null;
   const unit = recipe.servingUnit === undefined ? t('detail.stats.serving') : servingUnitWord(t, recipe.servingUnit);
   const stats = (
     <div className={s.stats}>
@@ -195,9 +202,14 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
             <Flame size={18} strokeWidth={2} aria-hidden />
             <span className="visually-hidden">{t('detail.stats.calories')}</span>{' '}
             <span className="tabular" dir="auto">
-              {kcal === undefined ? '—' : t('detail.stats.kcalValue', { kcal })}
+              {kcal === undefined
+                ? '—'
+                : shown100 !== null
+                  ? t('detail.stats.kcal100g', { kcal: shown100 })
+                  : t('detail.stats.kcalValue', { kcal })}
             </span>
-            {recipe.kcalEstimated && kcal !== undefined && <EstTag />}
+            {/* A dish's weight is always an estimate, so per 100 g always is. */}
+            {kcal !== undefined && (recipe.kcalEstimated || shown100 !== null) && <EstTag />}
           </span>{' '}
           <span className={cx(s.statItem, fit.missing > 0 ? s.statAccent : s.statSage)}>
             {fit.missing > 0 ? <ShoppingBag size={18} strokeWidth={2} aria-hidden /> : <Check size={18} strokeWidth={2.4} aria-hidden />}
@@ -220,12 +232,31 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
           <Clock size={15} strokeWidth={2} aria-hidden />
           {t('detail.stats.prepCook', { prep: recipe.prepMin, cook: recipe.cookMin })}
         </li>
-        <li>
-          <Flame size={15} strokeWidth={2} aria-hidden />
-          {kcal === undefined
-            ? t('detail.stats.notEnough')
-            : t(recipe.kcalEstimated ? 'detail.stats.perEstimated' : 'detail.stats.per', { unit })}
-        </li>
+        {per100 !== null ? (
+          <li className={s.kcalRow}>
+            <Flame size={15} strokeWidth={2} aria-hidden />
+            <Segmented<KcalBasis>
+              size="sm"
+              label={t('detail.stats.calories')}
+              value={kcalBasis}
+              onChange={setKcalBasis}
+              options={[
+                { value: 'serving', label: t('detail.stats.per', { unit }) },
+                { value: '100g', label: t('detail.stats.per100g') },
+              ]}
+            />
+            {(shown100 !== null || recipe.kcalEstimated) && (
+              <span className={s.kcalNote}>{t(shown100 !== null ? 'detail.stats.fromWeights' : 'detail.stats.estimated')}</span>
+            )}
+          </li>
+        ) : (
+          <li>
+            <Flame size={15} strokeWidth={2} aria-hidden />
+            {kcal === undefined
+              ? t('detail.stats.notEnough')
+              : t(recipe.kcalEstimated ? 'detail.stats.perEstimated' : 'detail.stats.per', { unit })}
+          </li>
+        )}
         <li>
           <ShoppingBag size={15} strokeWidth={2} aria-hidden />
           <span>

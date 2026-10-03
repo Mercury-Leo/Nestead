@@ -21,6 +21,13 @@ export interface CatalogItem {
   gramsPerUnit?: number;
   densityGPerMl?: number;
   /**
+   * Grams of water one gram takes up as it cooks: dry rice, pasta, noodles,
+   * grains and lentils. From their calories: dry over cooked, less one.
+   */
+  waterUptake?: number;
+  /** Water or stock: what rice and pasta cooked in the dish take up. */
+  cookingWater?: boolean;
+  /**
    * Broader words this counts as when searching by ingredient: "rice" finds
    * arborio and jasmine, "chicken" finds thighs and breasts.
    */
@@ -53,6 +60,10 @@ interface Extra {
   d?: number;
   /** Search groups. */
   g?: string[];
+  /** Water taken up in cooking, grams per gram. */
+  w?: number;
+  /** Cooking water: water or stock. */
+  s?: true;
 }
 
 /** [name, section, flags, kcal/100 g, carbs/100 g, extras] */
@@ -195,38 +206,38 @@ const ROWS: Row[] = [
   ['Burger buns', 'B', 'gluten', 279, 50, { u: 60, a: ['burger bun', 'brioche bun'] }],
 
   // Grains & pasta
-  ['Long-grain rice', 'G', '', 360, 80, { a: ['long-grain white rice', 'white rice', 'long grain rice'], g: ['rice'] }],
-  ['Arborio rice', 'G', '', 358, 79, { a: ['risotto rice', 'carnaroli rice'], g: ['rice'] }],
-  ['Jasmine rice', 'G', '', 356, 79, { g: ['rice'] }],
-  ['Basmati rice', 'G', '', 356, 78, { g: ['rice'] }],
-  ['Brown rice', 'G', '', 362, 76, { g: ['rice'] }],
-  ['Sushi rice', 'G', '', 358, 80, { a: ['short-grain rice'], g: ['rice'] }],
-  ['Paella rice', 'G', '', 358, 80, { a: ['bomba rice'], g: ['rice'] }],
-  ['Brown lentils', 'G', '', 352, 60, { a: ['lentil', 'dried brown lentils'], g: ['lentil'] }],
-  ['Green lentils', 'G', '', 352, 60, { a: ['puy lentils'], g: ['lentil'] }],
-  ['Red lentils', 'G', '', 358, 63, { a: ['split red lentils'], g: ['lentil'] }],
-  ['Spaghetti', 'G', 'gluten', 371, 75, { g: ['pasta'] }],
-  ['Penne', 'G', 'gluten', 371, 75, { g: ['pasta'] }],
-  ['Rigatoni', 'G', 'gluten', 371, 75, { g: ['pasta'] }],
-  ['Linguine', 'G', 'gluten', 371, 75, { g: ['pasta'] }],
-  ['Fusilli', 'G', 'gluten', 371, 75, { g: ['pasta'] }],
-  ['Orzo', 'G', 'gluten', 371, 75, { g: ['pasta'] }],
+  ['Long-grain rice', 'G', '', 360, 80, { a: ['long-grain white rice', 'white rice', 'long grain rice'], g: ['rice'], w: 1.8 }],
+  ['Arborio rice', 'G', '', 358, 79, { a: ['risotto rice', 'carnaroli rice'], g: ['rice'], w: 1.8 }],
+  ['Jasmine rice', 'G', '', 356, 79, { g: ['rice'], w: 1.8 }],
+  ['Basmati rice', 'G', '', 356, 78, { g: ['rice'], w: 1.8 }],
+  ['Brown rice', 'G', '', 362, 76, { g: ['rice'], w: 1.9 }],
+  ['Sushi rice', 'G', '', 358, 80, { a: ['short-grain rice'], g: ['rice'], w: 1.8 }],
+  ['Paella rice', 'G', '', 358, 80, { a: ['bomba rice'], g: ['rice'], w: 1.8 }],
+  ['Brown lentils', 'G', '', 352, 60, { a: ['lentil', 'dried brown lentils'], g: ['lentil'], w: 2 }],
+  ['Green lentils', 'G', '', 352, 60, { a: ['puy lentils'], g: ['lentil'], w: 2 }],
+  ['Red lentils', 'G', '', 358, 63, { a: ['split red lentils'], g: ['lentil'], w: 2 }],
+  ['Spaghetti', 'G', 'gluten', 371, 75, { g: ['pasta'], w: 1.3 }],
+  ['Penne', 'G', 'gluten', 371, 75, { g: ['pasta'], w: 1.3 }],
+  ['Rigatoni', 'G', 'gluten', 371, 75, { g: ['pasta'], w: 1.3 }],
+  ['Linguine', 'G', 'gluten', 371, 75, { g: ['pasta'], w: 1.3 }],
+  ['Fusilli', 'G', 'gluten', 371, 75, { g: ['pasta'], w: 1.3 }],
+  ['Orzo', 'G', 'gluten', 371, 75, { g: ['pasta'], w: 1.3 }],
   ['Lasagne sheets', 'G', 'gluten', 371, 75, { u: 20, a: ['lasagna sheets', 'lasagna noodle'], g: ['pasta'] }],
-  ['Egg noodles', 'G', 'gluten egg', 384, 71, { g: ['noodle'] }],
-  ['Rice noodles', 'G', '', 364, 80, { a: ['rice vermicelli', 'flat rice noodle', 'rice stick noodle'], g: ['noodle'] }],
-  ['Soba noodles', 'G', 'gluten', 336, 74, { g: ['noodle'] }],
+  ['Egg noodles', 'G', 'gluten egg', 384, 71, { g: ['noodle'], w: 1.8 }],
+  ['Rice noodles', 'G', '', 364, 80, { a: ['rice vermicelli', 'flat rice noodle', 'rice stick noodle'], g: ['noodle'], w: 2.4 }],
+  ['Soba noodles', 'G', 'gluten', 336, 74, { g: ['noodle'], w: 2.4 }],
   ['Potato gnocchi', 'G', 'gluten', 133, 28, { a: ['gnocchi'] }],
-  ['Couscous', 'G', 'gluten', 376, 77 ],
-  ['Quinoa', 'G', '', 368, 64 ],
-  ['Bulgur', 'G', 'gluten', 342, 76, { a: ['bulgur wheat', 'bulghur'] }],
+  ['Couscous', 'G', 'gluten', 376, 77, { w: 2.4 }],
+  ['Quinoa', 'G', '', 368, 64, { w: 2.1 }],
+  ['Bulgur', 'G', 'gluten', 342, 76, { a: ['bulgur wheat', 'bulghur'], w: 3.1 }],
   ['Rolled oats', 'G', 'gluten', 389, 66, { d: 0.4, a: ['oats', 'porridge oats', 'old-fashioned oats'] }],
   ['Polenta', 'G', '', 370, 79, { a: ['cornmeal'] }],
-  ['Farro', 'G', 'gluten', 340, 72 ],
+  ['Farro', 'G', 'gluten', 340, 72, { w: 1.7 }],
 
   // Cans & jars
-  ['Chicken stock', 'C', 'poultry', 6, 1, { d: 1, a: ['chicken broth', 'chicken stock cube'] }],
-  ['Vegetable stock', 'C', '', 5, 1, { d: 1, a: ['vegetable broth', 'veg stock', 'veggie stock'] }],
-  ['Beef stock', 'C', 'meat', 7, 1, { d: 1, a: ['beef broth'] }],
+  ['Chicken stock', 'C', 'poultry', 6, 1, { d: 1, a: ['chicken broth', 'chicken stock cube'], s: true }],
+  ['Vegetable stock', 'C', '', 5, 1, { d: 1, a: ['vegetable broth', 'veg stock', 'veggie stock'], s: true }],
+  ['Beef stock', 'C', 'meat', 7, 1, { d: 1, a: ['beef broth'], s: true }],
   ['Crushed tomatoes', 'C', '', 32, 7, { u: 400, a: ['canned tomatoes', 'tinned tomatoes', 'crushed tomato', 'canned crushed tomatoes'] }],
   ['Tomato paste', 'C', '', 82, 19, { d: 1.1, a: ['tomato purée', 'tomato puree', 'concentrated tomato paste'] }],
   ['Passata', 'C', '', 30, 6, { d: 1, a: ['tomato passata', 'strained tomatoes'] }],
@@ -267,6 +278,7 @@ const ROWS: Row[] = [
   ['Oyster sauce', 'I', 'shellfish', 51, 11, { d: 1.2 }],
   ['Hoisin sauce', 'I', 'sesame', 220, 44, { d: 1.2, a: ['hoisin'] }],
   ['Sriracha', 'I', '', 93, 19, { d: 1.1, a: ['chili sauce', 'hot sauce'] }],
+  ['Satay sauce', 'I', 'peanut', 300, 15, { d: 1.1, a: ['peanut sauce'] }],
   ['Gochujang', 'I', 'gluten', 190, 40, { d: 1.2 }],
   ['Thai red curry paste', 'I', 'shellfish', 110, 12, { d: 1.1, a: ['red curry paste', 'curry paste', 'green curry paste'] }],
   ['Rice vinegar', 'I', '', 18, 0, { d: 1, a: ['rice wine vinegar'] }],
@@ -333,7 +345,7 @@ const ROWS: Row[] = [
   ['Pistachios', 'K', 'treeNut', 560, 28, { d: 0.6, a: ['pistachio'], g: ['nut'] }],
   ['Hazelnuts', 'K', 'treeNut', 628, 17, { d: 0.6, a: ['hazelnut'], g: ['nut'] }],
   ['Pine nuts', 'K', 'treeNut', 673, 13, { d: 0.6, a: ['pine nut'], g: ['nut'] }],
-  ['Peanuts', 'K', 'peanut', 567, 16, { d: 0.6, a: ['peanut', 'roasted peanuts'], g: ['nut'] }],
+  ['Peanuts', 'K', 'peanut', 567, 16, { d: 0.6, a: ['peanut', 'roasted peanuts', 'groundnut'], g: ['nut'] }],
   ['Walnut oil', 'K', 'treeNut', 884, 0, { d: 0.92 }],
   ['Raisins', 'K', '', 299, 79, { d: 0.6, a: ['sultanas'] }],
   ['Dried cranberries', 'K', '', 308, 82, { d: 0.6 }],
@@ -359,9 +371,10 @@ const ROWS: Row[] = [
   ['Coconut water', 'R', '', 19, 4, { d: 1 }],
 
   // Other
-  ['Water', 'O', '', 0, 0, { d: 1, a: ['cold water', 'boiling water', 'warm water', 'hot water', 'ice water'] }],
+  ['Water', 'O', '', 0, 0, { d: 1, a: ['cold water', 'boiling water', 'warm water', 'hot water', 'ice water'], s: true }],
   ['Olive oil', 'O', '', 884, 0, { d: 0.91, a: ['extra-virgin olive oil', 'extra virgin olive oil', 'evoo', 'light olive oil'] }],
   ['Vegetable oil', 'O', '', 884, 0, { d: 0.92, a: ['neutral oil', 'canola oil', 'sunflower oil', 'rapeseed oil', 'oil'] }],
+  ['Peanut oil', 'O', 'peanut', 884, 0, { d: 0.92, a: ['groundnut oil'] }],
   ['Coconut oil', 'O', '', 862, 0, { d: 0.92 }],
   ['Foil', 'O', '', 0, 0, { u: 0, a: ['aluminium foil', 'aluminum foil', 'kitchen foil'] }],
   ['Baking paper', 'O', '', 0, 0, { u: 0, a: ['parchment paper', 'parchment'] }],
@@ -392,6 +405,8 @@ export const CATALOG: readonly CatalogItem[] = ROWS.map(([name, section, flags, 
     carbsPer100g: carbs,
     gramsPerUnit: extra.u,
     densityGPerMl: extra.d,
+    waterUptake: extra.w,
+    cookingWater: extra.s,
     groups: extra.g ?? [],
   };
 });

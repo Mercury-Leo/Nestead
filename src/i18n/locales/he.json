@@ -252,8 +252,13 @@
       },
       "nutAllergy": {
         "name": "אלרגיה לאגוזים",
-        "rule": "בוטנים ואגוזי עצים, כולל שמני אגוזים",
+        "rule": "אגוזי עצים, כולל שמני אגוזים",
         "noun": "אגוזים"
+      },
+      "peanutAllergy": {
+        "name": "אלרגיה לבוטנים",
+        "rule": "בוטנים, חמאת בוטנים ושמן בוטנים",
+        "noun": "בוטנים"
       },
       "eggAllergy": {
         "name": "אלרגיה לביצים",
@@ -542,9 +547,13 @@
     "stats": {
       "calories": "קלוריות",
       "kcalValue": "{{kcal, number}} קק״ל",
+      "kcal100g": "{{kcal, number}} קק״ל ל-100 גרם",
       "notEnough": "אין מספיק נתונים",
       "per": "לכל {{unit}}",
+      "per100g": "ל-100 גרם",
       "perEstimated": "לכל {{unit}}, הערכה לפי המצרכים",
+      "estimated": "הערכה לפי המצרכים",
+      "fromWeights": "הערכה לפי משקל המצרכים",
       "serving": "מנה",
       "totalTime": "זמן כולל",
       "prepCook": "הכנה {{prep, number}} · בישול {{cook, number}}",

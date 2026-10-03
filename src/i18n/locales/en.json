@@ -251,8 +251,13 @@
       },
       "nutAllergy": {
         "name": "Nut allergy",
-        "rule": "Peanuts and tree nuts, including nut oils",
+        "rule": "Tree nuts, including nut oils",
         "noun": "nuts"
+      },
+      "peanutAllergy": {
+        "name": "Peanut allergy",
+        "rule": "Peanuts, peanut butter and peanut oil",
+        "noun": "peanuts"
       },
       "eggAllergy": {
         "name": "Egg allergy",
@@ -516,9 +521,13 @@
     "stats": {
       "calories": "Calories",
       "kcalValue": "{{kcal, number}} kcal",
+      "kcal100g": "{{kcal, number}} kcal/100 g",
       "notEnough": "Not enough data",
       "per": "Per {{unit}}",
+      "per100g": "Per 100 g",
       "perEstimated": "Per {{unit}}, estimated from ingredients",
+      "estimated": "Estimated from ingredients",
+      "fromWeights": "Estimated from ingredient weights",
       "serving": "serving",
       "totalTime": "Total time",
       "prepCook": "{{prep, number}} prep · {{cook, number}} cook",
