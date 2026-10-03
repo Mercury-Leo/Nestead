@@ -6,6 +6,15 @@ const reply = (body: unknown, status = 200): Response => new Response(JSON.strin
 const completion = (content: unknown, finish = 'stop', extra: Record<string, unknown> = {}) =>
   ({ model: 'meta-llama/llama-3.3-70b-instruct:free', choices: [{ finish_reason: finish, message: { role: 'assistant', content } }], ...extra });
 
+// Fetch that throws Illegal invocation if called as a bound method (this !== undefined && this !== globalThis)
+// Only works when called unbound: const doFetch = fetch; doFetch(...)
+function strictFetch(answer: () => Response): typeof fetch {
+  return function (this: unknown) {
+    if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+    return Promise.resolve(answer());
+  } as unknown as typeof fetch;
+}
+
 describe('model ids', () => {
   it('accepts plain vendor/model ids, with or without :free', () => {
     for (const id of ['google/gemini-2.5-flash', 'openai/gpt-4o-mini', 'meta-llama/llama-3.3-70b-instruct:free', 'qwen/qwen3-235b-a22b-2507']) {
@@ -60,6 +69,13 @@ describe('callChat', () => {
     expect(url).toBe(`${OPENROUTER}/chat/completions`);
     expect(init.method).toBe('POST');
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer sk-or-test');
+  });
+
+  it('calls fetch unbound so Illegal invocation does not throw on Workers and browsers', async () => {
+    // strictFetch only works when called unbound (this === undefined)
+    // If the code did options.fetch(...), this would be options and it would throw
+    expect(await callChat('sk', { model: 'x/y' }, options(strictFetch(() => reply(completion('{}'))))))
+      .toEqual({ kind: 'content', content: '{}', model: 'meta-llama/llama-3.3-70b-instruct:free' });
   });
 
   it('treats any finish but stop, an error object or missing content as incomplete', async () => {
@@ -129,12 +145,10 @@ describe('checkKey', () => {
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer sk-test-key');
   });
 
-  it('works when fetch is called unbound (not as a method on options)', async () => {
-    // This test verifies our code calls fetch as doFetch(...) unbound, not options.fetch(...)
-    // A properly working fetch function
-    const fetch = vi.fn(async () => data({}));
-    const result = await checkKey('sk', { fetch, timeoutMs: 1000 });
-    expect(result).toBe('ok');
+  it('calls fetch unbound so Illegal invocation does not throw on Workers and browsers', async () => {
+    // strictFetch only works when called unbound (this === undefined)
+    // If the code did options.fetch(...), this would be options and it would throw
+    expect(await checkKey('sk', { fetch: strictFetch(() => data({})), timeoutMs: 1000 })).toBe('ok');
   });
 });
 
