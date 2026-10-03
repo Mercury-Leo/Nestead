@@ -80,7 +80,7 @@ describe('parseRecipeHtml', () => {
   });
 
   it('decodes character references, and leaves one past U+10FFFF as written instead of throwing', () => {
-    expect(decodeEntities('&#x41;&#66;&#X43; &amp; &frac12; &#x1F600; &#x10FFFF;')).toBe('ABC & ½ \u{1F600} \u{10FFFF}');
+    expect(decodeEntities('&#x41;&#66;&#X43; &amp; &frac12; &#x1F600; &#x10FFFF;')).toBe('ABC & \u00bd \u{1F600} \u{10FFFF}');
     for (const ref of ['&#x110000;', '&#9999999;', '&#99999999999999999999;', '&#x10FFFFF;', `&#x${'f'.repeat(300)};`]) {
       expect(decodeEntities(`a ${ref} b`), ref).toBe(`a ${ref} b`);
     }
