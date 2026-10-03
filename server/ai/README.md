@@ -9,7 +9,7 @@ AI recipe reading: send pasted text or a web page to a language model on OpenRou
 | `openrouter.ts` | The one fixed chat request (`chatBody()`), `callChat()` with its time limit, `chatError()` (OpenRouter's answers as our codes), `checkKey()`, and the model-id rules (`isModelId()`, `freeModelList()`). |
 | `prompt.ts` | The fixed system prompt, the nonce-delimited user message and `RECIPE_SCHEMA`, the closed JSON schema the model must answer in. |
 | `validate.ts` | `validateOutput()`: exact keys, exact types, plain text, every limit; rejects instead of repairing. |
-| `pageText.ts` | `pageText()`: a fetched page as plain text (up to 20,000 characters) and its `og:image`, in one linear pass with no DOM library. |
+| `pageText.ts` | `pageText()`: a fetched page as plain text (up to 20,000 characters) and its `og:image`, in one linear pass with no DOM library. Only the page from its first `<body` is tokenized; the head gets one cheap scan for its `<meta>` tags. |
 | `crypto.ts` | `importSecret()`, `encryptKey()`, `decryptKey()`: AES-256-GCM for a family's own key. |
 | `store.ts` | `postgrestStore()`: the family's AI settings and the free-read counter through Supabase's database functions, as the member. |
 | `types.ts` | `AiError`, `QuotaScope`, `ClaimResult`, `AiStore`, `AiLogEntry`, `AiOptions`. |
@@ -26,7 +26,7 @@ AI recipe reading: send pasted text or a web page to a language model on OpenRou
   3. Without the Supabase URL and key, `unavailable`.
   4. The claim, one call to Supabase with the member's token: 401 or a member in no family is `unauthorized`, a spent allowance is `quota-exceeded` with `scope` `user` or `app`; otherwise the read is `free` or `family` (the family's encrypted key and chosen model).
   5. The configuration is checked before any page is fetched: the free path needs the shared key and at least one valid free model, the family path a 32-byte `AI_KEY_SECRET`, and a model the family chose must be a plain model id; else `unavailable` (`model-failed` for a bad chosen model). A family key with no model chosen runs the free list on the family's own key (spec A5), so that path needs at least one valid `OPENROUTER_FREE_MODELS` entry too, or it is `unavailable`; it does not need the shared `OPENROUTER_API_KEY`.
-  6. A URL is fetched with the importer's `fetchPage()` (its guard on every redirect), then `pageText()` reads at most the first 1,000,000 characters of the HTML. Text that comes out empty is `not-a-recipe` and the model is not called.
+  6. A URL is fetched with the importer's `fetchPage()` (its guard on every redirect), then `pageText()` reads at most the first 1,000,000 characters of the HTML, tokenizing them only from the first `<body` (see CPU under Rules & gotchas). Text that comes out empty is `not-a-recipe` and the model is not called.
   7. The family key is decrypted last, so the plaintext lives only for the one model call. A key that will not decrypt is `key-invalid`.
   8. One chat completion to OpenRouter; `chatError()` turns a failure into a code.
   9. `validateOutput()` checks the answer: `found: false`, an empty title or no ingredients is `not-a-recipe`; anything else wrong is `model-failed`.
@@ -55,6 +55,8 @@ AI recipe reading: send pasted text or a web page to a language model on OpenRou
 - Call the injected `fetch` unbound (`const doFetch = options.fetch; doFetch(...)`): as a method it throws "Illegal invocation" on Workers when it is the global.
 - Dev and production share one Supabase project, but their `AI_KEY_SECRET`s differ. A key saved through `npm run dev` does not decrypt in production, where reads answer `key-invalid` until it is added again. Locally, save keys only to the test families.
 - A Cloudflare Pages variable applies to deploys made after it is set, and the handler is built once per isolate: change one, then deploy again.
+- CPU: Workers Free allows 10 ms of CPU per request, and waiting on the network does not count. `pageText()` is the one heavy step, so the handler gives it at most the first 1,000,000 characters of HTML, and it tokenizes only from the first `<body` (any case), reading `og:image` and `twitter:image` from the head with one regex scan for `<meta>` tags (with no `<body`, the whole page is tokenized as before). Measured on an i7-9700K under Node 24, 1 MB of tags takes about 3 ms in the head (8.5 ms before the head was skipped) but about 29 ms in the body, which skipping the head cannot help. Whether real pages stay within 10 ms on Workers is unverified (spec section 15.3); if reads fail there for CPU, lower `MAX_HTML` in `handler.ts`.
+- The `<body` search does not skip comments or scripts: a `<body` written inside one in the head starts the text early, so some head text can reach the model. That is defence in depth only, like the rest of `pageText()`.
 - `tsconfig.json` includes `server/` and `functions/`, so `npm run build` type-checks them.
 
 ## Tests
@@ -63,6 +65,6 @@ No test calls OpenRouter or Supabase. `ai.test.ts` and `injection.test.ts` call 
 - `injection.test.ts`: hostile pages and hostile model answers, with `../../tests/fixtures/ai/`: text stays inside markers the page cannot know, hidden elements are dropped, and an obeying model's extra fields, images, markup and oversized output achieve nothing.
 - `openrouter.test.ts`: model ids, the fixed request, `callChat()` outcomes (`"error": null` included), `chatError()`, `checkKey()`, and that `fetch` is called unbound.
 - `validate.test.ts`: the prompt and schema, `validateOutput()` accepting and rejecting, and tag stripping in linear time on 40,000 characters of unclosed `<a`.
-- `pageText.test.ts`: dropped and hidden elements, region choice, entities (one past U+10FFFF kept as written), `og:image`, the cut, and linear time on unclosed tags.
+- `pageText.test.ts`: dropped and hidden elements, region choice, entities (one past U+10FFFF kept as written), `og:image` on either side of `<body`, the cut, and linear time on unclosed tags and on a head of 50k meta tags.
 - `crypto.test.ts`: round trip, another family, tampering, another secret, unknown versions, a bad secret.
 - `store.test.ts`: the database calls and headers, the member's token, refusals, and unexpected answers.

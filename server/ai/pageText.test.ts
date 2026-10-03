@@ -185,6 +185,24 @@ describe('pageText', () => {
     expect(text).not.toContain('Soup');
   });
 
+  // The head is not tokenized, only scanned for meta tags (CPU on Workers, spec section 15.3).
+  it('reads from the first <body in any case, and finds the image on either side of it', () => {
+    const head = '<head><title>Secret</title><meta name="twitter:image" content="/t.jpg"></head>';
+    expect(pageText(`${head}<bodyx>no</bodyx><BODY class=x><p>Text</p>`, URL_)).toEqual({ text: 'Text', image: 'https://example.com/t.jpg' });
+    // og:image wins over twitter:image wherever each one is.
+    expect(pageText(`${head}<body><meta property="og:image" content="/o.jpg"><p>Text</p>`, URL_).image).toBe('https://example.com/o.jpg');
+    expect(pageText('<head></head><body><meta property="og:image" content="/b.jpg"><p>Text</p></body>', URL_).image).toBe('https://example.com/b.jpg');
+    // A head meta that never ends is no tag, as in the body.
+    expect(pageText('<head><meta property="og:image" content="/a.jpg" <link></head><body><p>x</p>', URL_).image).toBeUndefined();
+  });
+
+  it('reads a head of 50k meta tags in under a second', () => {
+    const html = `<head>${'<meta name="x" content="y"><meta property="og:image" content="/a.jpg" '.repeat(50_000)}</head><body><p>Text</p>`;
+    const start = performance.now();
+    expect(pageText(html, URL_)).toEqual({ text: 'Text' });
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
+
   it.each(['<a ', '<meta ', '<svg>', '<div hidden>', '<p hidden>x', '<head></head>', '<!--', '<script>'])(
     'reads 50k repeats of %s in under a second',
     (piece) => {

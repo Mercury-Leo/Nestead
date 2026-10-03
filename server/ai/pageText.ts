@@ -11,6 +11,11 @@ import { decodeEntities } from '../import';
  * end; `toText` walks the tokens and skips the dropped elements. An element
  * with no end loses only its opening tag: guessing an end would risk the
  * page's visible text, where leaving it out leaks at worst a hidden scrap.
+ *
+ * To save CPU on Workers, only the page from its first `<body` is tokenized.
+ * The head, whose text is dropped anyway, gets one cheap scan for its `<meta>`
+ * tags. A `<body` written inside a head comment or script starts the body
+ * early, so some head text can get through: defence in depth, as above.
  */
 
 export const MAX_PAGE_TEXT = 20_000;
@@ -246,10 +251,18 @@ function readableText(tokens: Token[]): string {
   return toText(tokens, body === undefined ? 0 : body + 1, tokens.length);
 }
 
-function metaImage(tokens: Token[], pageUrl: string): string | undefined {
-  const metas = tokens.filter((token): token is OpenTag => token.kind === 'open' && token.name === 'meta');
+/** Where the body starts: the first `<body` whose name ends there, in any case. */
+const BODY_START = /<body[\s/>]/i;
+/** A `<meta>` tag in the head, ending as a tag does in `tokenize`: at the next `>`, unless a `<` comes first. Linear, as `[^<>]` cannot run past the next tag. */
+const HEAD_META = /<meta[\s/][^<>]*>/gi;
+/** Most meta tags are not about the image: one cheap test spares them the attribute lookups. */
+const IMAGE = /image/i;
+
+/** og:image, or else twitter:image, from the meta tags in page order: the first that is an http(s) URL short enough. */
+function metaImage(metas: string[], pageUrl: string): string | undefined {
+  const candidates = metas.filter((raw) => IMAGE.test(raw));
   for (const wanted of ['og:image', 'twitter:image']) {
-    for (const { raw } of metas) {
+    for (const raw of candidates) {
       if ((propertyOf(raw) ?? nameOf(raw) ?? '').toLowerCase() !== wanted) continue;
       const content = decodeEntities(contentOf(raw) ?? '').trim();
       if (!content) continue; // new URL('', page) would be the page itself
@@ -265,9 +278,16 @@ function metaImage(tokens: Token[], pageUrl: string): string | undefined {
 }
 
 export function pageText(html: string, pageUrl: string): PageText {
-  const tokens = tokenize(html);
+  // The head is only scanned for its meta tags; with no <body, the whole page is tokenized.
+  const bodyAt = html.search(BODY_START);
+  const head = bodyAt === -1 ? '' : html.slice(0, bodyAt);
+  const tokens = tokenize(bodyAt === -1 ? html : html.slice(bodyAt));
   pair(tokens);
-  const image = metaImage(tokens, pageUrl);
+  const metas = [
+    ...Array.from(head.matchAll(HEAD_META), (match) => match[0]),
+    ...tokens.flatMap((token) => (token.kind === 'open' && token.name === 'meta' ? [token.raw] : [])),
+  ];
+  const image = metaImage(metas, pageUrl);
   const text = readableText(tokens).slice(0, MAX_PAGE_TEXT);
   return image === undefined ? { text } : { text, image };
 }
