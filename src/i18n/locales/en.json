@@ -833,5 +833,23 @@
     "sampleBadge": "Contains peanuts, sesame",
     "saved": "Saved recipes that conflict",
     "savedNote": "They stay in the library, with a warning."
+  },
+  "ai": {
+    "error": {
+      "unauthorized": "Sign in again to use AI reading.",
+      "emptyText": "Paste a recipe first.",
+      "generic": "Something went wrong. Try again.",
+      "textTooLong": "That’s longer than 20,000 characters. Paste just the recipe.",
+      "quotaUser": "You’ve used today’s 5 free AI reads. They come back at {{time}}, or add a family OpenRouter key on the Family page.",
+      "quotaApp": "Nestead’s free AI reads are used up for today. They come back at {{time}}, or add a family OpenRouter key on the Family page.",
+      "keyRejected": "OpenRouter didn’t accept that key. Copy a regular API key from openrouter.ai/keys; it starts with sk-or-.",
+      "keyBroken": "The family’s OpenRouter key no longer works. Replace it on the Family page.",
+      "keyNoCredit": "That key has no credit left. Add credit or raise its limit in OpenRouter.",
+      "familyKeyNoCredit": "The family’s OpenRouter key is out of credit. Top it up in OpenRouter, or remove it on the Family page to use free AI.",
+      "modelFailed": "The AI couldn’t read it this time. Try again, or add the recipe yourself.",
+      "notARecipe": "The AI didn’t find a recipe there.",
+      "timeout": "That took too long. Try again.",
+      "unavailable": "AI reading isn’t available right now. Try again later."
+    }
   }
 }
