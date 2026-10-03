@@ -172,7 +172,8 @@ The family id is read in step 3 and the key stored in step 6. If it changed in b
 POST https://openrouter.ai/api/v1/chat/completions
 Authorization: Bearer <shared or family key>
 {
-  "models": ["<free 1>", "<free 2>", "<free 3>"],  // free list; a chosen model is sent alone as "model"
+  "model": "<free 1>",                             // a chosen model is sent alone, as "model"
+  "models": ["<free 1>", "<free 2>", "<free 3>"],  // free list only: the whole list, first entry included
   "messages": [
     { "role": "system", "content": "<fixed instructions with the nonce, §5.4>" },
     { "role": "user", "content": "<<<RECIPE {nonce}>>>\n{text}\n<<<END {nonce}>>>" }
@@ -229,7 +230,7 @@ The schema sent to the model gives only the shape: types, `required`, `enum` and
 3. The closed schema: exactly the listed keys at every level, and exact types (an integer is an integer).
 4. `found === false` is `not-a-recipe`, whatever else the object holds.
 5. Every string is normalised. HTML tags (`<` then a letter, `/` or `!`, through `>`) are removed, along with C0 and C1 control characters and the bidi embedding, override and isolate characters (U+202A–U+202E, U+2066–U+2069). Whitespace is collapsed and the ends trimmed. Entities are not decoded, since decoding could make markup.
-6. The limits are checked after normalising. An empty title or no ingredients is `not-a-recipe`. Any other empty string, or a count, length or range out of bounds, is `model-failed`. The validator does not cut anything down to fit.
+6. The limits are checked after normalising. An empty title or no ingredients is `not-a-recipe`. An empty `description` counts as none. Any other empty string, or a count, length or range out of bounds, is `model-failed`. The validator does not cut anything down to fit.
 
 The result maps field by field onto `ImportedRecipe`: `title`, `description`, `servings`, `servingUnit`, `prepMin`, `cookMin`, `ingredients` and `steps`.
 
@@ -682,7 +683,7 @@ It must never claim without a key row, which would spend the real app's free rea
 
 These are facts to confirm, not design choices. The design already behaves acceptably whichever way each turns out.
 
-1. **`models` with or without `model`.** The API reference marks `model` as required, while the fallback guide's example sends only `models`. One manual call settles which body shape is accepted, and the unit test pins it.
+1. **`models` with or without `model`.** The API reference marks `model` as required, while the fallback guide's example sends only `models`. The free path therefore sends both: `model` as the first entry and `models` as the whole list. If OpenRouter reads `models` as the full order, that is the list. If it reads `models` as fallbacks after `model`, the first model may be tried twice, which is harmless. One manual call can settle which reading holds and drop the duplicate.
 2. **Whether every fallback attempt counts toward the 50 a day.** Compare `free_model_daily_requests.used` from `GET /api/v1/key` before and after a request that falls back. If attempts count, OpenRouter's 429 can arrive before our 45. That already maps to `quota-exceeded` with scope `app`, so nothing breaks, and the cap can be lowered later.
 3. **CPU time.** Workers Free allows 10 ms of CPU per request, and waiting on the network does not count ([limits](https://developers.cloudflare.com/workers/platform/limits/)). Measure `pageText()` on the largest fixture. If it runs too long, reduce only the first 1 MB of HTML. The importer's parser already does similar work.
 4. **Strict schemas on free models.** Whether the free models' providers accept nullable unions in strict mode. A provider that refuses fails over through `require_parameters` and the fallback list, and the validator is the guarantee either way.
