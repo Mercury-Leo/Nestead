@@ -3,11 +3,17 @@ import type { ImportError, ImportOptions } from './types';
 
 const MAX_REDIRECTS = 5;
 
-async function readCapped(response: Response, maxBytes: number): Promise<string | 'too-large'> {
-  const declared = Number(response.headers.get('content-length') ?? '0');
+/**
+ * A response's or request's body as UTF-8 text, or 'too-large' past `maxBytes`: refused unread
+ * when its Content-Length says so, otherwise read a chunk at a time and the stream cancelled as
+ * soon as it passes the cap, so a body with no Content-Length is never held whole. Also reads
+ * the request bodies of `../ai/`.
+ */
+export async function readCapped(message: Pick<Response, 'headers' | 'body'>, maxBytes: number): Promise<string | 'too-large'> {
+  const declared = Number(message.headers.get('content-length') ?? '0');
   if (declared > maxBytes) return 'too-large';
-  if (response.body === null) return '';
-  const reader = response.body.getReader();
+  if (message.body === null) return '';
+  const reader = message.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
   for (;;) {

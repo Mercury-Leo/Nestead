@@ -95,4 +95,19 @@ describe('validateOutput', () => {
   it('plainText collapses whitespace and trims', () => {
     expect(plainText('  a \n\t b  ')).toBe('a b');
   });
+
+  it('strips a tag through its first >, even with a < inside, so nothing left is a tag', () => {
+    expect(plainText('<a<b>>x')).toBe('>x');
+    expect(plainText('a <b and <i>c</i>')).toBe('a c');
+    expect(plainText('<a'.repeat(3) + 'x')).toBe('<a<a<ax');
+  });
+
+  it('reads an answer at the size cap full of unclosed tags in linear time', () => {
+    const content = answer({ title: '<a'.repeat(19_890) });
+    expect(content.length).toBeLessThanOrEqual(LIMITS.content);
+    expect(content.length).toBeGreaterThan(39_900);
+    const start = performance.now();
+    expect(validateOutput(content).kind).toBe('invalid');
+    expect(performance.now() - start).toBeLessThan(100);
+  });
 });

@@ -191,7 +191,8 @@ describe('POST /api/ai/extract, the checks before any work', () => {
       ['a blank url', { url: '  ' }, 400, 'invalid-url'],
       ['a text over the limit', { text: 'x'.repeat(MAX_TEXT + 1) }, 413, 'too-large'],
       ['a body over 128 KB', 'x'.repeat(129 * 1024), 413, 'too-large'],
-      ['a body over 128 KB in bytes', JSON.stringify({ text: '\u00e9'.repeat(70 * 1024) }), 413, 'too-large'],
+      // Over 128 KB in bytes (2 per character) but under it in characters, in a field the handler ignores.
+      ['a body over 128 KB in bytes', JSON.stringify({ text: 'Soup', pad: '\u00e9'.repeat(70 * 1024) }), 413, 'too-large'],
     ];
     for (const [name, body, status, error] of cases) {
       const { store } = fakeStore({ mode: 'free' });
@@ -215,6 +216,39 @@ describe('POST /api/ai/extract, the checks before any work', () => {
     const text = vi.spyOn(request, 'text');
     expect((await handle(request)).status).toBe(413);
     expect(text).not.toHaveBeenCalled();
+    expect(request.bodyUsed).toBe(false);
+    expect(store.claim).not.toHaveBeenCalled();
+  });
+
+  it('stops reading a body with no Content-Length once it passes 128 KB', async () => {
+    const { store } = fakeStore({ mode: 'free' });
+    const { handle } = handler(store);
+    // 16 MB on offer, 16 KB at a time; the handler should take only a little over 128 KB of it.
+    const chunk = new Uint8Array(16 * 1024).fill(0x20);
+    let pulled = 0;
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += 1;
+        controller.enqueue(chunk);
+        if (pulled === 1024) controller.close();
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const request = new Request('http://localhost/api/ai/extract', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${TOKEN}` },
+      body,
+      duplex: 'half',
+    } as RequestInit);
+    expect(request.headers.get('content-length')).toBeNull();
+    const response = await handle(request);
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: 'too-large' });
+    expect(pulled).toBeLessThan(16);
+    expect(cancelled).toBe(true);
     expect(store.claim).not.toHaveBeenCalled();
   });
 });
@@ -270,8 +304,26 @@ describe('POST /api/ai/extract, configuration', () => {
     createAiHandler({ freeModels: ' a/one:free, openai/gpt-4o:online,,bad id ,b/two:free,~x/y:free,c/three:free,d/four:free', warn });
     expect(warn).toHaveBeenCalledTimes(1);
     const message = warn.mock.calls[0]![0] as string;
-    for (const dropped of ['openai/gpt-4o:online', 'bad id', '~x/y:free']) expect(message).toContain(dropped);
+    // "bad id" has no "/", so it could be anything: it is shown by its place in the list, the fourth.
+    for (const dropped of ['openai/gpt-4o:online', '<hidden entry 4>', '~x/y:free']) expect(message).toContain(dropped);
+    expect(message).not.toContain('bad id');
     for (const kept of ['a/one:free', 'b/two:free', 'c/three:free', 'd/four:free']) expect(message).not.toContain(kept);
+  });
+
+  it('never prints an entry that could be a key, nor its tail', () => {
+    const key = `sk-or-v1-${'9f3e'.repeat(16)}`;
+    const cases: [string, string[]][] = [
+      [`${key},a/b`, ['<hidden entry 1>', 'a/b']],
+      [`a/b, ${key.toUpperCase()} ,vendor/${key},x/${'y'.repeat(99)}`, ['a/b', '<hidden entry 2>', '<hidden entry 3>', '<hidden entry 4>']],
+    ];
+    for (const [freeModels, shown] of cases) {
+      const warn = vi.fn();
+      createAiHandler({ freeModels, warn });
+      expect(warn, freeModels).toHaveBeenCalledTimes(1);
+      const message = warn.mock.calls[0]![0] as string;
+      for (const part of shown) expect(message, freeModels).toContain(part);
+      for (const secret of [key, key.slice(-4), '9f3e', 'sk-or', 'y'.repeat(99)]) expect(message.toLowerCase(), freeModels).not.toContain(secret);
+    }
   });
 
   it('does not warn when every entry is valid, or when none is set', () => {

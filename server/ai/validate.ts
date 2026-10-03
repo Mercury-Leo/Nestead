@@ -32,12 +32,23 @@ export interface Extracted {
 export type Validated = { kind: 'recipe'; recipe: Extracted } | { kind: 'not-a-recipe' } | { kind: 'invalid'; reason: string };
 
 const KEYS: readonly string[] = RECIPE_SCHEMA.required;
+/** A tag: `<`, then a letter, `/` or `!`, through the first `>` (a `<` inside counts as part of it, so nothing left forms a tag). */
 const TAG = /<[a-zA-Z/!][^>]*>/g;
 // C0 and C1 controls (each field is one line, so newlines and tabs too) and bidi embedding, override and isolate marks.
 const CONTROL = /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g;
 
+/**
+ * No tag can start after the last `>`, so only the text up to it is searched. That keeps
+ * the search linear: otherwise every unclosed `<a` would scan on to the end, and 20,000
+ * of them in a 40,000-character answer took over half a second.
+ */
+function stripTags(text: string): string {
+  const end = text.lastIndexOf('>') + 1;
+  return end === 0 ? text : text.slice(0, end).replace(TAG, ' ') + text.slice(end);
+}
+
 export function plainText(text: string): string {
-  return text.replace(TAG, ' ').replace(CONTROL, ' ').replace(/\s+/g, ' ').trim();
+  return stripTags(text).replace(CONTROL, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function invalid(reason: string): Validated {

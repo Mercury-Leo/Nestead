@@ -31,7 +31,7 @@ export type ModelChoice = { model: string } | { models: string[] };
 /**
  * The whole request. For the free list, `model` is the first entry and
  * `models` the whole list, which falls back in order under either reading of
- * OpenRouter's docs (spec §15.1).
+ * OpenRouter's docs (spec section 15.1).
  */
 export function chatBody(text: string, nonce: string, choice: ModelChoice): Record<string, unknown> {
   const routing = 'model' in choice ? { model: choice.model } : { model: choice.models[0], models: choice.models };
@@ -77,7 +77,8 @@ export async function callChat(key: string, body: Record<string, unknown>, optio
     const data = (await response.json()) as { model?: unknown; error?: unknown; choices?: unknown };
     const choice = Array.isArray(data.choices) ? (data.choices[0] as Choice | undefined) : undefined;
     const content = choice?.message?.content;
-    if (data.error !== undefined || choice === undefined || choice.error !== undefined || choice.finish_reason !== 'stop' || typeof content !== 'string') {
+    // `"error": null` is no error: some providers send the key with a null value.
+    if (data.error != null || choice === undefined || choice.error != null || choice.finish_reason !== 'stop' || typeof content !== 'string') {
       return { kind: 'incomplete' };
     }
     return typeof data.model === 'string' ? { kind: 'content', content, model: data.model } : { kind: 'content', content };
@@ -88,7 +89,7 @@ export async function callChat(key: string, body: Record<string, unknown>, optio
   }
 }
 
-/** What a failed call means for the person (spec §5.7), on the shared free key or the family's own. */
+/** What a failed call means for the person (spec section 5.7), on the shared free key or the family's own. */
 export function chatError(outcome: Exclude<ChatOutcome, { kind: 'content' }>, path: 'free' | 'family'): { error: AiError; scope?: QuotaScope } {
   if (outcome.kind === 'timeout') return { error: 'timeout' };
   if (outcome.kind !== 'http') return { error: 'model-failed' };

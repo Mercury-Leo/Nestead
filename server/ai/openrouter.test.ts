@@ -76,6 +76,15 @@ describe('callChat', () => {
     }
   });
 
+  it('takes an error of null, at the top or on the choice, for no error', async () => {
+    const choice = { finish_reason: 'stop', error: null, message: { role: 'assistant', content: '{"a":1}' } };
+    for (const body of [completion('{"a":1}', 'stop', { error: null }), { model: 'x/y', error: null, choices: [choice] }]) {
+      expect(await callChat('k', {}, options(vi.fn(async () => reply(body))))).toMatchObject({ kind: 'content', content: '{"a":1}' });
+    }
+    // An error object on the choice still fails the call.
+    expect(await callChat('k', {}, options(vi.fn(async () => reply({ choices: [{ ...choice, error: { code: 502 } }] }))))).toEqual({ kind: 'incomplete' });
+  });
+
   it('reports the status of a refused call, a network failure and the time limit', async () => {
     expect(await callChat('k', {}, options(vi.fn(async () => reply({ error: { code: 402 } }, 402))))).toEqual({ kind: 'http', status: 402 });
     expect(await callChat('k', {}, options(vi.fn(async () => { throw new TypeError('network'); })))).toEqual({ kind: 'network' });

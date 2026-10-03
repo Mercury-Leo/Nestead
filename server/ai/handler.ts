@@ -1,4 +1,4 @@
-import { checkUrl, detectEquipment, fetchPage, siteOf } from '../import';
+import { checkUrl, detectEquipment, fetchPage, readCapped, siteOf } from '../import';
 import type { ImportError, ImportReport, ImportedRecipe } from '../import';
 import { decryptKey, encryptKey, importSecret } from './crypto';
 import { callChat, chatBody, chatError, checkKey, freeModelList, isModelId } from './openrouter';
@@ -57,10 +57,10 @@ function bearer(request: Request): string | null {
   return match === null ? null : (match[1] as string);
 }
 
+/** The JSON object in the body. Over 128 KB is refused by its Content-Length, or else as soon as the bytes read pass the cap: never buffered whole. */
 async function readBody(request: Request): Promise<Record<string, unknown> | 'too-large' | null> {
-  if (Number(request.headers.get('content-length') ?? '0') > MAX_BODY) return 'too-large';
-  const raw = await request.text();
-  if (new TextEncoder().encode(raw).byteLength > MAX_BODY) return 'too-large';
+  const raw = await readCapped(request, MAX_BODY);
+  if (raw === 'too-large') return 'too-large';
   try {
     const value: unknown = JSON.parse(raw);
     return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -78,12 +78,18 @@ function fromImportError(error: ImportError): AiError {
   return error === 'not-found' ? 'not-a-recipe' : error;
 }
 
-/** The OPENROUTER_FREE_MODELS entries freeModelList() leaves out for being no valid :free id. Entries past the first three valid ones are unused, not dropped. */
+/**
+ * The OPENROUTER_FREE_MODELS entries freeModelList() leaves out for being no valid :free id,
+ * as the warning names them. Entries past the first three valid ones are unused, not dropped.
+ * A model id is not secret, but a key pasted into the list would be, so an entry is named only
+ * if it looks like an id (a "/", no "sk-", at most 100 characters), and otherwise by its place.
+ */
 function droppedModels(raw: string | undefined): string[] {
   return (raw ?? '')
     .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id !== '' && !(isModelId(id) && id.endsWith(':free')));
+    .map((entry, index) => ({ id: entry.trim(), place: index + 1 }))
+    .filter(({ id }) => id !== '' && !(isModelId(id) && id.endsWith(':free')))
+    .map(({ id, place }) => (id.includes('/') && !/sk-/i.test(id) && id.length <= 100 ? id : `<hidden entry ${place}>`));
 }
 
 interface Page {
@@ -124,10 +130,10 @@ export function createAiHandler(options: AiOptions = {}): (request: Request) => 
   const log = options.log ?? ((entry: AiLogEntry) => console.info(JSON.stringify({ ai: entry })));
   const warn = options.warn ?? ((message: string) => console.warn(message));
 
-  // Model ids are not secret; an entry is cut to the longest id there is, so one stray value cannot fill the log.
+  // Only entries that look like model ids are named (droppedModels()), so no key and no long stray value reaches the log.
   const dropped = droppedModels(options.freeModels);
   if (dropped.length > 0) {
-    warn(`OPENROUTER_FREE_MODELS: ignoring ${JSON.stringify(dropped.map((id) => id.slice(0, 100)))}; each entry must be a plain vendor/model id ending in :free`);
+    warn(`OPENROUTER_FREE_MODELS: ignoring ${JSON.stringify(dropped)}; each entry must be a plain vendor/model id ending in :free`);
   }
 
   const storeFor = (token: string): AiStore | null => {

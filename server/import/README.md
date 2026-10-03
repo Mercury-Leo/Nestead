@@ -7,7 +7,7 @@ Recipe import: fetch a web page and read the recipe from its schema.org data. On
 | `index.ts` | The public surface: re-exports the handler, guard, parser and types. |
 | `handler.ts` | `createImportHandler(options)` and `handleImport`: GET `?url=` or POST `{ url }`, JSON out. |
 | `guard.ts` | The SSRF guard: `checkUrl()` and `isPrivateAddress()`. |
-| `fetchPage.ts` | `fetchPage()`: follows up to 5 redirects by hand, re-checking each; time and size caps. |
+| `fetchPage.ts` | `fetchPage()`: follows up to 5 redirects by hand, re-checking each; time and size caps. `readCapped()`: a body as text, cut off at a byte cap. |
 | `parse.ts` | `parseRecipeHtml()`: JSON-LD first, microdata as fallback; `isoMinutes()`, `detectEquipment()`, `decodeEntities()`. |
 | `types.ts` | `ImportedRecipe`, `ImportReport`, `ImportError`, `ImportOptions`. |
 | `import.test.ts` | Parser, guard and handler cases. |
@@ -16,7 +16,7 @@ Recipe import: fetch a web page and read the recipe from its schema.org data. On
 - Production: `../../functions/api/import.ts` exports `onRequest`, which calls `handleImport`, as the Cloudflare Pages Function at `/api/import`.
 - Development and `vite preview`: `../../vite.config.ts` mounts `createImportHandler({ resolveHost })` at `/api/import`, with Node DNS so names that resolve to private addresses are refused too.
 - "Search online" hits are imported through here too: `../search/` finds the pages, this reads the one chosen.
-- `fetchPage()` and `siteOf()` are exported for `../ai/`, which reads pages the same way. `ImportedRecipe.url` and `.site` are absent for pasted text.
+- `fetchPage()` and `siteOf()` are exported for `../ai/`, which reads pages the same way, and `readCapped()` for its request bodies. `readCapped()` refuses a body whose `Content-Length` is over the cap without reading it; otherwise it reads chunk by chunk and cancels the stream as soon as the bytes pass the cap, so an undeclared body is never held whole. `ImportedRecipe.url` and `.site` are absent for pasted text.
 - Limits: 10 s and 5 MB (`handler.ts`); http(s) only, no credentials in the URL, no `localhost`, `.local` or `.internal`, no private, loopback or link-local addresses (`guard.ts`).
 - Error codes map to statuses: `invalid-url` and `blocked` 400, `fetch-failed` 502, `too-large` 413, `not-found` 422, `timeout` 504; other methods get 405 (`handler.ts`).
 - Ingredient lines come back as text; the app parses them with `src/domain/kitchen/parse.ts` (`src/features/larder/import/imported.ts`).
