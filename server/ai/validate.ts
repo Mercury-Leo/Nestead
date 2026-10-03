@@ -3,7 +3,7 @@ import { RECIPE_SCHEMA, SERVING_UNITS } from './prompt';
 /**
  * The model's answer, checked before anything uses it: exactly the schema's
  * keys, exact types, plain text, every limit. A failure rejects the whole
- * answer; nothing is repaired or cut to fit (spec §5.5).
+ * answer; nothing is repaired or cut to fit (spec section 5.5).
  */
 
 export const LIMITS = {
@@ -34,7 +34,7 @@ export type Validated = { kind: 'recipe'; recipe: Extracted } | { kind: 'not-a-r
 const KEYS: readonly string[] = RECIPE_SCHEMA.required;
 const TAG = /<[a-zA-Z/!][^>]*>/g;
 // C0 and C1 controls (each field is one line, so newlines and tabs too) and bidi embedding, override and isolate marks.
-const CONTROL = /[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/g;
+const CONTROL = /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g;
 
 export function plainText(text: string): string {
   return text.replace(TAG, ' ').replace(CONTROL, ' ').replace(/\s+/g, ' ').trim();

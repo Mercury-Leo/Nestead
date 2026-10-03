@@ -88,7 +88,7 @@ describe('validateOutput', () => {
   });
 
   it('keeps plain text only: tags, control and bidi characters go', () => {
-    const result = validateOutput(answer({ title: '<b>Lentil</b> soup‮', steps: ['<script>alert(1)</script>Bake\u0007 at <180C'] }));
+    const result = validateOutput(answer({ title: '<b>Lentil</b> soup\u202e', steps: ['<script>alert(1)</script>Bake\u0007 at <180C'] }));
     expect(result).toMatchObject({ kind: 'recipe', recipe: { title: 'Lentil soup', steps: ['alert(1) Bake at <180C'] } });
   });
 
