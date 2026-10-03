@@ -17,7 +17,7 @@ Reads are free through Nestead's shared OpenRouter key on `:free` models: 5 per 
 
 ### Out of scope (v1)
 
-Photos and vision, chat, tool calling, auto-saving, streaming answers, AI on Hebrew pages that already import through schema.org (§8, v1.1), and re-encrypting stored keys under a new secret (§11).
+Photos and vision, chat, tool calling, auto-saving, streaming answers, English ingredient names from the model (§8, v1.1), and re-encrypting stored keys under a new secret (§11).
 
 ## 2. Decisions
 
@@ -32,7 +32,7 @@ Photos and vision, chat, tool calling, auto-saving, streaming answers, AI on Heb
 - **D7 Quotas.** Free tier: 5 reads per user per UTC day and a global stop at 45. A family key has no Nestead cap, and the UI tells whoever adds it to set a credit limit in OpenRouter.
 - **D8 UI.** Paste text and "Read it with AI" on the import screen. An "AI assistant" card on the Family page with a write-only key input. A small client module sends the token and maps error codes to messages. Browser code imports only types from `server/`.
 - **D9 Search.** The AI fallback lets search admit sites without schema.org data. Sites that refuse our fetch stay out, and Tavily's page content is not used to get around them.
-- **D10 Hebrew ingredients.** Extraction returns an English catalog name per line (§8).
+- **D10 Hebrew ingredients.** Extraction may return an English catalog name per line. The brief left v1 or v1.1 to this spec; §8 decides v1.1.
 - **D11 Prompt injection.** The goal is that a successful injection achieves nothing (§10).
 
 ### 2.2 Details this spec adds to the brief
@@ -44,7 +44,7 @@ Photos and vision, chat, tool calling, auto-saving, streaming answers, AI on Heb
 | A3 | `claim_ai_request()` also returns `family_id` on the family-key path. | Decryption needs it as additional authenticated data. It is the caller's own family. |
 | A4 | Model ids must look like `vendor/model`, optionally ending `:free`. No other `:` variants (`:online` turns on web search), no `~` aliases, no `openrouter/*` routers. | Keeps D11's "no abilities", and keeps the model the family chose the one that runs. "Any model" in D7 means any model with a plain id. |
 | A5 | With a family key and no model chosen, the free list runs on the family key. | No paid default model to hard-code. The family's credit is spent only once someone picks a paid model. |
-| A6 | `ImportedRecipe.url` and `.site` become optional (absent for pasted text), and `ImportedRecipe` gains `englishNames`. | Pasted text has no page. TypeScript then flags every reader that assumed one. |
+| A6 | `ImportedRecipe.url` and `.site` become optional (absent for pasted text). | Pasted text has no page. TypeScript then flags every reader that assumed one. |
 | A7 | New Cloudflare variables `SUPABASE_URL` and `SUPABASE_ANON_KEY`. | Functions read the Pages project's environment at runtime. The `VITE_*` values are GitHub repository variables, seen only by the build. |
 | A8 | New shared folder `src/ai/` for the client module. | Both the import screen and the Family page use it, and `docs/ARCHITECTURE.md` keeps screens from importing each other's files. |
 | A9 | `Account` gains `accessToken()`, `aiStatus()`, `clearAiKey()` and `setAiModel()`, and `Session` gains `ai`. | CLAUDE.md: a new backend capability is a method on `Account`, and RPC names stay in `src/data/supabase/`. |
@@ -58,7 +58,7 @@ Photos and vision, chat, tool calling, auto-saving, streaming answers, AI on Heb
 - **Paste text** has a multi-line field (`dir="auto"`, `maxLength` 20,000) and a **Read with AI** button. One muted line under it says "Free AI · N of 5 left today", or "Uses your family's OpenRouter key", plus "The text is sent to an AI service to read." The screen loads the status from `session.ai.status()` when the tab opens and again after each read.
 - **Fallback.** When `/api/import` answers `not-found`, for a pasted link or a chosen search hit, the error line keeps its "write it yourself" link and adds a **Read it with AI** button that reads the same URL. Only `not-found` offers it. After `fetch-failed`, `blocked`, `too-large` or `timeout` the page could not be fetched, so AI could not read it either.
 - While reading, the button says "Reading…". A read can take up to a minute, the model timeout.
-- On success the same `PreviewCard` opens. The status line says "Read with AI", or "Read with AI from {site}" for a page. "What we read" gains a flagged line: "Read by AI: check it against the original before saving." A line whose catalog match came from an AI English name shows the name it was matched as (§8).
+- On success the same `PreviewCard` opens. The status line says "Read with AI", or "Read with AI from {site}" for a page. "What we read" gains a flagged line: "Read by AI: check it against the original before saving."
 - On failure the message comes from §5.7.
 
 ### 3.2 Family page: "AI assistant" card
@@ -95,7 +95,7 @@ It sits between Members and "On this device".
 | `src/data/types.ts`, `src/data/supabase/supabaseAccount.ts` | The new `Account` methods (A9). |
 | `src/auth/session.tsx`, `src/auth/accountSession.tsx` | `Session.ai`. |
 | `src/ai/client.ts` | `extractRecipe()`, `saveFamilyKey()`, `aiErrorMessage()`. |
-| `src/features/larder/import/` | Paste mode, the fallback, `englishNames` in `imported.ts`, the preview marks. |
+| `src/features/larder/import/` | Paste mode, the fallback, a recipe without a URL in `imported.ts`, the "Read by AI" line. |
 | `src/features/family/AiCard.tsx` | The card and its sheets. |
 | `src/i18n/locales/en.json`, `he.json` | New strings. |
 
@@ -202,7 +202,6 @@ The system prompt is fixed English text with the per-request nonce put in. Its w
 > - If the text holds no recipe, set `found` to false.
 > - Copy the title, ingredient lines and steps in the language they are written in. Do not translate them, and do not add ingredients, amounts, steps, tips or links that are not in the text.
 > - One ingredient per entry, as written, with its amount. A heading such as "For the sauce:" may be its own entry.
-> - `englishName`: the ingredient's everyday English name, lower case, singular, without amount or preparation ("olive oil", "onion"), or null when unsure.
 > - `servings`, `prepMin`, `cookMin`: only when the text states them, otherwise null. `servingUnit` only when the yield is counted in slices, pieces, cookies, muffins, bars or squares.
 > - `description`: at most two sentences taken from the text, or null.
 
@@ -220,9 +219,7 @@ The schema sent to the model gives only the shape: types, `required`, `enum` and
 | `servings` | integer or null | 1–100 |
 | `servingUnit` | `slice`, `piece`, `cookie`, `muffin`, `bar`, `square` or null | the enum |
 | `prepMin`, `cookMin` | integer or null | 0–4,320 |
-| `ingredients` | array of `{ line, englishName }` | 1–80 entries |
-| `ingredients[].line` | string | 1–300 characters |
-| `ingredients[].englishName` | string or null | a hint: kept only if it matches `^[a-z][a-z '-]{0,39}$` once lower-cased, otherwise treated as null |
+| `ingredients` | array of strings | 1–80 entries, each 1–300 characters |
 | `steps` | array of strings | 0–60 entries, each 1–2,000 characters |
 
 `validate.ts` works in this order. Any failure is `model-failed` unless it says otherwise:
@@ -233,9 +230,8 @@ The schema sent to the model gives only the shape: types, `required`, `enum` and
 4. `found === false` is `not-a-recipe`, whatever else the object holds.
 5. Every string is normalised. HTML tags (`<` then a letter, `/` or `!`, through `>`) are removed, along with C0 and C1 control characters and the bidi embedding, override and isolate characters (U+202A–U+202E, U+2066–U+2069). Whitespace is collapsed and the ends trimmed. Entities are not decoded, since decoding could make markup.
 6. The limits are checked after normalising. An empty title or no ingredients is `not-a-recipe`. Any other empty string, or a count, length or range out of bounds, is `model-failed`. The validator does not cut anything down to fit.
-7. Each `englishName` is lower-cased and kept only if it matches the pattern (§8).
 
-The result maps field by field onto `ImportedRecipe`: `title`, `description`, `servings`, `servingUnit`, `prepMin`, `cookMin`, `ingredients` (the lines), `englishNames` and `steps`.
+The result maps field by field onto `ImportedRecipe`: `title`, `description`, `servings`, `servingUnit`, `prepMin`, `cookMin`, `ingredients` and `steps`.
 
 **Rendering:** as React text only. `StepText` finds timers in a step but makes no links, and nothing uses `dangerouslySetInnerHTML`. A test pins that a URL in a step renders as plain text.
 
@@ -466,12 +462,7 @@ ai?: {
 
 **`src/ai/client.ts`** has `extractRecipe(ai, { text } | { url })`, `saveFamilyKey(ai, key)` and `aiErrorMessage(code, { input: 'text' | 'url' | 'key', scope? })`. It sends `Authorization: Bearer <token>`, turns the answers into typed outcomes, and maps codes to the messages in §5.7. It imports `ImportedRecipe`, `ImportReport` and `AiError` with `import type` only. Offline is handled as `fetchRecipe()` handles it today.
 
-**Import screen.** `ImportRecipe.tsx` gets the `text` mode. A `not-found` status carries an `offerAi` URL when `session.ai` is set, and an `ok` status carries `ai: true`. `Preview` gains `stated.ai` and the ids of the lines matched through an English name. `fromImported()`:
-
-- gives a recipe without `url` the id `import:text` and the source `{ kind: 'mine' }`; the screen remounts the preview on each read;
-- fills `canonicalId` from `englishNames` (§8).
-
-`whatWeRead()` adds the flagged "Read by AI" line when `stated.ai` is set.
+**Import screen.** `ImportRecipe.tsx` gets the `text` mode. A `not-found` status carries an `offerAi` URL when `session.ai` is set, and an `ok` status carries `ai: true`. `Preview` gains `stated.ai`. `fromImported()` gives a recipe without `url` the id `import:text` and the source `{ kind: 'mine' }`, and the screen remounts the preview on each read. Hebrew lines are matched by the parser as for any import (§8). `whatWeRead()` adds the flagged "Read by AI" line when `stated.ai` is set.
 
 **Family page.** `AiCard.tsx` and its two `Sheet`s (§3.2), using `session.ai` and `src/ai/client.ts`.
 
@@ -479,27 +470,22 @@ ai?: {
 
 ## 8. Hebrew ingredient names (D10)
 
-**Decision: v1 has the field. Running AI on Hebrew pages that already import waits for v1.1.**
+**Decision: v1.1, not v1.** v1's extraction returns the lines as written and asks for no English names.
 
-- **v1.** Extraction returns `englishName` for every line in the same call. It costs a few output tokens a line and no extra request, so pasted Hebrew text and AI-read Hebrew pages get pantry, diet and calorie checks from the first version.
-- **Not in v1.** The five Hebrew sites in `sites.ts` all import through schema.org today, with no model call. Giving those recipes checks would mean a model call on every Hebrew import:
-  - each one would spend one of the person's 5 free reads, and a Hebrew-reading family imports mostly Hebrew;
-  - the app-wide 45 a day would run out quickly;
-  - imports that are deterministic today would pass through a model.
-  v1.1 can decide this from v1's real usage. If it is added, it should be something the person chooses to do, not automatic.
+**Why.** While this spec was being written, commit `fc2bb0d` ("Recipes: match Hebrew ingredient names to the catalog") added `src/domain/kitchen/hebrewNames.ts`. Hebrew lines now find their catalog item with no model: 110 of 124 lines across 11 recipes from the Hebrew sites, and the rest are headings, notes and products the catalog has no item for. That changes the trade-off the brief described:
 
-**Schema.** `ingredients[].englishName`, a string or null (§5.5). `ImportedRecipe` gains `englishNames?: (string | null)[]`, the same length as `ingredients` and in the same order. Only `/api/ai/extract` sets it.
+- **The quota cost is gone.** Hebrew pages that import through schema.org already get pantry, diet and calorie checks, so no model call is needed to give them checks.
+- **AI-read and pasted Hebrew text gets the same checks.** `fromImported()` runs every line through `parseIngredientLine()`, which now reads Hebrew names.
+- **What a hint could still add is small.** It would cover lines in a third language, and Hebrew lines `hebrewNames.ts` misses. Most of those name products the catalog has no item for, so a hint would find nothing there either.
+- **It carries a risk the deterministic match does not.** A wrong but valid hint, such as "rice flour" for a line saying "קמח חיטה" (wheat flour), would pass a diet check that should fail, whether it came from a model mistake or a hostile page. Guarding against that would need a "matched as" mark on every hinted line and diet tags left unselected, which is UI and rules for little gain.
 
-**`imported.ts`.** `fromImported()` pairs each raw line with its hint before it filters out headings, so the two stay aligned:
+**If v1.1 adds it**, the design is ready:
 
-- The parser runs first. If `parseIngredientLine()` found a `canonicalId`, it stands.
-- Otherwise a hint goes through the same `canonicalId()` (`src/domain/kitchen/normalize.ts`) that English lines use. If that finds a catalog entry, the line gets its `canonicalId`, and the line's id is reported back with the recipe. If not, the hint is ignored. A hint can only select an entry that already exists.
-- The line keeps its original text (`item`, `raw`); quantities and units still come from the parser, which reads Hebrew amounts. Which lines were matched this way is preview state only, never stored.
-- `mostlyUnrecognised()` then counts matched lines as recognised. For a Hebrew recipe whose hints match, the preview vouches for it as it does for an English one.
-- `suggestedTags()` still offers the diet tags, but preselects none when any line was matched through a hint.
-- `PreviewCard` shows "matched as {catalog name}" beside each such line, with the name translated through `labels.ts`.
+- **Schema.** `ingredients` items become `{ line, englishName }`, with `englishName` a string or null, kept only if it matches `^[a-z][a-z '-]{0,39}$` once lower-cased and otherwise ignored. `ImportedRecipe` gains `englishNames?: (string | null)[]`, in the order of `ingredients`.
+- **Matching.** `fromImported()` pairs each line with its hint before it filters out headings, so the two stay aligned. A hint is used only where the parser found no `canonicalId`, and only through `canonicalId()`, so it can select nothing but an existing catalog entry.
+- **On show.** `PreviewCard` shows "matched as {name}" beside each hinted line, and `suggestedTags()` preselects no diet tag when any line was matched this way.
 
-**What can go wrong.** A hint can be wrong but valid: "rice flour" for a line that says "קמח חיטה" (wheat flour), so the diet check passes a recipe it should flag. A model mistake or a hostile page can both cause it. The line shows its matched name beside its own text, and the diet tags are not preselected, so the person sees what was checked before saving. An English page's author can already make the parser match whatever they write; here the difference is that the matched name is put on show.
+The decision is worth revisiting if people paste many recipes in languages the catalog has no names for.
 
 ## 9. Search (D9)
 
@@ -529,7 +515,7 @@ How the design holds to it:
 - **No secrets in the context.** The model sees our fixed instructions with a random nonce, and the untrusted text. No key, token, member, family or other row is in it, so there is nothing to leak.
 - **Fetch targets come from people, not the model.** The URL is one a person pasted or a search hit they chose, and it goes through the SSRF guard on every hop. `image`, `url` and `site` come from the page's metadata and the input URL by our code. The output schema has no field for any of them, and an extra field is rejected.
 - **Strict output validation** (§5.5). A closed schema with unknown fields rejected, limits on every length and count, a total size cap, plain text only (tags and control and bidi characters removed), numbers in range. Anything that fails is rejected, never repaired. The output is shown as React text only, and a URL in a step is not made a link.
-- **English names only select catalog entries** (§8). Anything else is ignored, and a match is put on show.
+- **The model chooses no catalog match.** Ingredient lines are matched to the catalog by the app's own parser, as for any import (§8), so an injection cannot steer a pantry, diet or calorie check except through the line's own text, which the author controls anyway.
 - **The output is a draft.** Nothing is saved until the person confirms in the preview, where it is marked "Read by AI".
 - **Bounded cost.** A fixed `max_completion_tokens`, one model call per request, input cut or refused at 20,000 characters.
 - **Defence in depth, relied on for nothing above:** HTML reduced to text by our code (§5.6), the untrusted text between nonce markers, and a system prompt that calls it data.
@@ -544,7 +530,6 @@ What a successful injection can still do, and why that is no more than the autho
 | Add fields (`image`, `url`, `save`, …) | Rejected: `model-failed` | The schema is closed. |
 | Produce markup or script | Removed, then shown as text | Plain text only. |
 | Produce huge output | Cut off by `max_completion_tokens`, or rejected by the size caps | Fixed cost. |
-| Return a wrong English name | A wrong but existing catalog match, shown beside the line | §8. |
 | Reveal its instructions | Our fixed prompt and the nonce, at most | They hold no secret. |
 
 **Note for a future agent.** If Nestead ever gives a model tools, untrusted content and tools never share one model context. Text from a page or a paste is read by a model with no tools, like this one, and only its validated output goes further. Any tool that writes data acts only after the person confirms it in the UI.
@@ -591,7 +576,6 @@ No test calls OpenRouter: the shared free tier is 50 requests a day. Every handl
   - Unknown fields at the top level and nested.
   - Wrong types: floats, strings for numbers.
   - Every count, length and range limit, and the 40,000-character cap.
-  - An invalid `englishName` becomes null and does not reject the answer.
   - HTML and control characters are removed.
 - **Broken output.** Malformed JSON, JSON inside code fences, empty content, `finish_reason` `length`, `error` or `content_filter`, and a 200 carrying an `error` object: each is `model-failed`.
 - **Not a recipe.** `found: false`, an empty title, no ingredients: each is `not-a-recipe`.
@@ -633,7 +617,6 @@ No test calls OpenRouter: the shared free tier is 50 requests a day. Every handl
 - **Oversized output:** 81 ingredients, 300,000 characters. Both are rejected.
 - **Malformed JSON:** truncated, trailing text, fenced. All are rejected.
 - **Bidi overrides and control characters** are removed.
-- **English names.** "rice flour" on a "קמח חיטה" line matches rice flour and is reported as matched (the documented residual risk). `<script>` and "ignore instructions" as names are ignored.
 
 **SQL** (`claim_ai_request()` and the RPCs), on a throwaway local Postgres, never the production project (open question 1):
 
@@ -671,12 +654,9 @@ It must never claim without a key row, which would spend the real app's free rea
 
 - `src/ai/client.test.ts`: the token header is sent, every code maps to its message, and both quota scopes are covered.
 - `imported.test.ts`:
-  - hints fill only lines the parser left unmatched, and a parser match wins;
-  - unknown names are ignored;
-  - filtering out headings keeps hints aligned;
-  - the matched ids are reported;
-  - diet tags are not preselected when a hint matched;
-  - a recipe without a URL gets the source `mine`.
+  - a recipe without a URL gets the id `import:text` and the source `mine`;
+  - `whatWeRead()` adds the "Read by AI" line only when `stated.ai` is set;
+  - a pasted Hebrew recipe's lines match the catalog through the parser.
 - `FamilyPage.test.tsx`:
   - the card with no key and with a key;
   - the key field is empty after saving and never shows the key;
@@ -685,14 +665,14 @@ It must never claim without a key row, which would spend the real app's free rea
 ## 14. Docs to update during implementation
 
 - **`server/ai/README.md` (new):** files, how it works, limits, codes, rules (type-only imports; RPC names only in `store.ts`; keys and text never logged; no tools), and tests.
-- **`server/import/README.md`:** `fetchPage` and `siteOf` are exported and used by `server/ai`; `ImportedRecipe`'s optional `url` and `site`, and `englishNames`.
+- **`server/import/README.md`:** `fetchPage` and `siteOf` are exported and used by `server/ai`; `ImportedRecipe`'s optional `url` and `site`.
 - **`server/search/README.md`:** the admission rule, and that Tavily's content is never used to read a page.
 - **`CLAUDE.md`:**
   - Commands: `/api/ai` and its variables.
   - Architecture: an AI API bullet.
   - Where things live: rows for `server/ai/` and `src/ai/`.
   - Rules: AI secrets are server-only, and model output is never acted on.
-  - Gotchas: the Hebrew note now covers AI reads; the local and production secrets differ.
+  - Gotchas: the local and production secrets differ.
 - **`docs/ARCHITECTURE.md`:** the Stack hosting row, the file layout, an "AI reading" paragraph in the kitchen section, the folder guide links.
 - **`supabase/README.md`:** the migration in Files, the AI tables with no policies and their RPCs, realtime unchanged.
 - **`src/features/larder/import/README.md`, `src/features/family/README.md`.**
