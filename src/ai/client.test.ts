@@ -38,6 +38,24 @@ describe('extractRecipe', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>', { status: 200 })));
     expect(await extractRecipe(ai(), { text: 'x' })).toEqual({ kind: 'error', code: 'unavailable' });
   });
+
+  it('answers unauthorized, asking nobody, when the token cannot be had', async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    const broken: FamilyAi = { ...ai(), token: async () => { throw new Error('refresh failed'); } };
+    expect(await extractRecipe(broken, { text: 'x' })).toEqual({ kind: 'error', code: 'unauthorized' });
+    expect(await saveFamilyKey(broken, 'sk-or-v1-abc')).toEqual({ kind: 'error', code: 'unauthorized' });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('says unavailable when the recipe or the report is not an object', async () => {
+    const recipe = { title: 'Soup', ingredients: ['1 egg'], steps: [], equipment: [] };
+    const report = { found: ['title'], missing: [] };
+    for (const body of [{ recipe: null, report }, { recipe: 'Soup', report }, { recipe: [recipe], report }, { recipe, report: null }, { recipe, report: 5 }, { recipe }]) {
+      vi.stubGlobal('fetch', answer(body));
+      expect(await extractRecipe(ai(), { text: 'x' }), JSON.stringify(body)).toEqual({ kind: 'error', code: 'unavailable' });
+    }
+  });
 });
 
 describe('saveFamilyKey', () => {

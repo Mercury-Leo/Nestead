@@ -323,7 +323,7 @@ describe('saving the family key', () => {
     expect(page.textContent).not.toContain(KEY);
   });
 
-  it('says it did not work, and lets the member try again, when the token cannot be read', async () => {
+  it('says to sign in again, and lets the member try again, when the token cannot be read', async () => {
     const fetch = stubFetch({});
     const page = await render(
       <FamilyPage />,
@@ -337,7 +337,8 @@ describe('saving the family key', () => {
     await act(async () => typeInto(keyField(), KEY));
     await click(sheetButton(i18n.t('family.ai.keySheet.save')));
 
-    await until(() => (openSheet()?.textContent ?? '').includes(i18n.t('family.ai.failed')));
+    // The client answers a token that cannot be had as unauthorized (src/ai/client.ts).
+    await until(() => (openSheet()?.textContent ?? '').includes(i18n.t('ai.error.unauthorized')));
     expect(fetch).not.toHaveBeenCalled();
     expect(openSheet()?.textContent).not.toContain('unavailable');
     expect(sheetButton(i18n.t('family.ai.keySheet.cancel'))?.disabled).toBe(false);

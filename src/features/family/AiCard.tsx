@@ -70,7 +70,8 @@ export function AiCard(): JSX.Element {
     try {
       outcome = await saveFamilyKey(ai, typed);
     } catch {
-      // The member's token could not be read; saying so in words is all there is to do.
+      // Not expected: saveFamilyKey() answers in outcomes, a token that cannot be had included
+      // (unauthorized). Should it throw all the same, saying so in words is all there is to do.
     }
     setBusy(false);
     if (outcome === null) {

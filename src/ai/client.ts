@@ -17,7 +17,13 @@ export type SaveKeyOutcome = { kind: 'ok' } | AiFailure;
 
 async function post(ai: FamilyAi, path: string, payload: unknown): Promise<Record<string, unknown> | AiFailure> {
   if (!navigator.onLine) return { kind: 'error', code: 'offline' };
-  const token = await ai.token();
+  let token: string | null;
+  try {
+    token = await ai.token();
+  } catch {
+    // A session that cannot be refreshed: the person has to sign in again, as with no token.
+    return { kind: 'error', code: 'unauthorized' };
+  }
   if (token === null) return { kind: 'error', code: 'unauthorized' };
   let response: Response;
   try {
@@ -41,13 +47,14 @@ async function post(ai: FamilyAi, path: string, payload: unknown): Promise<Recor
 }
 
 const failed = (value: Record<string, unknown> | AiFailure): value is AiFailure => value.kind === 'error';
+const isObject = (value: unknown): value is object => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export async function extractRecipe(ai: FamilyAi, input: AiInput): Promise<ExtractOutcome> {
   const answer = await post(ai, '/api/ai/extract', input);
   if (failed(answer)) return answer;
-  const { recipe, report } = answer as { recipe?: ImportedRecipe; report?: ImportReport };
-  if (recipe === undefined || report === undefined) return { kind: 'error', code: 'unavailable' };
-  return { kind: 'ok', recipe, report };
+  const { recipe, report } = answer;
+  if (!isObject(recipe) || !isObject(report)) return { kind: 'error', code: 'unavailable' };
+  return { kind: 'ok', recipe: recipe as ImportedRecipe, report: report as ImportReport };
 }
 
 export async function saveFamilyKey(ai: FamilyAi, key: string): Promise<SaveKeyOutcome> {
