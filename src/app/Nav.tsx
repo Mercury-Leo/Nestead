@@ -1,16 +1,18 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Leaf } from 'lucide-react';
+import { Ellipsis, Leaf, Pin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../auth/session';
 import { Brand } from '../components/Brand';
 import { ThemeToggle } from '../components/theme/ThemeToggle';
-import { cx, ForwardChevron, Tag } from '../components/ui';
+import { Button, cx, ForwardChevron, Sheet, Tag } from '../components/ui';
+import { readPreference, writePreference } from '../data/local/localStore';
 import { useCollection } from '../data/useCollection';
 import { useKitchen } from '../features/larder/KitchenContext';
 import { ruleLabels } from '../features/larder/labels';
 import { formatNumber } from '../i18n';
-import { SECTIONS, isPinnable, locate } from './sections';
-import type { Section, SectionPage } from './sections';
+import { MAX_PINS, PINS_PREFERENCE, SECTIONS, isPinnable, locate, resolvePins, togglePin } from './sections';
+import type { PinRefusal, Section, SectionId, SectionPage } from './sections';
 import s from './Shell.module.css';
 
 /**
@@ -127,23 +129,129 @@ export function Sidebar(): JSX.Element {
   );
 }
 
+/** The sections in this person's bar on this device. */
+function usePins(): [SectionId[], (pins: SectionId[]) => void] {
+  const { store } = useSession();
+  const [pins, setPins] = useState(() => resolvePins(readPreference(store.familyId, PINS_PREFERENCE)));
+  const save = (next: SectionId[]): void => {
+    setPins(next);
+    writePreference(store.familyId, PINS_PREFERENCE, next);
+  };
+  return [pins, save];
+}
+
+/** Every section as a tile; Edit bar turns the tiles into pin toggles. */
+function MoreSheet({ open, onClose, pins, onPins }: { open: boolean; onClose: () => void; pins: SectionId[]; onPins: (pins: SectionId[]) => void }): JSX.Element {
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const [refused, setRefused] = useState<PinRefusal | undefined>(undefined);
+
+  const close = (): void => {
+    setEditing(false);
+    setRefused(undefined);
+    onClose();
+  };
+  const toggle = (id: SectionId): void => {
+    const result = togglePin(pins, id);
+    onPins(result.pins);
+    setRefused(result.refused);
+  };
+
+  let status = '';
+  if (editing) status = refused === undefined ? t('nav.pinnedCount', { pinned: pins.length, max: MAX_PINS }) : t(`nav.${refused}`);
+
+  return (
+    <Sheet open={open} onClose={close} title={t('nav.more')}>
+      <div className={s.moreHead}>
+        <p className={s.moreStatus} aria-live="polite">
+          {status}
+        </p>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setEditing(!editing);
+            setRefused(undefined);
+          }}
+        >
+          {editing ? t('nav.done') : t('nav.editBar')}
+        </Button>
+      </div>
+      <ul className={s.moreGrid}>
+        {SECTIONS.map((section) => {
+          const label = t(section.labelKey);
+          const pinned = pins.includes(section.id);
+          const face = (
+            <>
+              <section.icon size={22} strokeWidth={2} aria-hidden />
+              <span>{label}</span>
+              {editing && pinned && <Pin size={14} strokeWidth={2} aria-hidden className={s.morePin} />}
+            </>
+          );
+          let tile: JSX.Element;
+          if (!editing) {
+            tile = (
+              <Link to={section.pages[0].path} className={s.moreTile} onClick={close}>
+                {face}
+              </Link>
+            );
+          } else if (!isPinnable(section)) {
+            tile = (
+              <button type="button" className={cx(s.moreTile, s.moreTileFixed)} disabled aria-label={t('nav.notPinnable', { section: label })}>
+                {face}
+              </button>
+            );
+          } else {
+            tile = (
+              <button type="button" className={cx(s.moreTile, pinned && s.moreTileOn)} aria-pressed={pinned} onClick={() => toggle(section.id)}>
+                {face}
+              </button>
+            );
+          }
+          return <li key={section.id}>{tile}</li>;
+        })}
+      </ul>
+    </Sheet>
+  );
+}
+
 export function TabBar(): JSX.Element {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const here = locate(pathname);
+  const [pins, setPins] = usePins();
+  const [moreOpen, setMoreOpen] = useState(false);
+  // In a section that isn't pinned, More stands in for it.
+  const moreCurrent = here !== undefined && !pins.includes(here.section.id);
+
   return (
-    <nav className={s.tabbar} aria-label={t('nav.main')}>
-      {SECTIONS.filter(isPinnable).map((section) => {
-        const active = here?.section === section;
-        return (
-          <Link key={section.id} to={section.pages[0].path} className={cx(s.tab, active && s.tabActive)} aria-current={active ? 'true' : undefined}>
-            <span className={s.tabIcon}>
-              <section.icon size={22} strokeWidth={2} aria-hidden />
-            </span>
-            <span className={s.tabLabel}>{t(section.labelKey)}</span>
-          </Link>
-        );
-      })}
-    </nav>
+    <>
+      <nav className={s.tabbar} aria-label={t('nav.main')}>
+        {SECTIONS.filter((section) => pins.includes(section.id)).map((section) => {
+          const active = here?.section === section;
+          return (
+            <Link key={section.id} to={section.pages[0].path} className={cx(s.tab, active && s.tabActive)} aria-current={active ? 'true' : undefined}>
+              <span className={s.tabIcon}>
+                <section.icon size={22} strokeWidth={2} aria-hidden />
+              </span>
+              <span className={s.tabLabel}>{t(section.labelKey)}</span>
+            </Link>
+          );
+        })}
+        <button
+          type="button"
+          className={cx(s.tab, s.tabButton, moreCurrent && s.tabActive)}
+          aria-haspopup="dialog"
+          aria-expanded={moreOpen}
+          aria-current={moreCurrent ? 'true' : undefined}
+          onClick={() => setMoreOpen(true)}
+        >
+          <span className={s.tabIcon}>
+            <Ellipsis size={22} strokeWidth={2} aria-hidden />
+          </span>
+          <span className={s.tabLabel}>{t('nav.more')}</span>
+        </button>
+      </nav>
+      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} pins={pins} onPins={setPins} />
+    </>
   );
 }

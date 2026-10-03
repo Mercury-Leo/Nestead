@@ -10,7 +10,7 @@ import { createLocalStore } from '../data/local/localStore';
 import type { Member } from '../domain/types';
 import { KitchenProvider } from '../features/larder/KitchenContext';
 import { LocaleProvider, i18n } from '../i18n';
-import { Sidebar } from './Nav';
+import { Sidebar, TabBar } from './Nav';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -57,6 +57,28 @@ async function render(node: ReactNode, path: string): Promise<HTMLElement> {
 /** The link whose visible text is `label`. */
 function link(host: HTMLElement, label: string): HTMLAnchorElement | undefined {
   return [...host.querySelectorAll('a')].find((a) => a.textContent?.trim().startsWith(label));
+}
+
+async function click(element: Element | null | undefined): Promise<void> {
+  if (element === null || element === undefined) throw new Error('nothing to click');
+  await act(async () => {
+    (element as HTMLElement).click();
+  });
+}
+
+function bar(host: HTMLElement): HTMLElement {
+  return host.querySelector(`nav[aria-label="${i18n.t('nav.main')}"]`) as HTMLElement;
+}
+
+function moreButton(host: HTMLElement): HTMLButtonElement {
+  return [...bar(host).querySelectorAll('button')].find((b) => b.textContent === i18n.t('nav.more')) as HTMLButtonElement;
+}
+
+/** The sheet's button whose text or label starts with `label`. */
+function sheetButton(label: string): HTMLButtonElement | undefined {
+  return [...document.querySelectorAll('dialog button')].find((b) =>
+    (b.getAttribute('aria-label') ?? b.textContent ?? '').trim().startsWith(label),
+  ) as HTMLButtonElement | undefined;
 }
 
 beforeAll(() => {
@@ -106,5 +128,67 @@ describe('the sidebar', () => {
     unmount?.();
     const onBoard = await render(<Sidebar />, '/');
     expect(onBoard.textContent).not.toContain(i18n.t('nav.editDiet'));
+  });
+});
+
+describe('the tab bar', () => {
+  it('shows the pinned sections and More, and lights the current section', async () => {
+    const host = await render(<TabBar />, '/recipe/abc');
+    const labels = [...bar(host).querySelectorAll('a')].map((a) => a.textContent);
+    expect(labels).toEqual([i18n.t('nav.board'), i18n.t('nav.lists'), i18n.t('nav.larder')]);
+    expect(link(bar(host), i18n.t('nav.larder'))?.getAttribute('aria-current')).toBe('true');
+    expect(moreButton(host).getAttribute('aria-haspopup')).toBe('dialog');
+    expect(moreButton(host).getAttribute('aria-current')).toBeNull();
+  });
+
+  it("lights More in a section that isn't pinned", async () => {
+    const host = await render(<TabBar />, '/family');
+    expect(moreButton(host).getAttribute('aria-current')).toBe('true');
+  });
+
+  it('opens More, and a tile goes to its section and closes the sheet', async () => {
+    const host = await render(<TabBar />, '/');
+    await click(moreButton(host));
+    const dialog = document.querySelector('dialog');
+    expect(dialog?.hasAttribute('open')).toBe(true);
+    await click(link(dialog as HTMLElement, i18n.t('nav.family')));
+    expect(host.querySelector('[data-testid="where"]')?.textContent).toBe('/family');
+    expect(document.querySelector('dialog')?.hasAttribute('open')).toBe(false);
+  });
+
+  it('unpins from Edit bar, and keeps the choice', async () => {
+    let host = await render(<TabBar />, '/');
+    await click(moreButton(host));
+    await click(sheetButton(i18n.t('nav.editBar')));
+    const lists = sheetButton(i18n.t('nav.lists'));
+    expect(lists?.getAttribute('aria-pressed')).toBe('true');
+    await click(lists);
+    expect(link(bar(host), i18n.t('nav.lists'))).toBeUndefined();
+    expect(document.querySelector('dialog')?.textContent).toContain(i18n.t('nav.pinnedCount', { pinned: 2, max: 4 }));
+
+    unmount?.();
+    host = await render(<TabBar />, '/');
+    expect(link(bar(host), i18n.t('nav.lists'))).toBeUndefined();
+    expect(link(bar(host), i18n.t('nav.board'))).toBeDefined();
+  });
+
+  it('refuses to unpin the last section, and says so', async () => {
+    const host = await render(<TabBar />, '/');
+    await click(moreButton(host));
+    await click(sheetButton(i18n.t('nav.editBar')));
+    await click(sheetButton(i18n.t('nav.lists')));
+    await click(sheetButton(i18n.t('nav.larder')));
+    await click(sheetButton(i18n.t('nav.board')));
+    expect(link(bar(host), i18n.t('nav.board'))).toBeDefined();
+    expect(document.querySelector('dialog')?.textContent).toContain(i18n.t('nav.keepOne'));
+  });
+
+  it("doesn't let Family be pinned", async () => {
+    const host = await render(<TabBar />, '/');
+    await click(moreButton(host));
+    await click(sheetButton(i18n.t('nav.editBar')));
+    const family = sheetButton(i18n.t('nav.family'));
+    expect(family?.disabled).toBe(true);
+    expect(family?.getAttribute('aria-label')).toBe(i18n.t('nav.notPinnable', { section: i18n.t('nav.family') }));
   });
 });

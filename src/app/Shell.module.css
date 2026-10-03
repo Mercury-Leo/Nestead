@@ -223,6 +223,90 @@
   }
 }
 
+/* The More tab is a <button>; it looks like the links beside it. */
+.tabButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------- more sheet -- */
+
+.moreHead {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.moreStatus {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.moreGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.moreTile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 84px;
+  padding: 12px 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.moreTile svg {
+  color: var(--ink-2);
+}
+
+.moreTileOn {
+  border-color: var(--accent-soft);
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+
+.moreTileOn svg {
+  color: var(--accent);
+}
+
+.moreTileFixed {
+  border-style: dashed;
+  color: var(--ink-3);
+  cursor: default;
+}
+
+.morePin {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+}
+
 /* ------------------------------------------------------------ desktop -- */
 
 @media (min-width: 1024px) {
