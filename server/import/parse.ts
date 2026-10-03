@@ -22,10 +22,16 @@ const ENTITIES: Record<string, string> = {
   hellip: '…',
 };
 
+/** The character for a numeric reference, or the reference as written when no character has that number (String.fromCodePoint() would throw). */
+function fromCodePoint(match: string, code: number): string {
+  return Number.isInteger(code) && code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : match;
+}
+
+/** Named, decimal and hex references. A name it does not know, or a number past U+10FFFF, stays as written. */
 export function decodeEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+\d*);/gi, (match, code: string) => {
-    if (code.startsWith('#x') || code.startsWith('#X')) return String.fromCodePoint(parseInt(code.slice(2), 16));
-    if (code.startsWith('#')) return String.fromCodePoint(Number(code.slice(1)));
+    if (code.startsWith('#x') || code.startsWith('#X')) return fromCodePoint(match, parseInt(code.slice(2), 16));
+    if (code.startsWith('#')) return fromCodePoint(match, Number(code.slice(1)));
     return ENTITIES[code.toLowerCase()] ?? match;
   });
 }

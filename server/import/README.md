@@ -20,6 +20,7 @@ Recipe import: fetch a web page and read the recipe from its schema.org data. On
 - Limits: 10 s and 5 MB (`handler.ts`); http(s) only, no credentials in the URL, no `localhost`, `.local` or `.internal`, no private, loopback or link-local addresses (`guard.ts`).
 - Error codes map to statuses: `invalid-url` and `blocked` 400, `fetch-failed` 502, `too-large` 413, `not-found` 422, `timeout` 504; other methods get 405 (`handler.ts`).
 - Ingredient lines come back as text; the app parses them with `src/domain/kitchen/parse.ts` (`src/features/larder/import/imported.ts`).
+- `decodeEntities()` (also used by `../ai/pageText.ts`) decodes a short list of named entities and every decimal or hex reference. An unknown name, or a number past U+10FFFF such as `&#x110000;`, stays as written: `String.fromCodePoint()` throws on those, which would fail the whole import (`parse.ts`).
 - A list packed into one entry, as older mako.co.il recipes give it, is split at its breaks: the ingredients when there is a single entry (`ingredientLines()`), a step that holds `<br>`s into steps without their numbers (`instructions()`, `parse.ts`).
 
 ## Connections
@@ -35,4 +36,4 @@ Recipe import: fetch a web page and read the recipe from its schema.org data. On
 - A recipe's serving unit is its yield's word (`slices?|pieces?|cookies?|muffins?|bars?|squares?` in `parse.ts`), kept singular and in English. The app translates exactly these words (`SERVING_WORDS` in `../../src/features/larder/labels.ts`, `kitchen.servingUnit` in the locale files), so add a new one there too, or Hebrew readers see it in English; `labels.test.ts` imports through this parser to check them.
 
 ## Tests
-`import.test.ts`, with `../../tests/fixtures/gnocchi.html`: JSON-LD in an `@graph`, an ingredient list and a method packed into one entry (Mako's shape), microdata fallback, no recipe, ISO durations and equipment, the SSRF guard including DNS, redirects re-checked, the size cap, the timeout.
+`import.test.ts`, with `../../tests/fixtures/gnocchi.html`: JSON-LD in an `@graph`, an ingredient list and a method packed into one entry (Mako's shape), microdata fallback, character references (invalid ones kept as written), no recipe, ISO durations and equipment, the SSRF guard including DNS, redirects re-checked, the size cap, the timeout.

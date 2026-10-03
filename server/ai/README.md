@@ -63,6 +63,6 @@ No test calls OpenRouter or Supabase. `ai.test.ts` and `injection.test.ts` call 
 - `injection.test.ts`: hostile pages and hostile model answers, with `../../tests/fixtures/ai/`: text stays inside markers the page cannot know, hidden elements are dropped, and an obeying model's extra fields, images, markup and oversized output achieve nothing.
 - `openrouter.test.ts`: model ids, the fixed request, `callChat()` outcomes (`"error": null` included), `chatError()`, `checkKey()`, and that `fetch` is called unbound.
 - `validate.test.ts`: the prompt and schema, `validateOutput()` accepting and rejecting, and tag stripping in linear time on 40,000 characters of unclosed `<a`.
-- `pageText.test.ts`: dropped and hidden elements, region choice, entities, `og:image`, the cut, and linear time on unclosed tags.
+- `pageText.test.ts`: dropped and hidden elements, region choice, entities (one past U+10FFFF kept as written), `og:image`, the cut, and linear time on unclosed tags.
 - `crypto.test.ts`: round trip, another family, tampering, another secret, unknown versions, a bad secret.
 - `store.test.ts`: the database calls and headers, the member's token, refusals, and unexpected answers.

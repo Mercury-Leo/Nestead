@@ -46,6 +46,11 @@ describe('pageText', () => {
     expect(pageText(html, URL_).text).toBe('Ingredients\n- 1 cup flour & salt\n- ½ tsp sugar\nBake');
   });
 
+  it('keeps a character reference past U+10FFFF as written, in the text and in og:image', () => {
+    expect(pageText('<p>&#x110000;</p><p>&#9999999; soup</p>', URL_).text).toBe('&#x110000;\n&#9999999; soup');
+    expect(pageText('<meta property="og:image" content="/a&#x110000;.jpg"><p>x</p>', URL_).image).toBe('https://example.com/a&#x110000;.jpg');
+  });
+
   it('cuts the text at the limit', () => {
     const html = `<body><p>${'a'.repeat(MAX_PAGE_TEXT + 500)}</p></body>`;
     expect(pageText(html, URL_).text).toHaveLength(MAX_PAGE_TEXT);

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { checkUrl, createImportHandler, detectEquipment, isoMinutes, parseRecipeHtml } from '.';
+import { checkUrl, createImportHandler, decodeEntities, detectEquipment, isoMinutes, parseRecipeHtml } from '.';
 
 const fixture = readFileSync(new URL('../../tests/fixtures/gnocchi.html', import.meta.url), 'utf8');
 const URL_ = 'https://weeknightpan.co/recipes/crispy-skillet-gnocchi';
@@ -77,6 +77,16 @@ describe('parseRecipeHtml', () => {
       ingredients: ['2 slices bread', '1 tbsp butter'],
       equipment: ['Frying pan'],
     });
+  });
+
+  it('decodes character references, and leaves one past U+10FFFF as written instead of throwing', () => {
+    expect(decodeEntities('&#x41;&#66;&#X43; &amp; &frac12; &#x1F600; &#x10FFFF;')).toBe('ABC & ½ \u{1F600} \u{10FFFF}');
+    for (const ref of ['&#x110000;', '&#9999999;', '&#99999999999999999999;', '&#x10FFFFF;', `&#x${'f'.repeat(300)};`]) {
+      expect(decodeEntities(`a ${ref} b`), ref).toBe(`a ${ref} b`);
+    }
+    const recipe = { '@type': 'Recipe', name: 'Soup &#x110000;', recipeIngredient: ['1 egg &#9999999;'] };
+    const parsed = parseRecipeHtml(`<script type="application/ld+json">${JSON.stringify(recipe)}</script>`, 'https://example.com/soup');
+    expect(parsed?.recipe).toMatchObject({ title: 'Soup &#x110000;', ingredients: ['1 egg &#9999999;'] });
   });
 
   it('returns null when there is no recipe', () => {
