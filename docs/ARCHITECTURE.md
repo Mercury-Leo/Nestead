@@ -25,7 +25,7 @@ same way the board was, without changing anything the core guarantees.
 | Auth            | Supabase Auth, one account per person | `src/auth/accountSession.tsx` over `src/data/supabase/supabaseAccount.ts` |
 | Auth (demo)     | None: pick a member per tab   | `src/auth/demoSession.tsx`                          |
 | Text            | i18next: English bundled, Hebrew fetched on first use | `src/i18n/`                 |
-| Hosting         | Cloudflare Pages               | static, plus Pages Functions: `/api/import`, `/api/search` |
+| Hosting         | Cloudflare Pages               | static, plus Pages Functions: `/api/import`, `/api/search`, `/api/ai` |
 
 The deploy workflow builds with `VITE_BACKEND=supabase`
 (`.github/workflows/deploy.yml`), and `npm run build` refuses anything else
@@ -35,7 +35,8 @@ Runtime dependencies are `react`, `react-dom`, `react-router-dom`,
 `@supabase/supabase-js`, `i18next`, `react-i18next`, `lucide-react` and six
 self-hosted font packages: Newsreader and Hanken Grotesk, plus Noto Arabic and
 Hebrew faces for text in those scripts (`src/styles/fonts.css`). Everything else
-is a dev dependency.
+is a dev dependency, including PGlite, which runs the SQL tests for the AI
+functions in `tests/sql/`.
 
 ## Principles
 
@@ -107,6 +108,8 @@ src/
                              and pointerDrag.ts (shared by the two drags).
   i18n/                      i18next, LocaleProvider (lang and dir), Intl
                              formatting; locales/en.json bundled, he.json lazy.
+  ai/                        Browser client for /api/ai: sends the member's
+                             token, returns a typed outcome, words every error.
   features/
     board/                   The kanban board: drag and drop, filter, repeating
                              chores, actions, default columns, board.css (global).
@@ -138,10 +141,15 @@ functions/api/import.ts      The same handler as a Cloudflare Pages Function.
 server/search/               Recipe search: Tavily, limited to the recipe sites
                              in sites.ts; index.ts is the public surface.
 functions/api/search.ts      The same handler as a Cloudflare Pages Function.
+server/ai/                   AI recipe reading: OpenRouter client, prompt and
+                             output validation, page text, key encryption, the
+                             Supabase store; index.ts is the public surface.
+functions/api/ai/[[path]].ts The same handler as a Cloudflare Pages Function
+                             (a catch-all file, since it answers two routes).
 supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 ```
 
-**Folder guides:** [src/app](../src/app/README.md) ·
+**Folder guides:** [src/ai](../src/ai/README.md) · [src/app](../src/app/README.md) ·
 [src/auth](../src/auth/README.md) · [src/components](../src/components/README.md) ·
 [src/data](../src/data/README.md) · [src/domain](../src/domain/README.md) ·
 [src/i18n](../src/i18n/README.md) · [features/board](../src/features/board/README.md) ·
@@ -152,7 +160,7 @@ supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 [recipe](../src/features/larder/recipe/README.md), [search](../src/features/larder/search/README.md),
 [seed](../src/features/larder/seed/README.md), [timers](../src/features/larder/timers/README.md) ·
 [server/import](../server/import/README.md) · [server/search](../server/search/README.md) ·
-[supabase](../supabase/README.md).
+[server/ai](../server/ai/README.md) · [supabase](../supabase/README.md).
 
 Dependencies point one way: `features` use `components`, `hooks`, `i18n`, `data`
 and `domain`; `domain` imports nothing outside `domain/`. A screen does not reach
@@ -279,6 +287,17 @@ the noun first; a recipe in a language the catalog has no names for is not
 checked against the pantry or diet, and the preview says so
 (`mostlyUnrecognised()` in `features/larder/import/imported.ts`).
 
+**AI reading** is `server/ai/`, the same shape of handler again.
+`POST /api/ai/extract` takes pasted text or a link the importer cannot read;
+`POST /api/ai/key` saves a family's own OpenRouter key. Supabase is called with
+the member's own token. A read is one OpenRouter call that must answer in a closed
+JSON schema, with no tools. It is free on Nestead's key and `:free` models, 5
+reads per person and 45 for the app per UTC day, counted in the database; a family
+may add its own key, which the server encrypts (AES-GCM under `AI_KEY_SECRET`) so
+Postgres holds ciphertext only. The answer is validated into `ImportedRecipe`,
+never repaired, and nothing is saved until the person confirms the preview. See
+[the design](superpowers/specs/2026-10-03-ai-recipe-extraction-design.md).
+
 **Screens load lazily.** The board is home, so each kitchen screen is its own
 chunk, fetched on first visit. An error boundary around the routes turns a
 chunk that has gone missing (a tab left open across a deploy) into a Reload
@@ -331,9 +350,10 @@ cross-client half of `subscribe` is checked separately, for Supabase, by
 ### `useSession()`
 
 Returns a `Session` (`src/auth/session.tsx`): `store`, `me`, `members` and
-`signOut` always; `setMe` in demo mode only; `family`, `rotateJoinCode` and
-`refreshFamily` with Supabase only. Screens depend on this shape, never on which
-session provides it.
+`signOut` always; `setMe` in demo mode only; `family`, `rotateJoinCode`,
+`refreshFamily` and `ai` with Supabase only (real accounts; `ai` is the token for
+`/api/ai` and the family's AI settings, so the demo has no AI reading). Screens
+depend on this shape, never on which session provides it.
 
 ## The Supabase backend
 

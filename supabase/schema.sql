@@ -14,6 +14,10 @@
 --   * every family table carries family_id;
 --   * RLS is on for every table, with a policy, from the moment it exists;
 --   * a row is visible only when its family_id = current_family_id().
+--   The AI tables (family_ai_settings, ai_usage, ai_usage_days) are the
+--   deliberate exception: RLS on and no policies, reached only through security
+--   definer functions; ai_usage is keyed by user and day, ai_usage_days by day,
+--   so neither carries family_id.
 --
 -- Apply it in one run. RLS without policies denies everything, and a table that
 -- exists before its policy does is briefly world-readable to anyone holding the
