@@ -78,6 +78,9 @@ export default function ImportRecipe(): JSX.Element {
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   // Counts AI reads, so each one starts a fresh preview.
   const [reads, setReads] = useState(0);
+  // True while an AI read is out. Each one spends a free read, and a tab change or a search
+  // clears the status that disables the buttons, so the status alone cannot stop a second.
+  const reading = useRef(false);
 
   useEffect(() => {
     if (reveal > 0) previewAt.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -131,27 +134,32 @@ export default function ImportRecipe(): JSX.Element {
 
   /** One AI read of pasted text or a page, into the same preview an import fills. */
   const readWithAi = async (input: AiInput): Promise<void> => {
-    if (ai === undefined) return;
-    setStatus({ kind: 'loading', ai: true });
-    const outcome = await extractRecipe(ai, input);
-    refreshAiStatus();
-    if (outcome.kind === 'error') {
-      setPreview(null);
-      const { message, offerWrite } = aiErrorMessage(outcome.code, {
-        input: 'text' in input ? 'text' : 'url',
-        ...(outcome.scope !== undefined ? { scope: outcome.scope } : {}),
+    if (ai === undefined || reading.current) return;
+    reading.current = true;
+    try {
+      setStatus({ kind: 'loading', ai: true });
+      const outcome = await extractRecipe(ai, input);
+      refreshAiStatus();
+      if (outcome.kind === 'error') {
+        setPreview(null);
+        const { message, offerWrite } = aiErrorMessage(outcome.code, {
+          input: 'text' in input ? 'text' : 'url',
+          ...(outcome.scope !== undefined ? { scope: outcome.scope } : {}),
+        });
+        setStatus({ kind: 'error', message, ...(offerWrite === true ? { offerWrite } : {}), ...(outcome.code === 'offline' ? { offline: true } : {}) });
+        return;
+      }
+      const missing = outcome.report.missing;
+      setReads((count) => count + 1);
+      setPreview({
+        recipe: fromImported(outcome.recipe),
+        stated: { photo: !missing.includes('photo'), servings: !missing.includes('servings'), times: !missing.includes('times'), ai: true },
       });
-      setStatus({ kind: 'error', message, ...(offerWrite === true ? { offerWrite } : {}), ...(outcome.code === 'offline' ? { offline: true } : {}) });
-      return;
+      setStatus({ kind: 'ok', ai: true, ...(outcome.recipe.site !== undefined ? { site: outcome.recipe.site } : {}) });
+      setReveal((count) => count + 1);
+    } finally {
+      reading.current = false;
     }
-    const missing = outcome.report.missing;
-    setReads((count) => count + 1);
-    setPreview({
-      recipe: fromImported(outcome.recipe),
-      stated: { photo: !missing.includes('photo'), servings: !missing.includes('servings'), times: !missing.includes('times'), ai: true },
-    });
-    setStatus({ kind: 'ok', ai: true, ...(outcome.recipe.site !== undefined ? { site: outcome.recipe.site } : {}) });
-    setReveal((count) => count + 1);
   };
 
   const runSearch = async (): Promise<void> => {
@@ -315,6 +323,7 @@ export default function ImportRecipe(): JSX.Element {
         )}
 
         <div aria-live="polite">
+          {status.kind === 'loading' && status.ai === true && <p className={s.muted}>{t('import.reading')}</p>}
           {status.kind === 'ok' && (
             <p className={s.ok}>
               <Check size={18} strokeWidth={2.4} aria-hidden />{' '}

@@ -91,10 +91,19 @@ afterEach(() => {
 
 type Reply = { body: unknown; status?: number };
 
+/** A reply that is not given yet: the request waits until `answer` is called. */
+function pending(): { reply: Promise<Reply>; answer: (reply: Reply) => void } {
+  let answer: (reply: Reply) => void = () => {};
+  const reply = new Promise<Reply>((resolve) => {
+    answer = resolve;
+  });
+  return { reply, answer };
+}
+
 /** Answers each path from `routes`; a request to any other path fails the test. */
-function stubFetch(routes: Record<string, Reply>): ReturnType<typeof vi.fn> {
+function stubFetch(routes: Record<string, Reply | Promise<Reply>>): ReturnType<typeof vi.fn> {
   const fetch = vi.fn(async (input: unknown) => {
-    const reply = routes[String(input)];
+    const reply = await routes[String(input)];
     if (reply === undefined) throw new Error(`unexpected request to ${String(input)}`);
     return new Response(JSON.stringify(reply.body), { status: reply.status ?? 200 });
   });
@@ -125,9 +134,10 @@ const buttonNamed = (page: HTMLElement, name: string): HTMLButtonElement | undef
 const importByOptions = (page: HTMLElement): string[] =>
   [...page.querySelectorAll(`[role="radiogroup"][aria-label="${i18n.t('import.importBy')}"] label`)].map((label) => label.textContent ?? '');
 
-async function choosePasteText(page: HTMLElement): Promise<void> {
-  await act(async () => page.querySelector<HTMLInputElement>('input[type="radio"][value="text"]')!.click());
+async function chooseMode(page: HTMLElement, mode: 'link' | 'search' | 'text'): Promise<void> {
+  await act(async () => page.querySelector<HTMLInputElement>(`input[type="radio"][value="${mode}"]`)!.click());
 }
+const choosePasteText = (page: HTMLElement): Promise<void> => chooseMode(page, 'text');
 
 async function fetchLink(page: HTMLElement, link: string): Promise<void> {
   await act(async () => typeInto(page.querySelector<HTMLInputElement>('input[type="url"]')!, link));
@@ -148,6 +158,11 @@ const previewTitle = (page: HTMLElement): string | undefined => page.querySelect
 /** The line above the preview's title: the site a page was read from; none for pasted text. */
 const aboveTitle = (page: HTMLElement): string | undefined => page.querySelector('#preview-title')?.previousElementSibling?.textContent ?? undefined;
 const statusLine = (page: HTMLElement): string => page.querySelector('[aria-live]')?.textContent?.trim() ?? '';
+/** Which source badges the preview shows over its photo: "Mine", "Web", both or neither. */
+const sourceBadges = (page: HTMLElement): string[] => {
+  const shown = [...page.querySelectorAll('section[aria-labelledby="preview-title"] span')].map((span) => span.textContent?.trim());
+  return [i18n.t('recipe.badge.mine'), i18n.t('recipe.badge.web')].filter((label) => shown.includes(label));
+};
 
 describe('the import screen, by what the account can do', () => {
   it('offers Paste text to an account with AI', async () => {
@@ -200,12 +215,38 @@ describe('Paste text', () => {
     expect(previewTitle(page)).toBe('Lemon Gnocchi');
     expect(page.textContent).toContain(i18n.t('import.read.byAi'));
     expect(statusLine(page)).toBe(i18n.t('import.readByAi'));
-    // Text has no page, so no site to show above the title.
+    // Text has no page, so no site to show above the title, and it is the family's own.
     expect(aboveTitle(page)).toBeUndefined();
+    expect(sourceBadges(page)).toEqual([i18n.t('recipe.badge.mine')]);
     expect(requestsTo(fetch, '/api/ai/extract')).toHaveLength(1);
     expect(JSON.parse(requestsTo(fetch, '/api/ai/extract')[0]![1].body as string)).toEqual({ text: '200 g gnocchi, 1 lemon. Boil, toss.' });
     // The read used one of the free reads, so the line under the box is asked again.
     expect(status.mock.calls.length).toBeGreaterThan(statusCalls);
+  });
+
+  it('reads once while a read is pending, even when the buttons come back', async () => {
+    const extract = pending();
+    const fetch = stubFetch({ '/api/ai/extract': extract.reply });
+    const page = await render(<ImportRecipe />, session(freeAi));
+    await choosePasteText(page);
+    await act(async () => typeInto(page.querySelector('textarea')!, 'Pancakes: 2 eggs, 1 cup flour. Whisk and fry.'));
+    await act(async () => buttonNamed(page, i18n.t('import.readWithAi'))!.click());
+    expect(requestsTo(fetch, '/api/ai/extract')).toHaveLength(1);
+
+    // Switching tabs clears the status, which enables the button again: the read is still out.
+    await chooseMode(page, 'link');
+    await choosePasteText(page);
+    expect(buttonNamed(page, i18n.t('import.readWithAi'))!.disabled).toBe(false);
+    await act(async () => buttonNamed(page, i18n.t('import.readWithAi'))!.click());
+    expect(requestsTo(fetch, '/api/ai/extract')).toHaveLength(1);
+
+    await act(async () => extract.answer({ body: readText }));
+    await until(() => previewTitle(page) !== undefined);
+    expect(requestsTo(fetch, '/api/ai/extract')).toHaveLength(1);
+
+    // And once it is done, the next read is allowed.
+    await act(async () => buttonNamed(page, i18n.t('import.readWithAi'))!.click());
+    expect(requestsTo(fetch, '/api/ai/extract')).toHaveLength(2);
   });
 
   it('says what went wrong, and shows no preview, when the free reads are used up', async () => {
@@ -238,11 +279,28 @@ describe('Read it with AI', () => {
     expect(page.textContent).toContain(i18n.t('import.read.byAi'));
     expect(statusLine(page)).toBe(i18n.t('import.readByAiFrom', { site: 'example.com' }));
     expect(aboveTitle(page)).toBe('example.com');
+    expect(sourceBadges(page)).toEqual([i18n.t('recipe.badge.web')]);
     const [[, init]] = requestsTo(fetch, '/api/ai/extract') as [[string, RequestInit]];
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer tok');
     expect(JSON.parse(init.body as string)).toEqual({ url: LINK });
     // Gone once it has been read: the answer is the preview now.
     expect(buttonNamed(page, i18n.t('import.readItWithAi'))).toBeUndefined();
+  });
+
+  it('says Reading while it reads, whatever the tab', async () => {
+    const extract = pending();
+    stubFetch({ '/api/import': { body: { error: 'not-found' }, status: 422 }, '/api/ai/extract': extract.reply });
+    const page = await render(<ImportRecipe />, session(freeAi));
+    await fetchLink(page, LINK);
+    await until(() => buttonNamed(page, i18n.t('import.readItWithAi')) !== undefined);
+    await act(async () => buttonNamed(page, i18n.t('import.readItWithAi'))!.click());
+
+    expect(statusLine(page)).toBe(i18n.t('import.reading'));
+    expect(buttonNamed(page, i18n.t('import.readItWithAi'))).toBeUndefined();
+
+    await act(async () => extract.answer({ body: readPage }));
+    await until(() => previewTitle(page) !== undefined);
+    expect(statusLine(page)).toBe(i18n.t('import.readByAiFrom', { site: 'example.com' }));
   });
 
   it.each(['blocked', 'invalid-url', 'timeout', 'too-large', 'fetch-failed'])('is not offered after %s, which AI could not fix', async (error) => {
