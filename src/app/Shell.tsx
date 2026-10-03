@@ -3,7 +3,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { cx } from '../components/ui';
 import { TimerHost } from '../features/larder/timers/TimerHost';
 import { AppRoutes } from './AppRoutes';
-import { Sidebar, TabBar } from './Nav';
+import { PagePills, Sidebar, TabBar } from './Nav';
 import s from './Shell.module.css';
 
 /** The frame around every screen: sidebar or tab bar, the page, and cook-mode timers. */
@@ -17,6 +17,8 @@ export function Shell(): JSX.Element {
     <div className={cx(s.shell, cooking && s.fullscreen, noTabBar && s.noTabBar)}>
       {!cooking && <Sidebar />}
       <main className={s.main} id="main">
+        {/* Where the tab bar shows, so do the pills; CSS hides them on desktop. */}
+        {!noTabBar && <PagePills />}
         <ErrorBoundary resetKey={pathname}>
           <AppRoutes />
         </ErrorBoundary>

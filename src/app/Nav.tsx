@@ -255,3 +255,23 @@ export function TabBar(): JSX.Element {
     </>
   );
 }
+
+/** On phones, a section's pages as pills at the top of the page. The sidebar lists them on desktop. */
+export function PagePills(): JSX.Element | null {
+  const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const here = locate(pathname);
+  if (here === undefined || here.section.pages.length < 2) return null;
+  return (
+    <nav className={s.pills} aria-label={t('nav.sectionPages', { section: t(here.section.labelKey) })}>
+      {here.section.pages.map((page) => {
+        const active = here.page === page;
+        return (
+          <Link key={page.path} to={page.path} className={cx(s.pill, active && s.pillOn)} aria-current={active ? 'page' : undefined}>
+            {t(page.labelKey)}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}

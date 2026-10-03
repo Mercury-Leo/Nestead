@@ -10,7 +10,7 @@ import { createLocalStore } from '../data/local/localStore';
 import type { Member } from '../domain/types';
 import { KitchenProvider } from '../features/larder/KitchenContext';
 import { LocaleProvider, i18n } from '../i18n';
-import { Sidebar, TabBar } from './Nav';
+import { PagePills, Sidebar, TabBar } from './Nav';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -190,5 +190,28 @@ describe('the tab bar', () => {
     const family = sheetButton(i18n.t('nav.family'));
     expect(family?.disabled).toBe(true);
     expect(family?.getAttribute('aria-label')).toBe(i18n.t('nav.notPinnable', { section: i18n.t('nav.family') }));
+  });
+});
+
+describe('the page pills', () => {
+  it("show a section's pages, with the current one marked", async () => {
+    const host = await render(<PagePills />, '/pantry');
+    const pills = host.querySelector(`nav[aria-label="${i18n.t('nav.sectionPages', { section: i18n.t('nav.larder') })}"]`);
+    expect([...(pills?.querySelectorAll('a') ?? [])].map((a) => a.textContent)).toEqual([
+      i18n.t('nav.library'),
+      i18n.t('nav.search'),
+      i18n.t('nav.pantry'),
+      i18n.t('nav.diet'),
+    ]);
+    expect(link(pills as HTMLElement, i18n.t('nav.pantry'))?.getAttribute('aria-current')).toBe('page');
+  });
+
+  it('stay away from sections with one page', async () => {
+    for (const path of ['/', '/lists', '/family']) {
+      const host = await render(<PagePills />, path);
+      expect(host.querySelector('nav'), path).toBeNull();
+      unmount?.();
+      unmount = null;
+    }
   });
 });
