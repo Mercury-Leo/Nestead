@@ -215,7 +215,8 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
                   <AlertTriangle size={17} strokeWidth={2.2} aria-hidden />{' '}
                   {/* One span, so the line's text and its quotes wrap as one in the flex row. */}
                   <span>
-                    <Trans i18nKey="import.preview.cantRead" values={{ item: line.raw ?? line.item }} />
+                    {/* The line goes in as a child, never a Trans value: a value is parsed for <0>-style tags, and this text is the model's or the page's. */}
+                    <Trans i18nKey="import.preview.cantRead" components={{ item: <bdi>{line.raw ?? line.item}</bdi> }} />
                   </span>
                 </p>
                 <div className={s.flagFields}>

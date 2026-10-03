@@ -743,7 +743,7 @@
       "uncheckedWhy": "We couldn’t recognise these ingredients, so your diet and pantry weren’t checked. Read them yourself before you cook.",
       "whatWeRead": "What we read",
       "ingredients": "Ingredients · {{count, number}}",
-      "cantRead": "Couldn’t read a quantity for “<bdi>{{item}}</bdi>”",
+      "cantRead": "Couldn’t read a quantity for “<item/>”",
       "qtyFor": "Quantity for {{item}}",
       "unitFor": "Unit for {{item}}",
       "equipment": "Equipment · {{count, number}}",

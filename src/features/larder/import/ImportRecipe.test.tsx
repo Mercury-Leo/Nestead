@@ -259,6 +259,23 @@ describe('Paste text', () => {
     await until(() => (page.textContent ?? '').includes('5 free AI reads'));
     expect(previewTitle(page)).toBeUndefined();
   });
+
+  it('shows a line it cannot read a quantity in as the text it is, markup and all', async () => {
+    // What a model wrote is never markup: not for React, and not for <Trans> either.
+    const lines = ['<0>x</0> basil', '<_x>y</_x> salt', '<1/> pepper'];
+    stubFetch({ '/api/ai/extract': { body: { ...readText, recipe: { ...gnocchi, ingredients: [...gnocchi.ingredients, ...lines] } } } });
+    const page = await render(<ImportRecipe />, session(freeAi));
+    await choosePasteText(page);
+    await act(async () => typeInto(page.querySelector('textarea')!, 'Gnocchi with basil, salt and pepper.'));
+    await act(async () => buttonNamed(page, i18n.t('import.readWithAi'))!.click());
+    await until(() => previewTitle(page) !== undefined);
+
+    const quoted = [...page.querySelectorAll('bdi')].map((bdi) => bdi.textContent);
+    for (const line of lines) {
+      expect(quoted).toContain(line);
+      expect(page.textContent).toContain(`\u201c${line}\u201d`);
+    }
+  });
 });
 
 describe('Read it with AI', () => {
