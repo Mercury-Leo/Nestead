@@ -56,20 +56,26 @@ export function Facts({ show, className }: { show: OmdbDetails; className?: stri
   );
 }
 
-/** Cycles To watch, Watching, Watched. The label says what a press changes it to. */
-function StatusButton({ status, onCycle }: { status: ShowStatus; onCycle: () => void }): JSX.Element {
+/**
+ * The status as a badge beside the title. A press cycles To watch, Watching,
+ * Watched, and the label says what it changes to. The button is a 44px target
+ * around the smaller badge.
+ */
+function StatusBadge({ status, onCycle }: { status: ShowStatus; onCycle: () => void }): JSX.Element {
   const { t } = useTranslation();
   const Icon = STATUS_ICON[status];
   const label = statusLabel(t, status);
   return (
     <button
       type="button"
-      className={cx(s.status, s[STATUS_KEY[status]])}
+      className={s.statusHit}
       aria-label={t('shows.card.changeStatus', { status: label, next: statusLabel(t, nextStatus(status)) })}
       onClick={onCycle}
     >
-      <Icon size={16} strokeWidth={2.2} aria-hidden />
-      <span>{label}</span>
+      <span className={cx(s.status, s[STATUS_KEY[status]])}>
+        <Icon size={14} strokeWidth={2.4} aria-hidden />
+        <span>{label}</span>
+      </span>
     </button>
   );
 }
@@ -193,15 +199,17 @@ function ShowCardView({ show, revealed }: { show: Show; revealed?: number }): JS
         <Poster url={show.posterUrl} kind={show.kind} sizes="(min-width: 1024px) 96px, 84px" />
       </a>
       <div className={s.body}>
-        <h3 className={s.title} dir="auto">
-          <a ref={title} href={href} target="_blank" rel="noopener noreferrer" className={s.titleLink}>
-            {show.title}
-            <span className="visually-hidden"> {t('shows.card.onImdb')}</span>
-          </a>
-        </h3>
-        <Facts show={show} />
-        <div className={s.controls}>
-          <StatusButton status={show.status} onCycle={() => void cycleStatus(store, show).catch(() => undefined)} />
+        <div className={s.top}>
+          <h3 className={s.title} dir="auto">
+            <a ref={title} href={href} target="_blank" rel="noopener noreferrer" className={s.titleLink}>
+              {show.title}
+              <span className="visually-hidden"> {t('shows.card.onImdb')}</span>
+            </a>
+          </h3>
+          <StatusBadge status={show.status} onCycle={() => void cycleStatus(store, show).catch(() => undefined)} />
+        </div>
+        <div className={s.factsRow}>
+          <Facts show={show} />
           <button
             type="button"
             className={cx(s.toggle, open && s.toggleOpen)}
