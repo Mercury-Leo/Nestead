@@ -5,10 +5,10 @@ import { cx } from '../../../components/ui';
 import s from './Poster.module.css';
 
 /**
- * OMDb's posters are on Amazon's image servers, as `<id>._V1_<options>.jpg`:
+ * Posters come as links to Amazon's image servers, as `<id>._V1_<options>.jpg`:
  * these days `._V1_QL75_UX380_CR0,0,380,562_.jpg`, a 380 px crop, and once
  * `._V1_SX300.jpg`. Those servers make the same poster at any width on
- * request (`._V1_QL75_SX200.jpg`, at OMDb's quality). A card draws it 84–96 px
+ * request (`._V1_QL75_SX200.jpg`, at the quality linked). A card draws it 84–96 px
  * wide, so the browser picks from 100, 200 and 300 px by `sizes` and the
  * screen's density: well under half the bytes on most phones (a 380 px
  * poster is about 40 KB, a 200 px one about 15 KB). Other links are left alone.
@@ -23,9 +23,9 @@ export function posterSrcSet(url: string): string | undefined {
 }
 
 /**
- * A show's poster from OMDb's link, loaded and cached by the browser, never
+ * A show's poster from its saved link, loaded and cached by the browser, never
  * stored. Missing, not https, or failing to load: a plain tile with the kind's
- * icon. A smaller width that fails falls back to OMDb's own link first. Always
+ * icon. A smaller width that fails falls back to the saved link first. Always
  * decorative: the title beside it names the show.
  *
  * `sizes` is how wide the poster is drawn, as in <img sizes>.

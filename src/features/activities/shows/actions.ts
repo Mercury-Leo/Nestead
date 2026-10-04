@@ -1,9 +1,9 @@
 import type { DataStore } from '../../../data/types';
 import { newShow, nextStatus, refreshPatch, statusPatch } from '../../../domain/shows';
-import type { OmdbDetails } from '../../../domain/shows';
+import type { FetchedDetails } from '../../../domain/shows';
 import type { Show } from '../../../domain/types';
-import { lookupShow } from './omdb';
-import type { ShowsFailure } from './omdb';
+import { lookupShow } from './client';
+import type { ShowsFailure } from './client';
 
 /**
  * The Shows page's writes. Screens decide what to do; these do it through the
@@ -15,7 +15,7 @@ import type { ShowsFailure } from './omdb';
  * title is never added twice. If another device added it a moment ago, the
  * backend turns the insert away (one row per title) and its row is returned.
  */
-export async function addShow(store: DataStore, shows: readonly Show[], details: OmdbDetails, memberId: string): Promise<{ show: Show; existed: boolean }> {
+export async function addShow(store: DataStore, shows: readonly Show[], details: FetchedDetails, memberId: string): Promise<{ show: Show; existed: boolean }> {
   const existing = shows.find((row) => row.imdbId === details.imdbId);
   if (existing !== undefined) return { show: existing, existed: true };
   try {
@@ -43,7 +43,7 @@ export async function restoreShow(store: DataStore, show: Show): Promise<Show> {
 }
 
 /**
- * Reads this one show from OMDb again and saves only OMDb's fields. On any
+ * Reads this one show's details again and saves only the fetched fields. On any
  * failure nothing is written and the saved details stay as they were.
  */
 export async function refreshShow(store: DataStore, show: Show, lookup: typeof lookupShow = lookupShow): Promise<{ ok: true; show: Show } | { ok: false; failure: ShowsFailure }> {

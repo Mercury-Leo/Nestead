@@ -29,7 +29,7 @@ const keyOf = (query: string, view: ShowView): string => [query, view.status, vi
 
 /**
  * The family's movies and series. Everything here works on saved rows: the
- * filters, the sort and the name search never call OMDb. Only adding a show,
+ * filters, the sort and the name search never call /api/shows. Only adding a show,
  * and refreshing one, do (AddShow.tsx, ShowCard.tsx).
  *
  * A long list is built a page at a time (SHOWS_PAGE), with Show more for the

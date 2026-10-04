@@ -966,9 +966,9 @@
       "seasons_other": "{{count, number}} seasons",
       "rating": "IMDb rating {{value}} out of 10",
       "changeStatus": "{{status}}. Change to {{next}}",
-      "noPlot": "OMDb has no plot for this one.",
-      "fetched": "Details from OMDb, {{date}}",
-      "refresh": "Refresh from OMDb",
+      "noPlot": "No plot for this one.",
+      "fetched": "Details as of {{date}}",
+      "refresh": "Refresh details",
       "refreshing": "Refreshing…",
       "drop": "Drop it",
       "restore": "Restore",
@@ -977,10 +977,10 @@
       "deleteQuestion": "Delete “<item/>” for everyone in the family?"
     },
     "failure": {
-      "unavailable": "OMDb isn’t set up on this server.",
-      "limit": "OMDb’s daily limit is used up. Try again tomorrow.",
-      "notFound": "OMDb doesn’t have this title.",
-      "failed": "Couldn’t reach OMDb. Try again."
+      "unavailable": "Looking up shows isn’t set up on this server.",
+      "limit": "Today’s lookups are used up. Try again tomorrow.",
+      "notFound": "This title wasn’t found.",
+      "failed": "Couldn’t look that up. Try again."
     },
     "addSheet": {
       "title": "Add a show",
@@ -990,7 +990,7 @@
       "search": "Search",
       "searching": "Searching…",
       "results": "Results",
-      "noResults": "Nothing on OMDb by that name.",
+      "noResults": "Nothing found by that name.",
       "inList": "In your list",
       "reading": "Reading the details…",
       "back": "Back to results",

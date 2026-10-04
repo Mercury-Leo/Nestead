@@ -1004,9 +1004,9 @@
       "seasons_other": "{{count, number}} עונות",
       "rating": "דירוג IMDb {{value}} מתוך 10",
       "changeStatus": "{{status}}. הבא: {{next}}",
-      "noPlot": "אין ב-OMDb תקציר לכותר הזה.",
-      "fetched": "הפרטים מ-OMDb, {{date}}",
-      "refresh": "רענון מ-OMDb",
+      "noPlot": "אין תקציר לכותר הזה.",
+      "fetched": "הפרטים נכונים ל-{{date}}",
+      "refresh": "רענון הפרטים",
       "refreshing": "ברענון…",
       "drop": "לוותר עליו",
       "restore": "להחזיר לרשימה",
@@ -1015,10 +1015,10 @@
       "deleteQuestion": "למחוק את \"<item/>\" לכל בני המשפחה?"
     },
     "failure": {
-      "unavailable": "OMDb לא מוגדר בשרת הזה.",
-      "limit": "המכסה היומית של OMDb נגמרה. נסו שוב מחר.",
-      "notFound": "הכותר הזה לא נמצא ב-OMDb.",
-      "failed": "לא הצלחנו להתחבר ל-OMDb. נסו שוב."
+      "unavailable": "חיפוש סרטים וסדרות לא מוגדר בשרת הזה.",
+      "limit": "המכסה היומית לחיפושים נגמרה. נסו שוב מחר.",
+      "notFound": "הכותר הזה לא נמצא.",
+      "failed": "לא הצלחנו לחפש כרגע. נסו שוב."
     },
     "addSheet": {
       "title": "הוספת סרט או סדרה",
@@ -1028,7 +1028,7 @@
       "search": "חיפוש",
       "searching": "מחפשים…",
       "results": "תוצאות",
-      "noResults": "אין ב-OMDb כותר בשם הזה.",
+      "noResults": "לא נמצא כותר בשם הזה.",
       "inList": "כבר ברשימה",
       "reading": "קוראים את הפרטים…",
       "back": "חזרה לתוצאות",

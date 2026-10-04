@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { lookupShow, searchShows } from './omdb';
+import { lookupShow, searchShows } from './client';
 
 function answer(body: string, status = 200, type = 'application/json') {
   const fetchMock = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => new Response(body, { status, headers: { 'content-type': type } }));
@@ -64,7 +64,7 @@ describe('lookupShow', () => {
     expect(fetchMock.mock.calls[0]?.[1]?.cache).toBe('no-store');
   });
 
-  it('says when OMDb has no such title', async () => {
+  it('says when the service has no such title', async () => {
     answer(JSON.stringify({ error: 'not-found' }), 404);
     expect(await lookupShow('tt1375666')).toEqual({ ok: false, failure: 'not-found' });
   });

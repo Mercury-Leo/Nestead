@@ -8,14 +8,14 @@ import { BackArrow, Button, Segmented, Sheet, Tag, TextField } from '../../../co
 import type { Show } from '../../../domain/types';
 import { addShow } from './actions';
 import { kindLabel } from './labels';
-import { lookupShow, searchShows } from './omdb';
-import type { ShowsFailure } from './omdb';
+import { lookupShow, searchShows } from './client';
+import type { ShowsFailure } from './client';
 import { Poster } from './Poster';
 import { Facts, failureKey } from './ShowCard';
 import s from './AddShow.module.css';
 
 /**
- * Search, results, preview, save. Each step costs OMDb one request at most:
+ * Search, results, preview, save. Each step costs the service one request at most:
  * search runs when the form is sent, never per keystroke, and a result that is
  * already on the family's list opens that entry instead of being read again.
  */

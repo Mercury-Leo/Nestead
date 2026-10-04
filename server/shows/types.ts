@@ -1,7 +1,10 @@
-/** The shapes the OMDb proxy sends. The app reads all of them too, as types only. */
+/** The shapes /api/shows sends, and the provider behind it. The app reads the shapes too, as types only. */
 
-/** OMDb's `Type`, narrowed: episodes and games are dropped. */
+/** Movies and series only: a service's episodes and games are dropped. */
 export type ShowKind = 'movie' | 'series';
+
+/** IMDb's id is the app's key for a title, whichever service answers: "tt1375666". */
+export const IMDB_ID = /^tt\d{7,10}$/;
 
 /** One search result. Its details are read, by `?id=`, only once it is chosen. */
 export interface ShowHit {
@@ -11,21 +14,22 @@ export interface ShowHit {
   /** The first year: a series running "2008–2013" is 2008. */
   year?: number;
   kind: ShowKind;
-  /** An https image on Amazon's servers, never img.omdbapi.com (that one needs the key). */
+  /** An https image that needs no key, so the browser can load it. */
   posterUrl?: string;
 }
 
-/** One title, normalised: OMDb's "N/A" is absent, numbers are numbers. */
+/** One title, normalised: what the service lacks is absent, numbers are numbers. */
 export interface ShowDetails {
   imdbId: string;
   kind: ShowKind;
   title: string;
-  /** OMDb's short plot (`plot=short`), written for a card. */
+  /** A short plot, written for a card. */
   plot?: string;
   posterUrl?: string;
-  /** ISO date, YYYY-MM-DD. From `Released`, or 1 January of `Year` when OMDb has no date. */
+  /** ISO date, YYYY-MM-DD: the release date, or 1 January of the year when the service has no date. */
   released?: string;
   year?: number;
+  /** A movie's running time, or one episode's for a series. */
   runtimeMin?: number;
   /** Series only. */
   totalSeasons?: number;
@@ -35,9 +39,36 @@ export interface ShowDetails {
 
 export type ShowsError = 'invalid-query' | 'not-configured' | 'limit' | 'not-found' | 'failed' | 'timeout';
 
+/** What a provider throws when it cannot answer. Its message is the code, never the service's text. */
+export class ShowsProviderError extends Error {
+  constructor(readonly code: 'not-configured' | 'limit' | 'failed') {
+    super(code);
+  }
+}
+
+/** One search: a name, already trimmed, and optionally one kind. */
+export interface ShowsSearch {
+  query: string;
+  kind?: ShowKind;
+}
+
+/**
+ * A movies-and-series service. The handler checks the question, times the
+ * provider out (`signal`) and turns its answers into responses; the provider
+ * only asks its service and normalises the answer: movies and series with an
+ * IMDb id and a title, each once, absent fields left out, titles under 300
+ * characters and plots under 1,000, posters https and free of any key. It
+ * throws `ShowsProviderError` for what the app should hear about, and nothing
+ * it throws ever reaches a response. Chosen in `provider.ts`.
+ */
+export interface ShowsProvider {
+  /** Movies and series by name; empty when the service finds none, or too many to list. */
+  search(search: ShowsSearch, signal: AbortSignal): Promise<ShowHit[]>;
+  /** One title with a short plot, or undefined when the service has no movie or series by that id. */
+  details(imdbId: string, signal: AbortSignal): Promise<ShowDetails | undefined>;
+}
+
 export interface ShowsOptions {
-  /** The OMDb API key. Without one, every request answers `not-configured`. */
-  apiKey?: string;
-  fetch?: typeof fetch;
+  provider: ShowsProvider;
   timeoutMs?: number;
 }

@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { SessionContext } from '../../../auth/session';
 import { createLocalStore } from '../../../data/local/localStore';
-import type { OmdbDetails } from '../../../domain/shows';
+import type { FetchedDetails } from '../../../domain/shows';
 import type { Member, Show } from '../../../domain/types';
 import { i18n, loadLocale, localeReady } from '../../../i18n';
 import { Facts, ShowCard, sameShow } from './ShowCard';
@@ -13,7 +13,7 @@ import { Facts, ShowCard, sameShow } from './ShowCard';
 let unmount: (() => void) | null = null;
 
 /** The facts line's items, as the reader scans them. */
-function facts(show: OmdbDetails): string[] {
+function facts(show: FetchedDetails): string[] {
   const host = document.createElement('div');
   document.body.append(host);
   const root = createRoot(host);
@@ -45,7 +45,7 @@ describe('Facts', () => {
     expect(items).toEqual(['2010', 'Movie', '148 min']);
   });
 
-  it('leaves out what OMDb did not give', () => {
+  it('leaves out what the service did not give', () => {
     expect(facts({ imdbId: 'tt0903747', kind: 'series', title: 'Breaking Bad' })).toEqual(['Series']);
   });
 });

@@ -3,10 +3,11 @@ import type { ShowDetails, ShowHit, ShowKind, ShowsError } from '../../../../ser
 /**
  * The browser's side of /api/shows (server/shows). Called only to search when
  * adding a show, to read the chosen result, and to refresh one show someone
- * asked for: the list itself reads saved rows, never OMDb.
+ * asked for: the list itself reads saved rows. Which service answers is the
+ * server's business (server/shows/provider.ts).
  *
- * `unavailable` means this build has no OMDb: the endpoint is missing (a static
- * host, the demo build) or the server has no key.
+ * `unavailable` means this build cannot look shows up: the endpoint is missing
+ * (a static host, the demo build) or the server has no key.
  */
 export type ShowsFailure = 'unavailable' | 'limit' | 'not-found' | 'failed';
 
@@ -39,9 +40,9 @@ export async function searchShows(query: string, kind?: ShowKind): Promise<Shows
 }
 
 /**
- * One title's details, with OMDb's short plot. The server lets the browser keep
+ * One title's details, with a short plot. The server lets the browser keep
  * an answer for ten minutes; `fresh` (a refresh someone asked for) skips that
- * copy, so the details saved are what OMDb says now.
+ * copy, so the details saved are what the service says now.
  */
 export async function lookupShow(imdbId: string, fresh = false): Promise<ShowsAnswer<ShowDetails>> {
   const answer = await ask(new URLSearchParams({ id: imdbId }), fresh ? { cache: 'no-store' } : {});

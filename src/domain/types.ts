@@ -285,20 +285,21 @@ export type ShowKind = 'movie' | 'series';
 export type ShowStatus = 'to-watch' | 'watching' | 'watched' | 'dropped';
 
 /**
- * A movie or series on the family's list. OMDb's details are saved when it is
- * added, so the list never calls OMDb; they change only when someone refreshes
- * that one show (see refreshPatch() in shows.ts). One row per imdbId per family.
+ * A movie or series on the family's list. Its details (from /api/shows) are
+ * saved when it is added, so the list never fetches them; they change only
+ * when someone refreshes that one show (see refreshPatch() in shows.ts). One
+ * row per imdbId per family.
  */
 export interface Show extends Base {
   /** IMDb's id, "tt1375666". */
   imdbId: string;
   kind: ShowKind;
   title: string;
-  /** OMDb's short plot. */
+  /** A short plot. */
   plot?: string;
-  /** OMDb's link to the poster on Amazon's servers. The image itself is never stored. */
+  /** A link to the poster on an image host (Amazon's today). The image itself is never stored. */
   posterUrl?: string;
-  /** ISO date (YYYY-MM-DD); 1 January of the year when OMDb has no date. */
+  /** ISO date (YYYY-MM-DD); 1 January of the year when the service has no date. */
   released?: string;
   /** The first year: a series running 2008–2013 is 2008. */
   year?: number;
@@ -307,7 +308,7 @@ export interface Show extends Base {
   totalSeasons?: number;
   /** 0 to 10. */
   imdbRating?: number;
-  /** ISO timestamp of the OMDb read these details came from. */
+  /** ISO timestamp of the read these details came from. */
   fetchedAt: string;
   status: ShowStatus;
   /** ISO timestamp: set when the status becomes watched, cleared when it leaves it. */

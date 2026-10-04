@@ -17,7 +17,7 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 - Kitchen: screens read shared rows from `useKitchen()` and write through `src/features/larder/actions.ts`.
 - Import API: one `(Request) => Response` handler in `server/import/`, run by `vite.config.ts` in dev and preview and `functions/api/import.ts` on Cloudflare.
 - Search API: the same shape in `server/search/` (`functions/api/search.ts`); it returns links on recipe sites the importer reads, and the one chosen goes through `/api/import`.
-- Shows API: the same shape in `server/shows/` (`functions/api/shows.ts`): OMDb search and one title's details, called only to add a show or refresh one; the details are saved as a `shows` row, so the list never calls OMDb.
+- Shows API: the same shape in `server/shows/` (`functions/api/shows.ts`): search and one title's details from a `ShowsProvider`, OMDb today, chosen only in `server/shows/provider.ts`; called only to add a show or refresh one; the details are saved as a `shows` row, so the list never calls it.
 - AI API: the same shape in `server/ai/` (`functions/api/ai/[[path]].ts`): one model call per read, validated into `ImportedRecipe`, never acted on; Supabase is called with the member's own token; family keys are encrypted by the server (`AI_KEY_SECRET`).
 - Text: UI strings come from `t()`, with keys typed from `src/i18n/locales/en.json`.
 
@@ -34,12 +34,12 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 | `src/features/lists/` | Shopping list and its sections | [README](src/features/lists/README.md) |
 | `src/features/family/` | Family page: invites, members, the AI assistant card, theme, language | [README](src/features/family/README.md) |
 | `src/features/larder/` | Kitchen: a folder per screen, `recipe/` shared UI, `seed/`, `timers/` | [README](src/features/larder/README.md) |
-| `src/features/activities/` | Activities: `shows/`, the family's movies and series (cards, add sheet, OMDb client, writes) | [README](src/features/activities/README.md) |
+| `src/features/activities/` | Activities: `shows/`, the family's movies and series (cards, add sheet, `/api/shows` client, writes) | [README](src/features/activities/README.md) |
 | `src/ai/` | Browser client for `/api/ai` | [README](src/ai/README.md) |
 | `src/hooks/`, `src/styles/` | Media query, direction, wake lock, pointer-drag helpers; `tokens.css` palette | none |
 | `server/import/` | Recipe import handler | [README](server/import/README.md) |
 | `server/search/` | Recipe search handler: Tavily, English and Hebrew recipe sites | [README](server/search/README.md) |
-| `server/shows/` | OMDb proxy for Shows: search, one title's details, normalising | [README](server/shows/README.md) |
+| `server/shows/` | Shows API: a provider interface, OMDb behind it (`provider.ts` is the swap point), search, one title's details, normalising | [README](server/shows/README.md) |
 | `server/ai/` | AI recipe reading: OpenRouter, key encryption, output validation | [README](server/ai/README.md) |
 | `supabase/` | Schema, migrations, CLI config | [README](supabase/README.md) |
 | `scripts/perf/` | Performance measurements: bundle, page load, interactions, database; results in `docs/PERFORMANCE.md` | [README](scripts/perf/README.md) |

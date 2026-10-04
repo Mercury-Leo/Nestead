@@ -29,7 +29,7 @@ describe('posterSrcSet', () => {
   const sized = (id: string): string =>
     [100, 200, 300].map((width) => `https://m.media-amazon.com/images/M/${id}._V1_QL75_SX${width}.jpg ${width}w`).join(', ');
 
-  it("offers OMDb's poster at 100, 200 and 300 px, from the link OMDb gives today", () => {
+  it("offers a poster at 100, 200 and 300 px, from the link given today", () => {
     // As OMDb answered on 2026-10-04: a 380 px crop at quality 75.
     expect(posterSrcSet(OMDB)).toBe(sized('MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@'));
     expect(posterSrcSet('https://m.media-amazon.com/images/M/MV5BOWE4NTc3YmYtNmU2Mi00ZjhkLWE1MTItZmM1M2U1ODU3YjFlXkEyXkFqcGc@._V1_QL75_UY562_CR2,0,380,562_.jpg')).toBe(
@@ -50,7 +50,7 @@ describe('posterSrcSet', () => {
 });
 
 describe('Poster', () => {
-  it("asks for a width that fits, then OMDb's own link, then shows the placeholder", () => {
+  it("asks for a width that fits, then the saved link, then shows the placeholder", () => {
     const host = render(OMDB);
     const img = (): HTMLImageElement | null => host.querySelector('img');
     expect(img()?.getAttribute('srcset')).toBe(posterSrcSet(OMDB));

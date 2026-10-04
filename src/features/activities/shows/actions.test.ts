@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLocalStore } from '../../../data/local/localStore';
 import type { DataStore } from '../../../data/types';
 import { addShow, cycleStatus, dropShow, refreshShow, restoreShow } from './actions';
-import type { lookupShow } from './omdb';
+import type { lookupShow } from './client';
 
 const INCEPTION = { imdbId: 'tt1375666', kind: 'movie' as const, title: 'Inception', year: 2010, runtimeMin: 148, imdbRating: 8.8 };
 
@@ -63,7 +63,7 @@ describe('dropShow', () => {
 });
 
 describe('refreshShow', () => {
-  it("saves OMDb's newer details and keeps the family's status", async () => {
+  it("saves the newer details and keeps the family's status", async () => {
     const { show } = await addShow(store, [], INCEPTION, 'm1');
     const watched = await cycleStatus(store, await cycleStatus(store, show));
     const lookup = vi.fn<typeof lookupShow>(async () => ({ ok: true, value: { ...INCEPTION, imdbRating: 8.9, plot: 'Newer.' } }));
@@ -78,7 +78,7 @@ describe('refreshShow', () => {
     expect(Date.parse(stored?.fetchedAt ?? '')).toBeGreaterThanOrEqual(Date.parse(show.fetchedAt));
   });
 
-  it('writes nothing when OMDb fails, or answers about another title', async () => {
+  it('writes nothing when the lookup fails, or answers about another title', async () => {
     const { show } = await addShow(store, [], INCEPTION, 'm1');
     const before = await store.shows.list();
     for (const answer of [

@@ -139,14 +139,14 @@ src/
   features/larder/           The kitchen: a folder per screen, recipe/ for what
                              they share, timers/, and seed/ (the demo kitchen,
                              plus the offline web index every build uses).
-  features/activities/       Shows: the family's movies and series, from OMDb.
+  features/activities/       Shows: the family's movies and series.
   styles/                    tokens.css (the one palette), global.css, fonts.css.
   main.tsx                   Entry point.
 server/import/               Recipe import: fetch a page, read schema.org data.
 functions/api/import.ts      The same, as a Cloudflare Pages Function.
 server/search/               Recipe search: find recipe pages the importer can read.
 functions/api/search.ts      The same, as a Cloudflare Pages Function.
-server/shows/                OMDb proxy for Shows: search and one title's details.
+server/shows/                Shows API: search and one title's details (OMDb today).
 functions/api/shows.ts       The same, as a Cloudflare Pages Function.
 supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 docs/ARCHITECTURE.md         The long version, including the Supabase backend.

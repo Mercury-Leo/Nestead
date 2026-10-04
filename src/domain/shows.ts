@@ -2,8 +2,8 @@ import type { NewRow, Show, ShowKind, ShowStatus } from './types';
 
 /**
  * The Shows page's logic: filtering and sorting saved rows, the status cycle,
- * and which of OMDb's fields a refresh may overwrite. No OMDb calls here: the
- * list works on what was saved when each show was added.
+ * and which fetched fields a refresh may overwrite. Nothing here calls
+ * /api/shows: the list works on what was saved when each show was added.
  */
 
 /** Every status, in the order the filters list them. */
@@ -121,21 +121,21 @@ export function statusPatch(status: ShowStatus, now: string): Pick<NewRow<Show>,
   return { status, watchedAt: status === 'watched' ? now : undefined };
 }
 
-/** OMDb's details as the proxy gives them (server/shows ShowDetails has this shape). */
-export type OmdbDetails = Pick<Show, 'imdbId' | 'kind' | 'title'> &
+/** One title's details as /api/shows gives them (server/shows ShowDetails has this shape). */
+export type FetchedDetails = Pick<Show, 'imdbId' | 'kind' | 'title'> &
   Partial<Pick<Show, 'plot' | 'posterUrl' | 'released' | 'year' | 'runtimeMin' | 'totalSeasons' | 'imdbRating'>>;
 
-/** What a refresh may overwrite: OMDb's fields and when they were read, never the family's own. */
+/** What a refresh may overwrite: the fetched fields and when they were read, never the family's own. */
 export const REFRESHED_FIELDS = ['title', 'plot', 'posterUrl', 'released', 'year', 'runtimeMin', 'totalSeasons', 'imdbRating', 'fetchedAt'] as const;
 
 export type RefreshPatch = Pick<NewRow<Show>, (typeof REFRESHED_FIELDS)[number]>;
 
 /**
- * The patch a refresh writes. Every OMDb field is in it, so one OMDb no longer
- * has (it says "N/A" now) is cleared rather than left stale. `status`,
+ * The patch a refresh writes. Every fetched field is in it, so one the service
+ * no longer has is cleared rather than left stale. `status`,
  * `watchedAt`, `createdBy`, `imdbId` and `kind` are never in it.
  */
-export function refreshPatch(details: OmdbDetails, fetchedAt: string): RefreshPatch {
+export function refreshPatch(details: FetchedDetails, fetchedAt: string): RefreshPatch {
   return {
     title: details.title,
     plot: details.plot,
@@ -149,8 +149,8 @@ export function refreshPatch(details: OmdbDetails, fetchedAt: string): RefreshPa
   };
 }
 
-/** A new row for the family's list: OMDb's details, To watch. */
-export function newShow(details: OmdbDetails, fetchedAt: string, createdBy?: string): NewRow<Show> {
+/** A new row for the family's list: the fetched details, To watch. */
+export function newShow(details: FetchedDetails, fetchedAt: string, createdBy?: string): NewRow<Show> {
   const row: NewRow<Show> = { ...refreshPatch(details, fetchedAt), imdbId: details.imdbId, kind: details.kind, status: 'to-watch' };
   if (createdBy !== undefined) row.createdBy = createdBy;
   // Absent, not undefined: a new row has nothing to clear.

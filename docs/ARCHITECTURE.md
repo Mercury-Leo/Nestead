@@ -119,7 +119,7 @@ src/
                              theme and language.
     lists/                   The shopping list: page, rows, item and section
                              forms, section drag.
-    activities/shows/        Shows: page, cards, add sheet, OMDb client, writes.
+    activities/shows/        Shows: page, cards, add sheet, /api/shows client, writes.
     larder/
       KitchenContext.tsx     The kitchen's rows, read once for every screen.
       actions.ts             Writes that span collections (list and pantry).
@@ -144,8 +144,9 @@ functions/api/import.ts      The same handler as a Cloudflare Pages Function.
 server/search/               Recipe search: Tavily, limited to the recipe sites
                              in sites.ts; index.ts is the public surface.
 functions/api/search.ts      The same handler as a Cloudflare Pages Function.
-server/shows/                OMDb proxy for Shows: search and one title's
-                             details, normalised; index.ts is the public surface.
+server/shows/                Shows API: search and one title's details from a
+                             ShowsProvider (OMDb, chosen in provider.ts),
+                             normalised; index.ts is the public surface.
 functions/api/shows.ts       The same handler as a Cloudflare Pages Function.
 server/ai/                   AI recipe reading: OpenRouter client, prompt and
                              output validation, page text, key encryption, the

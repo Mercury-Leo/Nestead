@@ -12,7 +12,7 @@ import {
   sortShows,
   statusPatch,
 } from './shows';
-import type { OmdbDetails } from './shows';
+import type { FetchedDetails } from './shows';
 import type { Show } from './types';
 
 let next = 0;
@@ -166,7 +166,7 @@ describe('the status cycle', () => {
 
 describe('refreshPatch', () => {
   const fetchedAt = '2026-10-04T12:00:00.000Z';
-  const fresh: OmdbDetails = {
+  const fresh: FetchedDetails = {
     imdbId: breakingBad.imdbId,
     kind: 'series',
     title: 'Breaking Bad',
@@ -186,7 +186,7 @@ describe('refreshPatch', () => {
     return out as unknown as Show;
   }
 
-  it("updates OMDb's fields and fetchedAt, and keeps status and watchedAt", () => {
+  it("updates the fetched fields and fetchedAt, and keeps status and watchedAt", () => {
     const watched = { ...breakingBad, status: 'watched' as const, watchedAt: '2026-09-01T20:00:00.000Z' };
     const after = apply(watched, refreshPatch(fresh, fetchedAt));
     expect(after.imdbRating).toBe(9.6);
@@ -201,14 +201,14 @@ describe('refreshPatch', () => {
   });
 
   it('writes exactly the refreshed fields, never status, watchedAt or who added it', () => {
-    const patch = refreshPatch({ ...fresh, status: 'to-watch', watchedAt: undefined, createdBy: 'm2' } as OmdbDetails, fetchedAt);
+    const patch = refreshPatch({ ...fresh, status: 'to-watch', watchedAt: undefined, createdBy: 'm2' } as FetchedDetails, fetchedAt);
     expect(Object.keys(patch).sort()).toEqual([...REFRESHED_FIELDS].sort());
     for (const key of ['status', 'watchedAt', 'createdBy', 'imdbId', 'kind', 'id', 'familyId', 'createdAt', 'updatedAt']) {
       expect(patch, key).not.toHaveProperty(key);
     }
   });
 
-  it('clears a field OMDb no longer has', () => {
+  it('clears a field the service no longer has', () => {
     const { posterUrl: _posterUrl, imdbRating: _rating, ...without } = fresh;
     const after = apply(breakingBad, refreshPatch(without, fetchedAt));
     expect(after.posterUrl).toBeUndefined();
@@ -218,7 +218,7 @@ describe('refreshPatch', () => {
 });
 
 describe('newShow', () => {
-  it("starts To watch, with OMDb's details, the reader's time and who added it", () => {
+  it("starts To watch, with the fetched details, the reader's time and who added it", () => {
     const row = newShow({ imdbId: 'tt1375666', kind: 'movie', title: 'Inception', year: 2010, imdbRating: 8.8 }, '2026-10-04T12:00:00.000Z', 'm1');
     expect(row).toEqual({
       imdbId: 'tt1375666',

@@ -4,12 +4,12 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { Button, cx } from '../../../components/ui';
 import { nextStatus } from '../../../domain/shows';
-import type { OmdbDetails } from '../../../domain/shows';
+import type { FetchedDetails } from '../../../domain/shows';
 import type { Show, ShowStatus } from '../../../domain/types';
 import { formatDate, formatNumber } from '../../../i18n';
 import { cycleStatus, dropShow, refreshShow, removeShow, restoreShow } from './actions';
 import { STATUS_KEY, imdbUrl, kindLabel, statusLabel } from './labels';
-import type { ShowsFailure } from './omdb';
+import type { ShowsFailure } from './client';
 import { Poster } from './Poster';
 import s from './ShowCard.module.css';
 
@@ -17,7 +17,7 @@ import s from './ShowCard.module.css';
  * Like a recipe card: what you scan for (title, year, length, rating, status)
  * stays in view, and the plot, refresh and delete wait behind a per-card
  * toggle. The title is the link (to IMDb); the poster repeats it, so it stays
- * out of the tab order and the accessibility tree. OMDb's text is data,
+ * out of the tab order and the accessibility tree. Fetched text is data,
  * rendered as React text only.
  */
 
@@ -29,9 +29,9 @@ export function failureKey(failure: ShowsFailure): 'unavailable' | 'limit' | 'no
 
 /**
  * Year, kind, seasons (series only), length and IMDb rating: the one line you
- * scan. A series' length is one episode's, as OMDb gives it.
+ * scan. A series' length is one episode's.
  */
-export function Facts({ show, className }: { show: OmdbDetails; className?: string }): JSX.Element {
+export function Facts({ show, className }: { show: FetchedDetails; className?: string }): JSX.Element {
   const { t } = useTranslation();
   const rating = show.imdbRating === undefined ? undefined : formatNumber(show.imdbRating, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const seasons = show.kind === 'series' && show.totalSeasons !== undefined ? t('shows.card.seasons', { count: show.totalSeasons }) : undefined;
