@@ -110,12 +110,13 @@ export function Shows(): JSX.Element {
           <>
             <Segmented<StatusFilter>
               label={t('shows.statusLabel')}
+              className={s.statusFilter}
               value={view.status}
               onChange={(status) => set({ status })}
               options={statuses.map((value) => ({ value, label: statusLabel(value) }))}
             />
-            <Segmented<KindFilter> label={t('shows.kindLabel')} value={view.kind} onChange={(kind) => set({ kind })} options={kinds} />
-            <SelectButton label={t('shows.sortBy')} icon={ArrowUpDown} value={view.sort} onChange={(sort) => set({ sort })} options={sorts} />
+            <Segmented<KindFilter> label={t('shows.kindLabel')} className={s.kindFilter} value={view.kind} onChange={(kind) => set({ kind })} options={kinds} />
+            <SelectButton label={t('shows.sortBy')} icon={ArrowUpDown} className={s.sort} value={view.sort} onChange={(sort) => set({ sort })} options={sorts} />
           </>
         ) : (
           <div className={s.chips}>
