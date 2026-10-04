@@ -6,7 +6,7 @@ import { SessionContext } from '../../../auth/session';
 import type { Session } from '../../../auth/session';
 import { createLocalStore } from '../../../data/local/localStore';
 import type { DataStore } from '../../../data/types';
-import { googleMapsUrl, wazeUrl } from '../../../domain/addresses/links';
+import { appleMapsUrl, geoUrl, googleMapsUrl } from '../../../domain/addresses/links';
 import type { Member } from '../../../domain/types';
 import { LocaleProvider, i18n } from '../../../i18n';
 import { AddressesPage } from './AddressesPage';
@@ -15,7 +15,19 @@ import { AddressesPage } from './AddressesPage';
 
 const alex: Member = { id: 'm-alex', familyId: 'f-test', name: 'Alex', color: '#4f8ef7', createdAt: '', updatedAt: '' };
 
-let desktop = false;
+const AGENTS = {
+  android: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36',
+  iphone: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  mac: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+  windows: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
+};
+
+/** Pretends to be a device, by user agent and touch points. */
+function device(agent: string, touchPoints = 0): void {
+  vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(agent);
+  // jsdom has no maxTouchPoints to spy on.
+  Object.defineProperty(navigator, 'maxTouchPoints', { value: touchPoints, configurable: true });
+}
 let store: DataStore;
 let unmount: (() => void) | null = null;
 
@@ -82,9 +94,8 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
-  desktop = false;
   vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: query.includes('min-width: 1024px') ? desktop : false,
+    matches: false,
     media: query,
     addEventListener: () => {},
     removeEventListener: () => {},
@@ -96,6 +107,8 @@ afterEach(() => {
   unmount?.();
   unmount = null;
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  delete (navigator as { maxTouchPoints?: number }).maxTouchPoints;
   localStorage.clear();
 });
 
@@ -127,7 +140,7 @@ describe('the address book', () => {
     expect(names(host)).toEqual(['Grandma']);
   });
 
-  it('searches by name or street, forgiving typos, and Escape clears it', async () => {
+  it('searches by name, street or city, forgiving typos, and Escape clears it', async () => {
     await store.addresses.create(herzl);
     await store.addresses.create({ name: "Dana's house", street: 'Ben Yehuda 5', city: 'Tel Aviv' });
     await store.addresses.create({ name: 'Office', street: 'Dizengoff 50', city: 'Herzliya' });
@@ -137,6 +150,11 @@ describe('the address book', () => {
 
     await type(search, 'herzel');
     expect(names(host)).toEqual(['Grandma']);
+    // Herzl the street, exactly, before Herzliya the city, by prefix.
+    await type(search, 'herzl');
+    expect(names(host)).toEqual(['Grandma', 'Office']);
+    await type(search, 'herzlia');
+    expect(names(host)).toEqual(['Office']);
     await type(search, 'dana');
     expect(names(host)).toEqual(["Dana's house"]);
 
@@ -152,29 +170,44 @@ describe('the address book', () => {
     expect(names(host)).toHaveLength(3);
   });
 
-  it('on a phone, Navigate offers Waze and Google Maps, with no door code in any link', async () => {
+  const navigateLink = (host: HTMLElement): HTMLAnchorElement =>
+    host.querySelector(`a[aria-label="${i18n.t('addresses.navigateTo', { name: 'Grandma' })}"]`) as HTMLAnchorElement;
+
+  it("on Android, Navigate is a geo: link for the system's app chooser, in the same tab", async () => {
+    device(AGENTS.android, 5);
     const address = await store.addresses.create(herzl);
     const host = await render();
-    await click(button(host, i18n.t('addresses.navigateTo', { name: 'Grandma' })));
-    const sheet = openDialog() as HTMLDialogElement;
-    const links = [...sheet.querySelectorAll('a')];
-    expect(links.map((a) => a.textContent)).toEqual([i18n.t('addresses.waze'), i18n.t('addresses.googleMaps')]);
-    expect(links.map((a) => a.getAttribute('href'))).toEqual([wazeUrl(address), googleMapsUrl(address)]);
-    for (const a of links) {
-      expect(a.target).toBe('_blank');
-      expect(a.rel).toBe('noopener noreferrer');
-    }
+    const navigate = navigateLink(host);
+    expect(navigate.getAttribute('href')).toBe(geoUrl(address));
+    expect(navigate.hasAttribute('target')).toBe(false);
+    expect(openDialog()).toBeNull();
     for (const a of document.querySelectorAll('a')) expect(decodeURIComponent(a.href)).not.toContain('5813');
   });
 
-  it('on desktop, Navigate is one Google Maps link in a new tab', async () => {
-    desktop = true;
+  it('on an iPhone, and an iPad that calls itself a Mac, Navigate opens Apple Maps', async () => {
     const address = await store.addresses.create(herzl);
-    const host = await render();
-    const navigate = host.querySelector(`a[aria-label="${i18n.t('addresses.navigateTo', { name: 'Grandma' })}"]`) as HTMLAnchorElement;
-    expect(navigate.getAttribute('href')).toBe(googleMapsUrl(address));
-    expect(navigate.target).toBe('_blank');
-    expect(button(host, i18n.t('addresses.navigateTo', { name: 'Grandma' }))).toBeUndefined();
+    for (const [agent, touch] of [[AGENTS.iphone, 5], [AGENTS.mac, 5]] as const) {
+      device(agent, touch);
+      const host = await render();
+      expect(navigateLink(host).getAttribute('href'), agent).toBe(appleMapsUrl(address));
+      expect(navigateLink(host).target).toBe('_blank');
+      unmount?.();
+      unmount = null;
+    }
+  });
+
+  it('on a computer, Navigate is one Google Maps link in a new tab', async () => {
+    const address = await store.addresses.create(herzl);
+    for (const agent of [AGENTS.windows, AGENTS.mac]) {
+      device(agent);
+      const host = await render();
+      const navigate = navigateLink(host);
+      expect(navigate.getAttribute('href'), agent).toBe(googleMapsUrl(address));
+      expect(navigate.target).toBe('_blank');
+      expect(navigate.rel).toBe('noopener noreferrer');
+      unmount?.();
+      unmount = null;
+    }
   });
 
   it('asks before deleting', async () => {

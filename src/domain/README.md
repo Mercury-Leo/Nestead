@@ -19,8 +19,8 @@ Pure TypeScript shared by every layer: the entity types, board ordering, and the
 | `kitchen/diet.ts` | `PRESETS`, `presetOn()`, `withPreset()`, `checkDiet()`, `parseCustomRule()`, `dietTags()`. |
 | `kitchen/list.ts` (+ `groupOrder.test.ts`) | Shopping-list plans (`planAddRecipe`, `planRemoveRecipe`, `planAddOwn`, `planRemoveGroup`) and section order (`orderGroups`, `groupDropPosition`). |
 | `kitchen/search.ts` | `search()`, `suggestions()`, `activeFilters()`, `defaultFilters()`. |
-| `addresses/links.ts` | `destination()`, `wazeUrl()`, `googleMapsUrl()`: navigation links from the street and city only. |
-| `addresses/search.ts` | `searchAddresses()`, `foldWords()`, `editDistance()`: fuzzy search over names and streets. |
+| `addresses/links.ts` | `destination()`, `geoUrl()`, `appleMapsUrl()`, `googleMapsUrl()`, `navigationUrl()`: navigation links from the street and city only, one per kind of device. |
+| `addresses/search.ts` | `searchAddresses()`, `foldWords()`, `editDistance()`: fuzzy search over names, streets and cities. |
 | `addresses/addresses.test.ts` | Links and search. |
 | `kitchen/kitchen.test.ts` | Unit tests across the kitchen modules. |
 | `kitchen/parseHebrew.test.ts` | Hebrew amounts and ingredient headings. |
@@ -44,7 +44,7 @@ Imports nothing outside `domain/`. Used by `../data/`, `../auth/`, `../features/
 - `AiStatus` is what `family_ai_status()` returns to any member: the key's last four characters, its model and who added it, and the member's free reads. It never carries the key or its ciphertext. `family_ai_settings` and `ai_usage` have no row type on purpose: no client can read those tables, so no screen should ever hold one of their rows (`types.ts`, `../../supabase/schema.sql`).
 - Stored names stay English (sections, catalog names, preset labels); screens translate them by id in `../features/larder/labels.ts` (`kitchen/sections.ts`, `kitchen/diet.ts`).
 - A navigation link carries `destination()`, the street and city, and nothing else: an apartment confuses geocoding, and the door code must never leave the app (`addresses/links.ts`).
-- Address search folds text itself (`foldWords()`): `kitchen/normalize.ts`'s `normalizeText()` singularises and drops food words, which would mangle names and streets. It searches the name and street only, never the city, apartment or door code (`addresses/search.ts`).
+- Address search folds text itself (`foldWords()`): `kitchen/normalize.ts`'s `normalizeText()` singularises and drops food words, which would mangle names and streets. It searches the name, street and city, never the apartment or door code; on a tie a name match ranks first, then a street match (`addresses/search.ts`).
 - `../i18n/literals.test.ts` skips `domain/`, so English here is never flagged as untranslated.
 - `ListGroup` rows with `builtin` only hold a built-in section's place; rows without `position` sort at 1000, 2000, then 3000 onwards (`kitchen/list.ts`).
 - Read presets through `presetOn()` or `activePresets()`, never `presets[id]`, and write them through `withPreset()`: an unset peanut allergy follows the nut allergy (`kitchen/diet.ts`).

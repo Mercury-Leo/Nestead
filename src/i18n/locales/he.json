@@ -230,7 +230,7 @@
     "title": "כתובות",
     "add": "הוספת כתובת",
     "searchLabel": "חיפוש כתובות",
-    "searchPlaceholder": "חיפוש לפי שם או רחוב",
+    "searchPlaceholder": "חיפוש לפי שם, רחוב או עיר",
     "clearSearch": "ניקוי החיפוש",
     "noMatches": "אין כתובות מתאימות.",
     "empty": {
@@ -242,8 +242,6 @@
     "doorCode": "קוד לדלת",
     "navigate": "ניווט",
     "navigateTo": "ניווט אל {{name}}",
-    "waze": "Waze",
-    "googleMaps": "Google Maps",
     "editLabel": "עריכת {{name}}",
     "deleteLabel": "מחיקת {{name}}",
     "deleteTitle": "למחוק את {{name}}?",

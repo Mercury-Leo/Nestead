@@ -229,7 +229,7 @@
     "title": "Addresses",
     "add": "Add address",
     "searchLabel": "Search addresses",
-    "searchPlaceholder": "Search by name or street",
+    "searchPlaceholder": "Search by name, street or city",
     "clearSearch": "Clear search",
     "noMatches": "No addresses match.",
     "empty": {
@@ -241,8 +241,6 @@
     "doorCode": "Door code",
     "navigate": "Navigate",
     "navigateTo": "Navigate to {{name}}",
-    "waze": "Waze",
-    "googleMaps": "Google Maps",
     "editLabel": "Edit {{name}}",
     "deleteLabel": "Delete {{name}}",
     "deleteTitle": "Delete {{name}}?",

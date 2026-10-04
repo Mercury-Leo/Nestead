@@ -91,7 +91,7 @@
   margin-inline-end: auto;
 }
 
-/* Desktop's Navigate is a link that looks like the primary button. */
+/* Navigate is a link that looks like the primary button. */
 .navigate {
   display: inline-flex;
   flex-shrink: 0;
@@ -119,44 +119,6 @@
 .navigate:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-
-.destination {
-  margin: 0 0 12px;
-  color: var(--ink-2);
-}
-
-.apps {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.app {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  min-height: 56px;
-  padding: 0 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: var(--card);
-  color: var(--ink);
-  font-size: 16.5px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.app:hover {
-  background: var(--hover-wash);
-}
-
-.appChevron {
-  margin-inline-start: auto;
-  color: var(--ink-3);
 }
 
 .noMatches {

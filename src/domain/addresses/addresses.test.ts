@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { destination, googleMapsUrl, wazeUrl } from './links';
+import { appleMapsUrl, destination, geoUrl, googleMapsUrl, navigationUrl } from './links';
 import { editDistance, foldWords, searchAddresses } from './search';
 
 const place = (name: string, street: string, extra: { city?: string; apartment?: string; doorCode?: string } = {}) => ({
@@ -19,24 +19,32 @@ describe('navigation links', () => {
     expect(destination(hebrew)).toBe('הרצל 12, תל אביב');
   });
 
-  it('builds Waze and Google Maps links, encoded', () => {
-    expect(wazeUrl(herzl)).toBe('https://waze.com/ul?q=Herzl%2012%2C%20Tel%20Aviv&navigate=yes');
+  it('builds geo:, Apple Maps and Google Maps links, encoded', () => {
+    expect(geoUrl(herzl)).toBe('geo:0,0?q=Herzl%2012%2C%20Tel%20Aviv');
+    expect(appleMapsUrl(herzl)).toBe('https://maps.apple.com/?daddr=Herzl%2012%2C%20Tel%20Aviv');
     expect(googleMapsUrl(herzl)).toBe('https://www.google.com/maps/dir/?api=1&destination=Herzl%2012%2C%20Tel%20Aviv');
-    expect(decodeURIComponent(new URL(wazeUrl(hebrew)).searchParams.get('q') ?? '')).toBe('הרצל 12, תל אביב');
+    expect(decodeURIComponent(geoUrl(hebrew).slice('geo:0,0?q='.length))).toBe('הרצל 12, תל אביב');
+    expect(new URL(appleMapsUrl(hebrew)).searchParams.get('daddr')).toBe('הרצל 12, תל אביב');
     expect(new URL(googleMapsUrl(hebrew)).searchParams.get('destination')).toBe('הרצל 12, תל אביב');
-    expect(googleMapsUrl(hebrew)).not.toMatch(/[א-ת ]/);
+    for (const url of [geoUrl(hebrew), appleMapsUrl(hebrew), googleMapsUrl(hebrew)]) expect(url).not.toMatch(/[א-ת ]/);
+  });
+
+  it("picks the device's own route: the system chooser on Android, Apple Maps on iOS, Google Maps elsewhere", () => {
+    expect(navigationUrl(herzl, 'android')).toBe(geoUrl(herzl));
+    expect(navigationUrl(herzl, 'ios')).toBe(appleMapsUrl(herzl));
+    expect(navigationUrl(herzl, 'other')).toBe(googleMapsUrl(herzl));
   });
 
   it('never puts the apartment or door code in a link', () => {
     for (const address of [herzl, hebrew]) {
-      for (const url of [wazeUrl(address), googleMapsUrl(address)]) {
+      for (const url of [geoUrl(address), appleMapsUrl(address), googleMapsUrl(address)]) {
         const decoded = decodeURIComponent(url);
         expect(decoded).not.toContain(address.doorCode);
         expect(decoded).not.toContain(`, ${address.apartment}`);
         expect(decoded).not.toMatch(/apartment|door/i);
       }
     }
-    expect(decodeURIComponent(wazeUrl(herzl))).not.toContain('#');
+    expect(decodeURIComponent(geoUrl(herzl))).not.toContain('#');
   });
 });
 
@@ -62,7 +70,7 @@ describe('searchAddresses', () => {
   const book = [
     place("Dana's house", 'Ben Yehuda 5'),
     place('Grandma', 'Herzl 12'),
-    place('Dentist', 'Weizmann 14', { city: 'Danville', apartment: 'Dana', doorCode: 'herzl' }),
+    place('Dentist', 'Weizmann 14', { city: 'Kfar Saba', apartment: 'Dana', doorCode: 'herzl' }),
     place('שלום ורינה', 'רחוב הגפן 3'),
     place('Office', 'Dizengoff 50'),
     place('Herzl gym', 'Arlozorov 2'),
@@ -89,10 +97,20 @@ describe('searchAddresses', () => {
     expect(names('grandma dizengoff')).toEqual([]);
   });
 
-  it('never matches the city, apartment or door code', () => {
-    expect(names('danville')).toEqual([]);
-    expect(names('tel aviv')).toEqual([]);
-    expect(searchAddresses(book, 'herzl', 'en').map((row) => row.name)).not.toContain('Dentist');
+  it('finds by city, typos included', () => {
+    expect(names('kfar saba')).toEqual(['Dentist']);
+    expect(names('kfar sabba')).toEqual(['Dentist']);
+    expect(names('tel aviv')).toHaveLength(5);
+  });
+
+  it('never matches the apartment or door code', () => {
+    expect(names('herzl')).not.toContain('Dentist');
+    expect(names('dana')).not.toContain('Dentist');
+  });
+
+  it('ranks a name or street match before a city match', () => {
+    const rows = [place('Office', 'Main 1', { city: 'Haifa' }), place('Haifa flat', 'Main 2', { city: 'Acre' }), place('Port', 'Haifa Road 3', { city: 'Acre' })];
+    expect(searchAddresses(rows, 'haifa', 'en').map((row) => row.name)).toEqual(['Haifa flat', 'Port', 'Office']);
   });
 
   it('ranks exact before prefix before typo, and the name before the street', () => {
