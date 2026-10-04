@@ -5,7 +5,7 @@ Things the family does together outside the kitchen. One page so far: Shows (`/s
 | File | Responsibility |
 | --- | --- |
 | `shows/Shows.tsx` (+ `Shows.module.css`, `Shows.test.tsx`) | The page: name search, status filter with counts, movies or series, sort, the cards 60 at a time with Show more; the empty state; opens `AddShow`. |
-| `shows/ShowCard.tsx` (+ `ShowCard.module.css`, `ShowCard.test.tsx`) | One show, memoised (`sameShow()`): poster, title linking to IMDb with the status badge (`StatusBadge`) at its end, the facts line (`Facts`: year, kind, seasons for a series, length, IMDb rating) with the details toggle at its end, and behind the toggle the plot, when OMDb was read, Refresh and Delete with confirmation. |
+| `shows/ShowCard.tsx` (+ `ShowCard.module.css`, `ShowCard.test.tsx`) | One show, memoised (`sameShow()`): poster, title linking to IMDb with the status badge (`StatusBadge`) at its end, the facts line (`Facts`: year, kind, seasons for a series, length, IMDb rating), and the details toggle at the card's bottom corner; behind it the plot, when OMDb was read, Refresh and Delete with confirmation. The toggle comes after the details, so an open card closes from its bottom. |
 | `shows/AddShow.tsx` (+ `AddShow.module.css`) | The add sheet: search, results, preview, save. |
 | `shows/Poster.tsx` (+ `Poster.module.css`, `Poster.test.tsx`) | OMDb's poster link as an `<img>` at the width drawn (`posterSrcSet()`), or a tile with the kind's icon when there is none or it fails. |
 | `shows/actions.ts` (+ `actions.test.ts`) | The writes: `addShow()`, `cycleStatus()`, `refreshShow()`, `removeShow()`. |

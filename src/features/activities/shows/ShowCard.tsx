@@ -208,22 +208,21 @@ function ShowCardView({ show, revealed }: { show: Show; revealed?: number }): JS
           </h3>
           <StatusBadge status={show.status} onCycle={() => void cycleStatus(store, show).catch(() => undefined)} />
         </div>
-        <div className={s.factsRow}>
-          <Facts show={show} />
-          <button
-            type="button"
-            className={cx(s.toggle, open && s.toggleOpen)}
-            aria-expanded={open}
-            aria-controls={id}
-            aria-label={t('shows.card.more', { title: show.title })}
-            onClick={() => setOpen(!open)}
-          >
-            <ChevronDown size={20} strokeWidth={2.2} aria-hidden />
-          </button>
-        </div>
+        <Facts show={show} />
         <div id={id} className={s.details} hidden={!open}>
           {open && <Details show={show} />}
         </div>
+        {/* At the card's bottom corner, after the details, so a card closes from where its reader ends. */}
+        <button
+          type="button"
+          className={cx(s.toggle, open && s.toggleOpen)}
+          aria-expanded={open}
+          aria-controls={id}
+          aria-label={t('shows.card.more', { title: show.title })}
+          onClick={() => setOpen(!open)}
+        >
+          <ChevronDown size={20} strokeWidth={2.2} aria-hidden />
+        </button>
       </div>
     </article>
   );

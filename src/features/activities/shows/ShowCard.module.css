@@ -1,10 +1,10 @@
 /* -------------------------------------------------------------- card -- */
 
 /* The poster sits on the start side, so the card mirrors itself in RTL. */
+/* The body stretches to the card's height, so the details toggle can sit at its bottom. */
 .card {
   display: flex;
   gap: 14px;
-  align-items: flex-start;
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--line);
@@ -32,6 +32,7 @@
 .poster {
   display: block;
   flex-shrink: 0;
+  align-self: flex-start;
   width: 84px;
   aspect-ratio: 2 / 3;
   overflow: hidden;
@@ -91,14 +92,6 @@
 }
 
 /* ------------------------------------------------------------- facts -- */
-
-/* The facts, and the details toggle at their end. */
-.factsRow {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  justify-content: space-between;
-}
 
 .facts {
   display: flex;
@@ -188,14 +181,21 @@
   outline-offset: 2px;
 }
 
-/* The details toggle: a 44px target at the end of the facts. */
+/*
+ * The details toggle, at the card's bottom corner: closed, it sits level with
+ * the poster's foot; open, after the details. A 44px target reaching into the
+ * card's padding, with room for its focus ring there.
+ */
 .toggle {
   display: inline-grid;
   flex-shrink: 0;
   place-items: center;
+  align-self: flex-end;
   width: 44px;
   height: 44px;
+  margin-top: auto;
   margin-inline-end: -6px;
+  margin-bottom: -6px;
   padding: 0;
   border: 0;
   border-radius: 50%;
