@@ -52,6 +52,21 @@
   margin: 0;
 }
 
+/* Under a long list: how much of it is built, and Show more. */
+.more {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 24px 0 8px;
+}
+
+.moreCount {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
 /* Desktop: the search and the sort on one line, the two filters under them. */
 @media (min-width: 1024px) {
   .toolbar {

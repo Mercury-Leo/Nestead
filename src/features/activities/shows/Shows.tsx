@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpDown, Clapperboard, Plus, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
@@ -6,7 +6,7 @@ import { PageHeader } from '../../../components/PageHeader';
 import { Button, Chip, EmptyState, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
 import { readPreference, writePreference } from '../../../data/local/localStore';
 import { useCollectionState } from '../../../data/useCollection';
-import { SHOW_SORTS, SHOW_STATUSES, filterShows, parseShowView, sortShows } from '../../../domain/shows';
+import { SHOWS_PAGE, SHOW_SORTS, SHOW_STATUSES, filterShows, parseShowView, shownCount, sortShows } from '../../../domain/shows';
 import type { KindFilter, ShowView, StatusFilter } from '../../../domain/shows';
 import type { Show } from '../../../domain/types';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
@@ -18,10 +18,23 @@ import s from './Shows.module.css';
 /** The status and kind filters and the sort, remembered per family on this device. */
 const VIEW_PREFERENCE = 'showsView';
 
+/** Pages built of one list (one search, filter and sort), and a show it must include. */
+interface Paging {
+  key: string;
+  pages: number;
+  reveal?: string;
+}
+
+const keyOf = (query: string, view: ShowView): string => [query, view.status, view.kind, view.sort].join('\u0000');
+
 /**
  * The family's movies and series. Everything here works on saved rows: the
  * filters, the sort and the name search never call OMDb. Only adding a show,
  * and refreshing one, do (AddShow.tsx, ShowCard.tsx).
+ *
+ * A long list is built a page at a time (SHOWS_PAGE), with Show more for the
+ * next: building every card of a 300-show list made opening and filtering
+ * slow. A new search, filter or sort starts again from the first page.
  */
 export function Shows(): JSX.Element {
   const { t, i18n } = useTranslation();
@@ -48,10 +61,34 @@ export function Shows(): JSX.Element {
   const ofKind = filterShows(rows, { query: '', status: 'all', kind: view.kind });
   const count = (status: StatusFilter): number => (status === 'all' ? ofKind.length : ofKind.filter((row) => row.status === status).length);
 
+  // Pages asked for, for this search, filter and sort only: any change, back
+  // to an earlier one too, starts from one page. `reveal` is a show that must
+  // be built wherever it sorts (just added, or already here); a change drops it.
+  const listKey = keyOf(query, view);
+  const [paging, setPaging] = useState<Paging>({ key: listKey, pages: 1 });
+  if (paging.key !== listKey) setPaging({ key: listKey, pages: 1 });
+  const current: Paging = paging.key === listKey ? paging : { key: listKey, pages: 1 };
+  const built = shownCount(shown.length, current.pages, current.reveal === undefined ? -1 : shown.findIndex((row) => row.id === current.reveal));
+  const grid = useRef<HTMLDivElement>(null);
+  const focusFrom = useRef<number | null>(null);
+  const showMore = (): void => {
+    focusFrom.current = built;
+    setPaging({ key: listKey, pages: Math.ceil(built / SHOWS_PAGE) + 1 });
+  };
+  // After Show more, the keyboard carries on from the first new card.
+  useEffect(() => {
+    if (focusFrom.current === null) return;
+    grid.current?.children[focusFrom.current]?.querySelector<HTMLElement>('h3 a')?.focus();
+    focusFrom.current = null;
+  }, [built]);
+
   /** Brings a show into view after adding it, or after trying to add one already here. */
   const reveal = (show: Show): void => {
     setAdding(false);
-    if (filterShows([show], { query, status: view.status, kind: view.kind }).length === 0) showAll();
+    const hidden = filterShows([show], { query, status: view.status, kind: view.kind }).length === 0;
+    if (hidden) showAll();
+    // Keyed to the list it will show in, so clearing the filters does not drop it.
+    setPaging(hidden ? { key: keyOf('', { ...view, status: 'all', kind: 'all' }), pages: 1, reveal: show.id } : { ...current, reveal: show.id });
     setRevealed({ id: show.id, at: Date.now() });
   };
 
@@ -154,11 +191,25 @@ export function Shows(): JSX.Element {
           </Button>
         </div>
       ) : (
-        <div className={s.grid}>
-          {shown.map((show) => (
-            <ShowCard key={show.id} show={show} revealed={revealed?.id === show.id ? revealed.at : undefined} />
-          ))}
-        </div>
+        <>
+          <div className={s.grid} ref={grid}>
+            {shown.slice(0, built).map((show) => (
+              <ShowCard key={show.id} show={show} revealed={revealed?.id === show.id ? revealed.at : undefined} />
+            ))}
+          </div>
+          {shown.length > SHOWS_PAGE && (
+            <div className={s.more}>
+              <p className={s.moreCount} aria-live="polite">
+                {t('shows.showing', { shown: built, total: shown.length })}
+              </p>
+              {built < shown.length && (
+                <Button variant="secondary" size="lg" onClick={showMore}>
+                  {t('shows.showMore', { count: Math.min(SHOWS_PAGE, shown.length - built) })}
+                </Button>
+              )}
+            </div>
+          )}
+        </>
       )}
       {sheet}
     </div>

@@ -991,6 +991,8 @@
     },
     "noMatch": "אין סרטים או סדרות שמתאימים לסינון.",
     "showAll": "הצגת הכול",
+    "showing": "מוצגים {{shown, number}} מתוך {{total, number}}",
+    "showMore": "להציג עוד {{count, number}}",
     "card": {
       "onImdb": "ב-IMDb, נפתח בלשונית חדשה",
       "more": "עוד על {{title}}",

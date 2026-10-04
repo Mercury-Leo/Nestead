@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SHOW_VIEW,
   REFRESHED_FIELDS,
+  SHOWS_PAGE,
   filterShows,
   newShow,
   nextStatus,
   parseShowView,
   refreshPatch,
+  shownCount,
   sortShows,
   statusPatch,
 } from './shows';
@@ -87,6 +89,27 @@ describe('sortShows', () => {
     const input = [b, a];
     expect(titles(sortShows(input, 'rating'))).toEqual(['Alpha', 'Beta']);
     expect(titles(input)).toEqual(['Beta', 'Alpha']);
+  });
+});
+
+describe('shownCount', () => {
+  it('builds whole pages, never more than the list', () => {
+    expect(SHOWS_PAGE).toBe(60);
+    expect(shownCount(300, 1)).toBe(60);
+    expect(shownCount(300, 2)).toBe(120);
+    expect(shownCount(130, 3)).toBe(130);
+    expect(shownCount(40, 1)).toBe(40);
+    expect(shownCount(0, 1)).toBe(0);
+  });
+
+  it('reaches a show that sorts past the pages asked for, to the end of its page', () => {
+    expect(shownCount(300, 1, 59)).toBe(60);
+    expect(shownCount(300, 1, 60)).toBe(120);
+    expect(shownCount(300, 1, 239)).toBe(240);
+    expect(shownCount(300, 1, 299)).toBe(300);
+    // Already built: the pages asked for stand.
+    expect(shownCount(300, 3, 10)).toBe(180);
+    expect(shownCount(300, 1, -1)).toBe(60);
   });
 });
 

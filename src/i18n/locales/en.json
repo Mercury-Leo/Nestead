@@ -954,6 +954,8 @@
     },
     "noMatch": "No shows match these filters.",
     "showAll": "Show all",
+    "showing": "Showing {{shown, number}} of {{total, number}}",
+    "showMore": "Show {{count, number}} more",
     "card": {
       "onImdb": "on IMDb, opens in a new tab",
       "more": "More about {{title}}",

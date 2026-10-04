@@ -86,6 +86,22 @@ function yearDate(year: number | undefined): string | undefined {
   return year === undefined ? undefined : `${String(year).padStart(4, '0')}-01-01`;
 }
 
+/**
+ * Cards built at a time. A family's list of 40 opens whole; a long one opens
+ * a page at a time, with Show more for the next (docs/PERFORMANCE.md).
+ */
+export const SHOWS_PAGE = 60;
+
+/**
+ * How many of a list of `total` to build: `pages` whole pages, and as many
+ * more as it takes to reach the show at index `include` (-1 for none), such
+ * as one just added that sorts further down.
+ */
+export function shownCount(total: number, pages: number, include = -1): number {
+  const reach = include < 0 ? 0 : Math.ceil((include + 1) / SHOWS_PAGE);
+  return Math.min(total, Math.max(pages, reach) * SHOWS_PAGE);
+}
+
 /** To watch, then Watching, then Watched, then round again. */
 export function nextStatus(status: ShowStatus): ShowStatus {
   return SHOW_STATUSES[(SHOW_STATUSES.indexOf(status) + 1) % SHOW_STATUSES.length] as ShowStatus;
