@@ -1,10 +1,12 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { SessionContext } from '../../../auth/session';
+import { createLocalStore } from '../../../data/local/localStore';
 import type { OmdbDetails } from '../../../domain/shows';
-import type { Show } from '../../../domain/types';
-import { localeReady } from '../../../i18n';
-import { Facts, sameShow } from './ShowCard';
+import type { Member, Show } from '../../../domain/types';
+import { i18n, loadLocale, localeReady } from '../../../i18n';
+import { Facts, ShowCard, sameShow } from './ShowCard';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -65,5 +67,43 @@ describe('sameShow', () => {
     const { fetchedAt: _fetchedAt, ...without } = show;
     expect(sameShow(show, { ...without, plot: 'x' } as Show)).toBe(false);
     expect(sameShow({ ...show, plot: 'x' }, show)).toBe(false);
+  });
+});
+
+describe('ShowCard', () => {
+  it('follows a change of language, although it is memoised', async () => {
+    const alex: Member = { id: 'm1', familyId: 'f', name: 'Alex', color: '#4f8ef7', createdAt: '', updatedAt: '' };
+    const show: Show = {
+      id: 's1', familyId: 'f', createdAt: '2026-10-04T08:00:00.000Z', updatedAt: '2026-10-04T08:00:00.000Z',
+      imdbId: 'tt0386676', kind: 'series', title: 'The Office', fetchedAt: '2026-10-04T08:00:00.000Z', status: 'to-watch',
+    };
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <SessionContext.Provider value={{ store: createLocalStore('f'), me: alex, members: [alex], signOut: async () => {} }}>
+          <ShowCard show={show} />
+        </SessionContext.Provider>,
+      ),
+    );
+    unmount = () => {
+      act(() => root.unmount());
+      host.remove();
+    };
+    const status = (): string => host.querySelector('button[aria-label]')?.textContent ?? '';
+    expect(status()).toBe('To watch');
+    try {
+      await loadLocale('he');
+      await act(async () => {
+        await i18n.changeLanguage('he');
+      });
+      expect(status()).toBe(i18n.t('shows.status.toWatch'));
+      expect(status()).not.toBe('To watch');
+    } finally {
+      await act(async () => {
+        await i18n.changeLanguage('en');
+      });
+    }
   });
 });
