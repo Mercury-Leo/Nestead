@@ -9,6 +9,7 @@ import type {
   NewRow,
   PantryItem,
   Recipe,
+  Show,
   Task,
 } from '../../domain/types';
 import { getSupabaseClient } from './supabaseClient';
@@ -32,10 +33,11 @@ type TableName =
   | 'pantry_items'
   | 'diet_profiles'
   | 'list_items'
-  | 'list_groups';
+  | 'list_groups'
+  | 'shows';
 
 /** Timestamps arrive from Postgres as e.g. 2026-09-22T10:00:00.123456+00:00. */
-const TIMESTAMP_KEYS = new Set(['createdAt', 'updatedAt']);
+const TIMESTAMP_KEYS = new Set(['createdAt', 'updatedAt', 'fetchedAt', 'watchedAt']);
 
 /** Base fields are owned by the store and can never be patched by a caller. */
 const READONLY_KEYS = new Set(['id', 'familyId', 'createdAt', 'updatedAt']);
@@ -246,6 +248,7 @@ export function createSupabaseStore(
     dietProfiles: createCollection<DietProfile>(client, familyId, 'diet_profiles'),
     listItems: createCollection<ListItem>(client, familyId, 'list_items'),
     listGroups: createCollection<ListGroup>(client, familyId, 'list_groups'),
+    shows: createCollection<Show>(client, familyId, 'shows'),
     photos: createPhotoStore(client, familyId),
   };
 }

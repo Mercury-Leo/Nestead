@@ -8,6 +8,7 @@ import type {
   NewRow,
   PantryItem,
   Recipe,
+  Show,
   Task,
 } from '../../domain/types';
 import { createLocalPhotoStore } from './localPhotos';
@@ -25,7 +26,7 @@ import type { ChangeListener, Collection, DataStore, Unsubscribe } from '../type
 
 const NAMESPACE = 'nestead';
 
-type CollectionName = 'members' | 'columns' | 'tasks' | 'recipes' | 'pantry' | 'diet' | 'list' | 'listGroups';
+type CollectionName = 'members' | 'columns' | 'tasks' | 'recipes' | 'pantry' | 'diet' | 'list' | 'listGroups' | 'shows';
 
 export function storageKey(familyId: string, collection: CollectionName): string {
   return `${NAMESPACE}:${familyId}:${collection}`;
@@ -199,6 +200,7 @@ export function createLocalStore(familyId: string): DataStore {
     dietProfiles: createCollection<DietProfile>(familyId, 'diet'),
     listItems: createCollection<ListItem>(familyId, 'list'),
     listGroups: createCollection<ListGroup>(familyId, 'listGroups'),
+    shows: createCollection<Show>(familyId, 'shows'),
     photos: createLocalPhotoStore(familyId),
   };
 }
