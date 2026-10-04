@@ -52,11 +52,18 @@
   min-width: 0;
 }
 
-/* The title, and the status badge at its end, centred on it. */
+/*
+ * The title, and the status badge at its end, centred on the title's first
+ * line however many lines it takes. --title-line is one line's height, shared
+ * by the title and the badge's target (.statusHit).
+ */
 .top {
+  --title-size: 19px;
+  --title-line: calc(var(--title-size) * 1.2);
+
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .title {
@@ -66,9 +73,9 @@
   margin: 0;
   overflow: hidden;
   font-family: var(--serif);
-  font-size: 19px;
+  font-size: var(--title-size);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--title-line);
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -114,9 +121,9 @@
 /* ---------------------------------------------------------- controls -- */
 
 /*
- * A 44px target around the badge. The negative margins make it take a title
- * line's height in the row, so the badge centres on a one-line title without
- * moving it; the target reaches into the card's padding instead.
+ * A 44px target around the badge. Equal negative margins leave it exactly one
+ * title line tall in the row, centred on that line, so the badge centres on
+ * the title's first line; the target reaches into the card's padding instead.
  */
 .statusHit {
   display: inline-flex;
@@ -125,7 +132,7 @@
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
-  margin-block: -10px;
+  margin-block: calc((var(--title-line) - 44px) / 2);
   margin-inline-end: -6px;
   padding: 0;
   border: 0;
