@@ -2,8 +2,9 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { OmdbDetails } from '../../../domain/shows';
+import type { Show } from '../../../domain/types';
 import { localeReady } from '../../../i18n';
-import { Facts } from './ShowCard';
+import { Facts, sameShow } from './ShowCard';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -44,5 +45,25 @@ describe('Facts', () => {
 
   it('leaves out what OMDb did not give', () => {
     expect(facts({ imdbId: 'tt0903747', kind: 'series', title: 'Breaking Bad' })).toEqual(['Series']);
+  });
+});
+
+describe('sameShow', () => {
+  const show: Show = {
+    id: 's1', familyId: 'f', createdAt: '2026-10-04T08:00:00.000Z', updatedAt: '2026-10-04T08:00:00.000Z',
+    imdbId: 'tt1375666', kind: 'movie', title: 'Inception', fetchedAt: '2026-10-04T08:00:00.000Z', status: 'to-watch',
+  };
+
+  it('treats a re-read copy with the same fields as the same show', () => {
+    expect(sameShow(show, { ...show })).toBe(true);
+    expect(sameShow(show, JSON.parse(JSON.stringify(show)) as Show)).toBe(true);
+  });
+
+  it('sees a changed, added or cleared field', () => {
+    expect(sameShow(show, { ...show, status: 'watching' })).toBe(false);
+    expect(sameShow(show, { ...show, watchedAt: '2026-10-04T21:00:00.000Z' })).toBe(false);
+    const { fetchedAt: _fetchedAt, ...without } = show;
+    expect(sameShow(show, { ...without, plot: 'x' } as Show)).toBe(false);
+    expect(sameShow({ ...show, plot: 'x' }, show)).toBe(false);
   });
 });

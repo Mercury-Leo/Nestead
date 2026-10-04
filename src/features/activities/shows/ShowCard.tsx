@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { memo, useEffect, useId, useRef, useState } from 'react';
 import { Bookmark, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Trash2 } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
@@ -147,11 +147,25 @@ function Details({ show }: { show: Show }): JSX.Element {
 }
 
 /**
+ * The same show, field by field. A show's fields are all plain values, and a
+ * re-read hands every row back as a new object, so identity alone would
+ * re-render every card after any write.
+ */
+export function sameShow(a: Show, b: Show): boolean {
+  if (a === b) return true;
+  const keys = Object.keys(a) as (keyof Show)[];
+  return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
+}
+
+/**
  * One show. `revealed` changes when the page asks for this card to be shown
  * (adding a show that is already on the list): it opens, scrolls into view,
- * takes focus and flashes once.
+ * takes focus and flashes once. Memoised on the show's fields, so a status
+ * change or a keystroke re-renders the cards it changes, not all of them.
  */
-export function ShowCard({ show, revealed }: { show: Show; revealed?: number }): JSX.Element {
+export const ShowCard = memo(ShowCardView, (before, after) => before.revealed === after.revealed && sameShow(before.show, after.show));
+
+function ShowCardView({ show, revealed }: { show: Show; revealed?: number }): JSX.Element {
   const { t } = useTranslation();
   const { store } = useSession();
   const [open, setOpen] = useState(false);
