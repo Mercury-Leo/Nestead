@@ -259,7 +259,9 @@
       "cityPlaceholder": "תל אביב",
       "cityMissing": "צריך עיר.",
       "apartment": "דירה (לא חובה)",
-      "doorCode": "קוד לדלת (לא חובה)"
+      "doorCode": "קוד לדלת (לא חובה)",
+      "suggestions": "הצעות לכתובת",
+      "cityCountry": "{{city}}, {{country}}"
     }
   },
   "kitchen": {

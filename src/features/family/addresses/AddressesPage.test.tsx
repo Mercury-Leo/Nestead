@@ -10,6 +10,7 @@ import { appleMapsUrl, geoUrl, googleMapsUrl } from '../../../domain/addresses/l
 import type { Member } from '../../../domain/types';
 import { LocaleProvider, i18n } from '../../../i18n';
 import { AddressesPage } from './AddressesPage';
+import { DEBOUNCE_MS } from './StreetSuggestions';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -236,5 +237,124 @@ describe('the address book', () => {
     expect(saved?.street).toBe('Herzl 14');
     expect(saved?.doorCode).toBeUndefined();
     expect(saved?.apartment).toBe('4');
+  });
+
+  describe('address suggestions', () => {
+    const SUGGESTIONS = {
+      results: [
+        { street: 'Herzl 12', city: 'Rishon LeZion', country: 'Israel' },
+        { street: 'Herzl 12', city: 'Haifa', country: 'Israel' },
+      ],
+      attribution: '© OpenStreetMap contributors',
+    };
+
+    /** Lets the typing pause pass, and the answer arrive. */
+    async function pause(): Promise<void> {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS + 50));
+      });
+      await flush();
+    }
+
+    async function openForm(fetchMock: ReturnType<typeof vi.fn>): Promise<{ form: HTMLDialogElement; street: HTMLInputElement }> {
+      vi.stubGlobal('fetch', fetchMock);
+      const host = await render();
+      await click(button(host, i18n.t('addresses.add')));
+      const form = openDialog() as HTMLDialogElement;
+      return { form, street: byLabel(form, i18n.t('addresses.form.street')) };
+    }
+
+    const options = (form: HTMLElement): HTMLElement[] => [...form.querySelectorAll<HTMLElement>('[role="option"]')];
+    const key = async (input: HTMLInputElement, name: string): Promise<KeyboardEvent> => {
+      const event = new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true });
+      await act(async () => {
+        input.dispatchEvent(event);
+      });
+      return event;
+    };
+
+    it('suggests after a pause in typing, and a pick fills the street and city', async () => {
+      const fetchMock = vi.fn(async (_input: string) => new Response(JSON.stringify(SUGGESTIONS), { status: 200 }));
+      const { form, street } = await openForm(fetchMock);
+      expect(street.getAttribute('role')).toBe('combobox');
+
+      await type(street, 'he');
+      await pause();
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      await type(street, 'herz');
+      await type(street, 'herzl 12');
+      await pause();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock.mock.calls[0]?.[0]).toBe(`/api/places?q=${encodeURIComponent('herzl 12')}`);
+      expect(street.getAttribute('aria-expanded')).toBe('true');
+      expect(options(form).map((option) => option.textContent)).toEqual(['Herzl 12Rishon LeZion, Israel', 'Herzl 12Haifa, Israel']);
+      expect(form.textContent).toContain('© OpenStreetMap contributors');
+
+      await key(street, 'ArrowDown');
+      await key(street, 'ArrowDown');
+      expect(street.getAttribute('aria-activedescendant')).toBe(options(form)[1]?.id);
+      const enter = await key(street, 'Enter');
+      expect(enter.defaultPrevented).toBe(true);
+      expect(street.value).toBe('Herzl 12');
+      expect(byLabel(form, i18n.t('addresses.form.city')).value).toBe('Haifa');
+      expect(options(form)).toEqual([]);
+      expect(await store.addresses.list()).toEqual([]);
+    });
+
+    it('asks with the city once it is filled in, and never with the name, apartment or door code', async () => {
+      const fetchMock = vi.fn(async (_input: string) => new Response(JSON.stringify({ results: [] }), { status: 200 }));
+      const { form, street } = await openForm(fetchMock);
+      await type(byLabel(form, i18n.t('addresses.form.name')), 'Secret name');
+      await type(byLabel(form, i18n.t('addresses.form.city')), 'Haifa');
+      await type(byLabel(form, i18n.t('addresses.form.apartment')), '77');
+      await type(byLabel(form, i18n.t('addresses.form.doorCode')), '9911#');
+      await type(street, 'הרצל 12');
+      await pause();
+      const url = decodeURIComponent(String(fetchMock.mock.calls[0]?.[0]));
+      expect(url).toBe('/api/places?q=הרצל 12, Haifa');
+      expect(url).not.toMatch(/Secret|77|9911/);
+    });
+
+    it('closes the list on a click, and Escape closes only the list', async () => {
+      const fetchMock = vi.fn(async (_input: string) => new Response(JSON.stringify(SUGGESTIONS), { status: 200 }));
+      const { form, street } = await openForm(fetchMock);
+      await type(street, 'herzl 12');
+      await pause();
+      const escape = await key(street, 'Escape');
+      expect(escape.defaultPrevented).toBe(true);
+      expect(options(form)).toEqual([]);
+      expect(openDialog()).toBe(form);
+
+      await type(street, 'herzl 1');
+      await pause();
+      await click(options(form)[0]);
+      expect(street.value).toBe('Herzl 12');
+      expect(byLabel(form, i18n.t('addresses.form.city')).value).toBe('Rishon LeZion');
+    });
+
+    it('shows nothing when the service fails, and the address can still be typed and saved', async () => {
+      const fetchMock = vi.fn(async (_input: string) => new Response(JSON.stringify({ error: 'places-failed' }), { status: 502 }));
+      const { form, street } = await openForm(fetchMock);
+      await type(byLabel(form, i18n.t('addresses.form.name')), 'Grandma');
+      await type(street, 'Herzl 12');
+      await pause();
+      expect(fetchMock).toHaveBeenCalled();
+      expect(options(form)).toEqual([]);
+      expect(street.getAttribute('aria-expanded')).toBe('false');
+      await type(byLabel(form, i18n.t('addresses.form.city')), 'Tel Aviv');
+      await click(button(form, i18n.t('addresses.add')));
+      expect((await store.addresses.list())[0]).toMatchObject({ street: 'Herzl 12', city: 'Tel Aviv' });
+    });
+
+    it('does not ask when an address is opened for editing, only once its street is typed in', async () => {
+      const fetchMock = vi.fn(async (_input: string) => new Response(JSON.stringify(SUGGESTIONS), { status: 200 }));
+      vi.stubGlobal('fetch', fetchMock);
+      await store.addresses.create(herzl);
+      const host = await render();
+      await click(button(host, i18n.t('addresses.editLabel', { name: 'Grandma' })));
+      await pause();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
   });
 });

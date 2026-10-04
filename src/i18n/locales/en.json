@@ -258,7 +258,9 @@
       "cityPlaceholder": "Tel Aviv",
       "cityMissing": "Add the city.",
       "apartment": "Apartment (optional)",
-      "doorCode": "Door code (optional)"
+      "doorCode": "Door code (optional)",
+      "suggestions": "Address suggestions",
+      "cityCountry": "{{city}}, {{country}}"
     }
   },
   "kitchen": {

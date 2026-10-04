@@ -6,10 +6,11 @@ import type { Connect, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { createAiHandler } from './server/ai';
 import { createImportHandler } from './server/import';
+import { createPlacesHandler, defaultAddressProvider } from './server/places';
 import { createSearchHandler } from './server/search';
 
 /**
- * /api/import, /api/search and /api/ai under `npm run dev` and `vite preview`:
+ * /api/import, /api/search, /api/places and /api/ai under `npm run dev` and `vite preview`:
  * the same handlers the Pages Functions run in production. Import and AI are
  * given Node's DNS, so they can also refuse names that resolve to private
  * addresses. Search is given the Tavily key from .env.local and AI its own keys
@@ -21,6 +22,7 @@ function apiRoutes(env: Record<string, string>): Plugin {
   const routes = [
     { path: '/api/import', failed: 'fetch-failed', handler: createImportHandler({ resolveHost }) },
     { path: '/api/search', failed: 'search-failed', handler: createSearchHandler({ apiKey: env.TAVILY_API_KEY }) },
+    { path: '/api/places', failed: 'places-failed', handler: createPlacesHandler({ provider: defaultAddressProvider() }) },
     {
       path: '/api/ai',
       failed: 'unavailable',
