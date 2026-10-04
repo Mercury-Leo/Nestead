@@ -147,7 +147,7 @@ export function AddShow({ shows, onClose, onShow }: { shows: readonly Show[]; on
                   <li key={hit.imdbId}>
                     <button type="button" className={s.hit} onClick={() => void choose(hit)}>
                       <span className={s.hitPoster}>
-                        <Poster url={hit.posterUrl} kind={hit.kind} />
+                        <Poster url={hit.posterUrl} kind={hit.kind} sizes="44px" />
                       </span>
                       <span className={s.hitText}>
                         <span className={s.hitTitle} dir="auto">
@@ -168,7 +168,7 @@ export function AddShow({ shows, onClose, onShow }: { shows: readonly Show[]; on
       ) : (
         <div className={s.preview}>
           <span className={s.previewPoster}>
-            <Poster url={chosen.details?.posterUrl ?? chosen.hit.posterUrl} kind={chosen.hit.kind} />
+            <Poster url={chosen.details?.posterUrl ?? chosen.hit.posterUrl} kind={chosen.hit.kind} sizes="112px" />
           </span>
           <div className={s.previewText}>
             <h3 ref={heading} tabIndex={-1} className={s.previewTitle} dir="auto">

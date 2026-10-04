@@ -188,7 +188,7 @@ function ShowCardView({ show, revealed }: { show: Show; revealed?: number }): JS
   return (
     <article ref={card} className={cx(s.card, flash && s.flash)}>
       <a href={href} target="_blank" rel="noopener noreferrer" className={s.poster} tabIndex={-1} aria-hidden>
-        <Poster url={show.posterUrl} kind={show.kind} />
+        <Poster url={show.posterUrl} kind={show.kind} sizes="(min-width: 1024px) 96px, 84px" />
       </a>
       <div className={s.body}>
         <h3 className={s.title} dir="auto">
