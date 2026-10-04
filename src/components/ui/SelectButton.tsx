@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { cx } from './';
+import { cx } from './cx';
 import s from './SelectButton.module.css';
 
 /**

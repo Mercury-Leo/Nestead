@@ -33,6 +33,7 @@ App-wide UI: the generic kit in `ui/`, the light and dark theme in `theme/`, and
 - Only generic pieces go in `ui/`; anything that knows about recipes lives in `features/larder/recipe/` (`ui/index.ts`).
 - Real `<button>`, `<a>` and `<input>` throughout, with touch targets of at least 44px (`ui/index.ts`).
 - Colours differ between themes only through tokens; components never branch on the theme (`../styles/tokens.css` header).
+- Files inside `ui/` import each other by file (`./cx`), never through the barrel `./`: the cycle makes `vite build` warn that the export "will end up in different chunks" once per lazy screen (`ui/SelectButton.tsx`).
 
 ## Tests
 `theme/theme.test.ts`: follows the system until a choice, keeps an explicit choice, ignores unknown stored values, uses the key `index.html` reads.
