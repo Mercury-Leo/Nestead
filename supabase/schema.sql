@@ -541,6 +541,41 @@ create policy recipe_photos_delete on storage.objects
          and (storage.foldername(name))[1] = public.current_family_id()::text);
 
 -- ---------------------------------------------------------------------------
+-- Addresses: the family's address book
+--
+-- Family-scoped like every other table, with RLS and its policy in the same run.
+-- The door code is family data: the app never puts it in a navigation link.
+-- ---------------------------------------------------------------------------
+
+create table addresses (
+  id           uuid primary key default gen_random_uuid(),
+  family_id    uuid        not null references families (id) on delete cascade,
+  -- What the family calls it, e.g. "Dana's house".
+  name         text        not null,
+  city         text        not null,
+  -- Street and house number, as one line.
+  street       text        not null,
+  apartment    text,
+  door_code    text,
+  created_by   uuid        references members (id) on delete set null,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+create index addresses_family_id_idx on addresses (family_id);
+
+create trigger addresses_set_updated_at before update on addresses
+  for each row execute function set_updated_at();
+
+alter table addresses enable row level security;
+
+create policy addresses_all on addresses
+  for all to authenticated using (family_id = current_family_id())
+  with check (family_id = current_family_id());
+
+alter publication supabase_realtime add table addresses;
+
+-- ---------------------------------------------------------------------------
 -- AI recipe reading: the family's own OpenRouter key and the free-read counter
 --
 -- The key is encrypted by the server (server/ai/crypto.ts) under a secret

@@ -218,8 +218,15 @@ describe('the page pills', () => {
     expect(link(pills as HTMLElement, i18n.t('nav.pantry'))?.getAttribute('aria-current')).toBe('page');
   });
 
+  it("show Family's pages, Addresses among them", async () => {
+    const host = await render(<PagePills />, '/addresses');
+    const pills = host.querySelector(`nav[aria-label="${i18n.t('nav.sectionPages', { section: i18n.t('nav.family') })}"]`);
+    expect([...(pills?.querySelectorAll('a') ?? [])].map((a) => a.textContent)).toEqual([i18n.t('nav.family'), i18n.t('nav.addresses')]);
+    expect(link(pills as HTMLElement, i18n.t('nav.addresses'))?.getAttribute('aria-current')).toBe('page');
+  });
+
   it('stay away from sections with one page', async () => {
-    for (const path of ['/', '/lists', '/family']) {
+    for (const path of ['/', '/lists']) {
       const host = await render(<PagePills />, path);
       expect(host.querySelector('nav'), path).toBeNull();
       unmount?.();

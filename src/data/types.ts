@@ -1,4 +1,5 @@
 import type {
+  Address,
   AiStatus,
   Base,
   BoardColumn,
@@ -59,6 +60,8 @@ export interface DataStore {
   listItems: Collection<ListItem>;
   /** The family's own shopping-list groups. */
   listGroups: Collection<ListGroup>;
+  /** The family's address book. */
+  addresses: Collection<Address>;
   photos: PhotoStore;
 }
 

@@ -1,4 +1,4 @@
-import { BookOpen, CookingPot, LayoutGrid, Leaf, ListChecks, Milk, Search, Users } from 'lucide-react';
+import { BookOpen, CookingPot, LayoutGrid, Leaf, ListChecks, MapPin, Milk, Search, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type en from '../i18n/locales/en.json';
 
@@ -48,7 +48,16 @@ export const SECTIONS: readonly Section[] = [
       { path: '/profile', labelKey: 'nav.diet', icon: Leaf },
     ],
   },
-  { id: 'family', labelKey: 'nav.family', icon: Users, pages: [{ path: '/family', labelKey: 'nav.family', icon: Users }], pinnable: false },
+  {
+    id: 'family',
+    labelKey: 'nav.family',
+    icon: Users,
+    pages: [
+      { path: '/family', labelKey: 'nav.family', icon: Users },
+      { path: '/addresses', labelKey: 'nav.addresses', icon: MapPin },
+    ],
+    pinnable: false,
+  },
 ];
 
 /** Sections in the phone's bar, besides More. */

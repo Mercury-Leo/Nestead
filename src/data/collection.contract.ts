@@ -198,6 +198,24 @@ export function runDataStoreContract(
       expect((await store.pantry.list()).map((row) => row.kind)).toEqual(['staple']);
     });
 
+    it('addresses round-trip, Hebrew included, and their optional fields clear', async () => {
+      const address = await store.addresses.create({
+        name: 'סבתא',
+        city: 'תל אביב',
+        street: 'הרצל 12',
+        apartment: '4',
+        doorCode: '1234#',
+      });
+
+      const [stored] = await store.addresses.list();
+      expect(stored).toEqual(address);
+
+      const cleared = await store.addresses.update(address.id, { apartment: undefined, doorCode: undefined });
+      expect(cleared.apartment).toBeUndefined();
+      expect(cleared.doorCode).toBeUndefined();
+      expect(cleared.street).toBe('הרצל 12');
+    });
+
     it("two families never see each other's rows", async () => {
       const other = await make('family-b');
       const theirColumnId = await aColumn(other);

@@ -1,11 +1,12 @@
 # family
-The Family page (`/family`): members, the invite link and join code, the AI assistant card, and this device's theme and language.
+The Family section: the Family page (`/family`), with members, the invite link and join code, the AI assistant card, and this device's theme and language; and the family's address book (`/addresses`, in [`addresses/`](addresses/README.md)).
 
 ## Files
 | File | Responsibility |
 | --- | --- |
 | `FamilyPage.tsx` (+ `FamilyPage.module.css`) | Invite link (share sheet or copy), join code, rotating the code, members, and one "On this device" card with the theme toggle and language picker. |
 | `AiCard.tsx` | The "AI assistant" card: the free reads left, or the family's own OpenRouter key (its last four characters, who added it and when), a write-only key `Sheet`, a Remove confirmation `Sheet`, and the model choice. Styles live in `FamilyPage.module.css`. |
+| `addresses/` | The Addresses page: see [its README](addresses/README.md). |
 | `FamilyPage.test.tsx` | Renders this page and `../board/BoardPage.tsx` with a signed-in session's shape, since the invite copy never shows in demo mode, and the AI card with stubbed `fetch` and a stubbed `Session.ai`. |
 
 ## How it works
@@ -22,7 +23,7 @@ The Family page (`/family`): members, the invite link and join code, the AI assi
 
 ## Connections
 - Uses: `../../auth/session.tsx`, `../../auth/invite.ts`, `../../ai/client.ts` (`saveFamilyKey`, `aiErrorMessage`), `../../components/` (PageHeader, ui, theme/ThemeToggle), `../../i18n/`.
-- Used by: `../../app/AppRoutes.tsx` (lazy, and not waiting for the kitchen).
+- Used by: `../../app/AppRoutes.tsx` (lazy, and not waiting for the kitchen), for both pages.
 
 ## Rules & gotchas
 - In demo mode there is no `family`, `rotateJoinCode`, `refreshFamily` or `ai`; the page shows a note instead of a code, and the AI card a note (`FamilyPage.tsx`, `AiCard.tsx`).

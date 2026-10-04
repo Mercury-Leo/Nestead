@@ -8,16 +8,16 @@ The signed-in app's frame: the shell around every screen, the sidebar and tab ba
 | `Shell.tsx` (+ `Shell.module.css`, also used by `Nav.tsx`) | Sidebar or tab bar, `PagePills` above the page wherever the tab bar shows, the routed page inside `ErrorBoundary`, and `TimerHost`. |
 | `sections.ts` | Every section and its pages (`SECTIONS`), `locate()` for which is lit, and the pin rules (`resolvePins()`, `togglePin()`). No React. |
 | `Nav.tsx` | `Sidebar`, `TabBar` with its More sheet, and `PagePills`, all drawn from `SECTIONS`; counts and the diet-rules link. |
-| `AppRoutes.tsx` | Every route; kitchen screens and `FamilyPage` load as `lazy()` chunks. |
+| `AppRoutes.tsx` | Every route; kitchen screens, `FamilyPage` and `AddressesPage` load as `lazy()` chunks. |
 
 ## How it works
 - `main.tsx` renders `LocaleProvider` → `ThemeProvider` → `BrowserRouter` → `SessionProvider` → `App`, so nothing here renders before a session exists.
-- `AppRoutes.tsx` wraps kitchen routes in `page()`, which shows Loading until `useKitchen().loaded`; `/` (the board) and `/family` do not wait. Unknown paths redirect to `/`.
+- `AppRoutes.tsx` wraps kitchen routes in `page()`, which shows Loading until `useKitchen().loaded`; `/` (the board), `/family` and `/addresses` do not wait (Addresses waits for its own collection). Unknown paths redirect to `/`.
 - `Shell.tsx` drops the sidebar in cook mode (`/^\/recipe\/[^/]+\/cook/`) and the tab bar on every `/recipe/` path; `ErrorBoundary` resets when `pathname` changes.
-- Sections (`sections.ts`): Board, Lists, Larder (Library, Search, Pantry, Diet) and Family. `locate()` lights a page by its path or an `also` prefix (`/recipe`, `/add` and `/import` are Library); URLs don't name sections.
+- Sections (`sections.ts`): Board, Lists, Larder (Library, Search, Pantry, Diet) and Family (Family, Addresses). `locate()` lights a page by its path or an `also` prefix (`/recipe`, `/add` and `/import` are Library); URLs don't name sections.
 - Phone: the bar shows the pinned sections in list order, then More. More opens a `Sheet` of every section; Edit bar pins and unpins, at most `MAX_PINS` (4) and at least one, refused rather than swapped. Pins are a per-family device preference, `navPins`. More is lit in a section that isn't pinned.
 - A section with more than one page shows its pages as pills at the top of `<main>` on phones; desktop hides them, since the sidebar lists them.
-- Desktop: the sidebar lists every section; the one you're in opens to its pages, with counts. Sections that can't be pinned (Family) sit at the foot. The diet-rules link shows under Larder's pages while you're in the Larder.
+- Desktop: the sidebar lists every section; the one you're in opens to its pages, with counts. Sections that can't be pinned (Family) sit at the foot, and open to their pages like the rest: Family's first page shares its section's name. The diet-rules link shows under Larder's pages while you're in the Larder.
 - Routes and screens are listed in the [root README](../../README.md#the-kitchen-larder); why screens load lazily is in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#the-kitchen-larder).
 
 ## Connections

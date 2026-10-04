@@ -31,7 +31,7 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 | `src/i18n/` | i18next, locale provider, formatting, locale files | [README](src/i18n/README.md) |
 | `src/features/board/` | Kanban board, drag and drop, repeating chores | [README](src/features/board/README.md) |
 | `src/features/lists/` | Shopping list and its sections | [README](src/features/lists/README.md) |
-| `src/features/family/` | Family page: invites, members, the AI assistant card, theme, language | [README](src/features/family/README.md) |
+| `src/features/family/` | Family page: invites, members, the AI assistant card, theme, language; `addresses/`, the address book | [README](src/features/family/README.md) |
 | `src/features/larder/` | Kitchen: a folder per screen, `recipe/` shared UI, `seed/`, `timers/` | [README](src/features/larder/README.md) |
 | `src/ai/` | Browser client for `/api/ai` | [README](src/ai/README.md) |
 | `src/hooks/`, `src/styles/` | Media query, direction, wake lock, pointer-drag helpers; `tokens.css` palette | none |

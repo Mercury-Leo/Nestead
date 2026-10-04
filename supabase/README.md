@@ -12,6 +12,7 @@ The Postgres schema for the real backend, the migrations for projects that alrea
 | `migrations/20260927120000_task_schedule.sql` | `tasks.recur_every_months` and `recur_from`; converts 30- and 90-day repeats to months. |
 | `migrations/20260927180000_list_group_order.sql` | `list_groups.position`, `builtin` and one row per built-in section. |
 | `migrations/20261003120000_family_ai.sql` | AI reading: `family_ai_settings`, `ai_usage`, `ai_usage_days` and their five functions. |
+| `migrations/20261004120000_addresses.sql` | `addresses`: the family's address book, with RLS, its policy and realtime. |
 | `config.toml` | Declares only `project_id`, the site URL and the `/join/**` redirect URL. |
 | `.gitignore` | Ignores the CLI's `.branches` and `.temp`. |
 
@@ -19,7 +20,7 @@ The Postgres schema for the real backend, the migrations for projects that alrea
 - Each migration's header says `schema.sql` already includes it: a fresh project needs only `schema.sql`.
 - Every family table has `family_id` and a policy comparing it with `current_family_id()`, a `security definer` function that returns NULL, and so denies everything, for a user in no family (`schema.sql`).
 - `create_family`, `join_family`, `rotate_join_code` and `invite_family_name` are `security definer` RPCs, since RLS makes those steps impossible from the client (`schema.sql`, `../src/data/supabase/supabaseAccount.ts`).
-- Realtime publishes `members`, `board_columns`, `tasks` and the five kitchen tables, not `families` or the AI tables (`schema.sql`).
+- Realtime publishes `members`, `board_columns`, `tasks`, the five kitchen tables and `addresses`, not `families` or the AI tables (`schema.sql`).
 - The AI tables have RLS with no policies and revoked privileges; only `family_ai_status`, `store_family_ai_key`, `clear_family_ai_key`, `set_family_ai_model` and `claim_ai_request` (security definer, `current_family_id()`-scoped) touch them. The key is ciphertext made by the server. `claim_ai_request()` serialises free claims on today's `ai_usage_days` row; the day is UTC (`schema.sql`, `../server/ai/store.ts`).
 - Photos live in the private `recipe-photos` bucket, one folder per family id, enforced by storage policies (`schema.sql`).
 

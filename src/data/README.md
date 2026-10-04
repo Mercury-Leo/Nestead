@@ -4,11 +4,11 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 ## Files
 | File | Responsibility |
 | --- | --- |
-| `types.ts` | `Collection<T>`, `PhotoStore`, `DataStore` (every collection one family owns), and `Account` and `Family` (sign-in, families, AI settings, `openStore()`). |
+| `types.ts` | `Collection<T>`, `PhotoStore`, `DataStore` (every collection one family owns, `addresses` included), and `Account` and `Family` (sign-in, families, AI settings, `openStore()`). |
 | `boundary.test.ts` | Fails if anything outside `supabase/` imports the Supabase SDK or that folder, bar `../auth/session.tsx`. |
 | `cache.ts` (+ `cache.test.ts`) | `CachedCollection`, `withCache()`, `cacheOf()`, `preloadStore()`: one shared copy per collection, writes shown at once. |
 | `useCollection.ts` | `useCollectionState()` (`rows` and `loaded`) and `useCollection()` (rows only). |
-| `collection.contract.ts` | `runDataStoreContract(name, make, reset?)`: the nine cases every backend must pass. |
+| `collection.contract.ts` | `runDataStoreContract(name, make, reset?)`: the ten cases every backend must pass, one of them address rows (Hebrew, optional fields cleared). |
 | `local/localStore.ts` (+ `localStore.test.ts`) | localStorage backend, plus `readPreference`/`writePreference` and `readDevicePreference`/`writeDevicePreference`. |
 | `local/localPhotos.ts` | Local `PhotoStore` in IndexedDB (`nestead-photos`). |
 | `supabase/supabaseClient.ts` | Browser client from `VITE_SUPABASE_*`, remember-me session storage, email-link parsing. |
@@ -46,7 +46,7 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 - Another client's delete never arrives over realtime. The channel filters on `family_id`, and a DELETE event carries only the primary key, so the filter never matches. The deleting client still notifies its own listeners (`supabaseStore.ts`; measured in `../../docs/PERFORMANCE.md`).
 - `localStore.ts` calls itself the only localStorage user, but `../auth/invite.ts` and `supabase/supabaseClient.ts` use it too.
 - Photo ids are `<familyId>/<uuid>` locally and `<familyId>/<uuid>.jpg` on Supabase (`local/localPhotos.ts`, `supabase/supabaseStore.ts`).
-- With all six `SUPABASE_TEST_*` values in `.env.test`, `npm test` runs the live suites, which delete every row in both test families between cases (`supabase/supabaseStore.test.ts`).
+- With all six `SUPABASE_TEST_*` values in `.env.test`, `npm test` runs the live suites, which delete every row in both test families between cases (`supabase/supabaseStore.test.ts`). The address contract case fails there until `../../supabase/migrations/20261004120000_addresses.sql` is applied to that project.
 
 ## Tests
 The contract runs three times: `local/localStore.test.ts`, `cache.test.ts` (cached local, plus ten cache cases), and `supabase/supabaseStore.test.ts` (live). The Supabase suites run in the `node` environment, not jsdom. `boundary.test.ts` reads source files only. `supabase/aiStatus.test.ts` maps `family_ai_status()` rows (with a key, free only, a setter who left, and a field it must not carry).

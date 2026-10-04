@@ -247,6 +247,7 @@ export function withCache(store: DataStore): DataStore {
     dietProfiles: new CachedCollection(store.dietProfiles),
     listItems: new CachedCollection(store.listItems),
     listGroups: new CachedCollection(store.listGroups),
+    addresses: new CachedCollection(store.addresses),
     photos: store.photos,
   };
 }

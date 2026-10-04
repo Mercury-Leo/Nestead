@@ -27,6 +27,7 @@
     "diet": "תזונה",
     "larder": "מטבח",
     "family": "משפחה",
+    "addresses": "כתובות",
     "more": "עוד",
     "editBar": "עריכת הסרגל",
     "done": "סיום",
@@ -223,6 +224,44 @@
         "keep": "להשאיר",
         "removing": "מסיר…"
       }
+    }
+  },
+  "addresses": {
+    "title": "כתובות",
+    "add": "הוספת כתובת",
+    "searchLabel": "חיפוש כתובות",
+    "searchPlaceholder": "חיפוש לפי שם או רחוב",
+    "clearSearch": "ניקוי החיפוש",
+    "noMatches": "אין כתובות מתאימות.",
+    "empty": {
+      "title": "עדיין אין כתובות",
+      "body": "שמרו את המקומות שהמשפחה מגיעה אליהם, כולל קודים לדלת, וקבלו הוראות הגעה בלחיצה."
+    },
+    "streetCity": "{{street}}, {{city}}",
+    "apartment": "דירה",
+    "doorCode": "קוד לדלת",
+    "navigate": "ניווט",
+    "navigateTo": "ניווט אל {{name}}",
+    "waze": "Waze",
+    "googleMaps": "Google Maps",
+    "editLabel": "עריכת {{name}}",
+    "deleteLabel": "מחיקת {{name}}",
+    "deleteTitle": "למחוק את {{name}}?",
+    "deleteBody": "הכתובת תימחק לכל בני המשפחה.",
+    "form": {
+      "addTitle": "כתובת חדשה",
+      "editTitle": "עריכת כתובת",
+      "name": "שם",
+      "namePlaceholder": "הבית של דנה",
+      "nameMissing": "צריך לתת שם.",
+      "street": "רחוב ומספר",
+      "streetPlaceholder": "הרצל 12",
+      "streetMissing": "צריך רחוב ומספר.",
+      "city": "עיר",
+      "cityPlaceholder": "תל אביב",
+      "cityMissing": "צריך עיר.",
+      "apartment": "דירה (לא חובה)",
+      "doorCode": "קוד לדלת (לא חובה)"
     }
   },
   "kitchen": {
