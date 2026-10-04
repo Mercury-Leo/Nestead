@@ -1,4 +1,4 @@
-import { BookOpen, Clapperboard, CookingPot, LayoutGrid, Leaf, ListChecks, MapPin, Milk, Search, Ticket, Users } from 'lucide-react';
+import { BookOpen, Clapperboard, CookingPot, LayoutGrid, Leaf, ListChecks, MapPin, Milk, Search, Settings, Ticket, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type en from '../i18n/locales/en.json';
 
@@ -55,7 +55,8 @@ export const SECTIONS: readonly Section[] = [
     labelKey: 'nav.family',
     icon: Users,
     pages: [
-      { path: '/family', labelKey: 'nav.family', icon: Users },
+      // The section is Family; its first page holds the family's settings.
+      { path: '/family', labelKey: 'nav.settings', icon: Settings },
       { path: '/addresses', labelKey: 'nav.addresses', icon: MapPin },
     ],
     pinnable: false,

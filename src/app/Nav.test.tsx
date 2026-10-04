@@ -222,7 +222,7 @@ describe('the page pills', () => {
   it("show Family's pages, Addresses among them", async () => {
     const host = await render(<PagePills />, '/addresses');
     const pills = host.querySelector(`nav[aria-label="${i18n.t('nav.sectionPages', { section: i18n.t('nav.family') })}"]`);
-    expect([...(pills?.querySelectorAll('a') ?? [])].map((a) => a.textContent)).toEqual([i18n.t('nav.family'), i18n.t('nav.addresses')]);
+    expect([...(pills?.querySelectorAll('a') ?? [])].map((a) => a.textContent)).toEqual([i18n.t('nav.settings'), i18n.t('nav.addresses')]);
     expect(link(pills as HTMLElement, i18n.t('nav.addresses'))?.getAttribute('aria-current')).toBe('page');
   });
 
