@@ -1,4 +1,4 @@
-import { BookOpen, CookingPot, LayoutGrid, Leaf, ListChecks, Milk, Search, Users } from 'lucide-react';
+import { BookOpen, Clapperboard, CookingPot, LayoutGrid, Leaf, ListChecks, Milk, Search, Ticket, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type en from '../i18n/locales/en.json';
 
@@ -11,7 +11,7 @@ import type en from '../i18n/locales/en.json';
 
 export type NavKey = `nav.${keyof (typeof en)['nav']}`;
 
-export type SectionId = 'board' | 'lists' | 'larder' | 'family';
+export type SectionId = 'board' | 'lists' | 'larder' | 'activities' | 'family';
 
 export interface SectionPage {
   path: string;
@@ -48,6 +48,8 @@ export const SECTIONS: readonly Section[] = [
       { path: '/profile', labelKey: 'nav.diet', icon: Leaf },
     ],
   },
+  // Things the family does together; Shows is its first page.
+  { id: 'activities', labelKey: 'nav.activities', icon: Ticket, pages: [{ path: '/shows', labelKey: 'nav.shows', icon: Clapperboard }] },
   { id: 'family', labelKey: 'nav.family', icon: Users, pages: [{ path: '/family', labelKey: 'nav.family', icon: Users }], pinnable: false },
 ];
 
