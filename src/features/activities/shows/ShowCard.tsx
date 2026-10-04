@@ -7,7 +7,7 @@ import { nextStatus } from '../../../domain/shows';
 import type { OmdbDetails } from '../../../domain/shows';
 import type { Show, ShowStatus } from '../../../domain/types';
 import { formatDate, formatNumber } from '../../../i18n';
-import { cycleStatus, dropShow, refreshShow, removeShow, restoreShow } from './actions';
+import { cycleStatus, dropShow, refreshShow, removeShow, restoreShow, toggleFavorite } from './actions';
 import { STATUS_KEY, imdbUrl, kindLabel, statusLabel } from './labels';
 import type { ShowsFailure } from './omdb';
 import { Poster } from './Poster';
@@ -75,6 +75,31 @@ function StatusBadge({ status, onCycle }: { status: ShowStatus; onCycle: () => v
       <span className={cx(s.status, s[STATUS_KEY[status]])}>
         <Icon size={14} strokeWidth={2.4} aria-hidden />
         <span>{label}</span>
+      </span>
+    </button>
+  );
+}
+
+/**
+ * The favourite star, on the poster's top corner: a show the family would
+ * watch again. A toggle for the whole family, named for its show since every
+ * card has one. It follows the title and status in the DOM, so someone moving
+ * by headings meets it after the show's name; CSS draws it over the poster.
+ */
+function FavoriteStar({ show, onToggle }: { show: Show; onToggle: () => void }): JSX.Element {
+  const { t } = useTranslation();
+  const on = show.favorite === true;
+  return (
+    <button
+      type="button"
+      className={s.starHit}
+      aria-pressed={on}
+      aria-label={t('shows.card.favorite', { title: show.title })}
+      title={t('shows.card.favoriteHint')}
+      onClick={onToggle}
+    >
+      <span className={cx(s.star, on && s.starOn)}>
+        <Star size={16} strokeWidth={2.2} fill={on ? 'currentColor' : 'none'} aria-hidden />
       </span>
     </button>
   );
@@ -218,6 +243,7 @@ function ShowCardView({ show, revealed }: { show: Show; revealed?: number }): JS
           </h3>
           <StatusBadge status={show.status} onCycle={() => void cycleStatus(store, show).catch(() => undefined)} />
         </div>
+        <FavoriteStar show={show} onToggle={() => void toggleFavorite(store, show).catch(() => undefined)} />
         <Facts show={show} />
         <div id={id} className={s.details} hidden={!open}>
           {open && <Details show={show} />}

@@ -42,6 +42,11 @@ export async function restoreShow(store: DataStore, show: Show): Promise<Show> {
   return store.shows.update(show.id, statusPatch('to-watch', new Date().toISOString()));
 }
 
+/** Stars or unstars a show for the whole family. Unstarring writes false, never a cleared field: the backend's column is not null. */
+export async function toggleFavorite(store: DataStore, show: Show): Promise<Show> {
+  return store.shows.update(show.id, { favorite: show.favorite !== true });
+}
+
 /**
  * Reads this one show from OMDb again and saves only OMDb's fields. On any
  * failure nothing is written and the saved details stay as they were.

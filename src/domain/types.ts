@@ -312,6 +312,8 @@ export interface Show extends Base {
   status: ShowStatus;
   /** ISO timestamp: set when the status becomes watched, cleared when it leaves it. */
   watchedAt?: string;
+  /** A family favourite, one they would watch again. Absent counts as false; unstarring writes false. */
+  favorite?: boolean;
   /** Member id. Cleared when that member is deleted. */
   createdBy?: string;
 }

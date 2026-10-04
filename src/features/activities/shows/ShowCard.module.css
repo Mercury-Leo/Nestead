@@ -2,7 +2,9 @@
 
 /* The poster sits on the start side, so the card mirrors itself in RTL. */
 /* The body stretches to the card's height, so the details toggle can sit at its bottom. */
+/* Positioned for the favourite star, which it places over the poster (.starHit). */
 .card {
+  position: relative;
   display: flex;
   gap: 14px;
   min-width: 0;
@@ -183,6 +185,58 @@
 }
 
 .statusHit:focus-visible .status {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/*
+ * The favourite star, over the poster's top start corner (top left; top right
+ * in RTL, where the poster is on the right). It follows the title in the DOM,
+ * so it is placed against the card: the card's padding (12px) to the poster's
+ * corner, 5px in to the disc's edge, and the disc's centre (14px) less half
+ * the 44px target. The target reaches a little into the card's padding.
+ */
+.starHit {
+  position: absolute;
+  top: calc(12px + 5px + 14px - 22px);
+  inset-inline-start: calc(12px + 5px + 14px - 22px);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+/* A disc of card colour, so the star reads on any poster and on the placeholder. */
+.star {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--card-glass);
+  box-shadow: var(--shadow-thumb);
+  color: var(--ink-2);
+}
+
+.starOn {
+  color: var(--honey);
+}
+
+.starHit:hover .star {
+  box-shadow: var(--shadow-thumb), inset 0 0 0 100px var(--hover-wash);
+}
+
+/* As the status badge's: the ring hugs the disc. */
+.starHit:focus-visible {
+  outline: none;
+}
+
+.starHit:focus-visible .star {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
