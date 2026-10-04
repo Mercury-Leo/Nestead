@@ -28,6 +28,8 @@
     "activities": "Activities",
     "shows": "Shows",
     "family": "Family",
+    "settings": "Settings",
+    "addresses": "Addresses",
     "more": "More",
     "editBar": "Edit bar",
     "done": "Done",
@@ -164,7 +166,7 @@
     }
   },
   "family": {
-    "title": "Family",
+    "title": "Settings",
     "invite": {
       "title": "Invite someone",
       "demo": "Demo mode: everyone’s already here.",
@@ -224,6 +226,44 @@
         "keep": "Keep it",
         "removing": "Removing…"
       }
+    }
+  },
+  "addresses": {
+    "title": "Addresses",
+    "add": "Add address",
+    "searchLabel": "Search addresses",
+    "searchPlaceholder": "Search by name, street or city",
+    "clearSearch": "Clear search",
+    "noMatches": "No addresses match.",
+    "empty": {
+      "title": "No addresses yet",
+      "body": "Save the places the family goes, door codes included, and get directions in one tap."
+    },
+    "streetCity": "{{street}}, {{city}}",
+    "apartment": "Apartment",
+    "doorCode": "Door code",
+    "navigate": "Navigate",
+    "navigateTo": "Navigate to {{name}}",
+    "editLabel": "Edit {{name}}",
+    "deleteLabel": "Delete {{name}}",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteBody": "It goes for everyone in the family.",
+    "form": {
+      "addTitle": "New address",
+      "editTitle": "Edit address",
+      "name": "Name",
+      "namePlaceholder": "Dana's house",
+      "nameMissing": "Give it a name.",
+      "street": "Street and number",
+      "streetPlaceholder": "Herzl 12",
+      "streetMissing": "Add the street and number.",
+      "city": "City",
+      "cityPlaceholder": "Tel Aviv",
+      "cityMissing": "Add the city.",
+      "apartment": "Apartment (optional)",
+      "doorCode": "Door code (optional)",
+      "suggestions": "Address suggestions",
+      "cityCountry": "{{city}}, {{country}}"
     }
   },
   "kitchen": {

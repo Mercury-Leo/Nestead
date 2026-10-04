@@ -4,7 +4,7 @@ Pure TypeScript shared by every layer: the entity types, board ordering, the kit
 ## Files
 | File | Responsibility |
 | --- | --- |
-| `types.ts` | `Base`, `NewRow`, `Member`, `BoardColumn`, `Task`, the recipe, pantry, diet and list types, `Show`, and `AiStatus`. |
+| `types.ts` | `Base`, `NewRow`, `Member`, `BoardColumn`, `Task`, the recipe, pantry, diet and list types, `Show`, `Address`, and `AiStatus`. |
 | `position.ts` (+ `position.test.ts`) | `positionBetween()`, `comparePosition()`, `POSITION_STEP` (1000). |
 | `shows.ts` (+ `shows.test.ts`) | `SHOW_STATUSES` (to watch, watching, watched, dropped), `filterShows()` (All leaves dropped shows out), `sortShows()`, `parseShowView()` (the stored filter and sort), `nextStatus()` (cycles the first three; dropped comes back as to watch), `statusPatch()`, `refreshPatch()` with `REFRESHED_FIELDS`, `newShow()`, and paging: `SHOWS_PAGE` (60) and `shownCount()`. |
 | `kitchen/catalog.ts` | `CATALOG`: each ingredient's section, diet flags, calories, carbs and unit weights, the water dry grains take up, which lines are cooking water; `catalogItem()`. |
@@ -20,6 +20,9 @@ Pure TypeScript shared by every layer: the entity types, board ordering, the kit
 | `kitchen/diet.ts` | `PRESETS`, `presetOn()`, `withPreset()`, `checkDiet()`, `parseCustomRule()`, `dietTags()`. |
 | `kitchen/list.ts` (+ `groupOrder.test.ts`) | Shopping-list plans (`planAddRecipe`, `planRemoveRecipe`, `planAddOwn`, `planRemoveGroup`) and section order (`orderGroups`, `groupDropPosition`). |
 | `kitchen/search.ts` | `search()`, `suggestions()`, `activeFilters()`, `defaultFilters()`. |
+| `addresses/links.ts` | `destination()`, `geoUrl()`, `appleMapsUrl()`, `googleMapsUrl()`, `navigationUrl()`: navigation links from the street and city only, one per kind of device. |
+| `addresses/search.ts` | `searchAddresses()`, `foldWords()`, `editDistance()`: fuzzy search over names, streets and cities. |
+| `addresses/addresses.test.ts` | Links and search. |
 | `kitchen/kitchen.test.ts` | Unit tests across the kitchen modules. |
 | `kitchen/parseHebrew.test.ts` | Hebrew amounts and ingredient headings. |
 
@@ -37,12 +40,14 @@ Pure TypeScript shared by every layer: the entity types, board ordering, the kit
 - More in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#the-kitchen-larder).
 
 ## Connections
-Imports nothing outside `domain/`. Used by `../data/`, `../auth/`, `../features/board/`, `../features/lists/`, every folder in `../features/larder/`, and `../features/activities/shows/`.
+Imports nothing outside `domain/`. Used by `../data/`, `../auth/`, `../features/board/`, `../features/lists/`, every folder in `../features/larder/`, `../features/activities/shows/` and `../features/family/addresses/`.
 
 ## Rules & gotchas
 - `types.ts` mirrors `../../supabase/schema.sql`: change both (`types.ts` header).
 - `AiStatus` is what `family_ai_status()` returns to any member: the key's last four characters, its model and who added it, and the member's free reads. It never carries the key or its ciphertext. `family_ai_settings` and `ai_usage` have no row type on purpose: no client can read those tables, so no screen should ever hold one of their rows (`types.ts`, `../../supabase/schema.sql`).
 - Stored names stay English (sections, catalog names, preset labels); screens translate them by id in `../features/larder/labels.ts` (`kitchen/sections.ts`, `kitchen/diet.ts`).
+- A navigation link carries `destination()`, the street and city, and nothing else: an apartment confuses geocoding, and the door code must never leave the app (`addresses/links.ts`).
+- Address search folds text itself (`foldWords()`): `kitchen/normalize.ts`'s `normalizeText()` singularises and drops food words, which would mangle names and streets. It searches the name, street and city, never the apartment or door code; on a tie a name match ranks first, then a street match (`addresses/search.ts`).
 - `../i18n/literals.test.ts` skips `domain/`, so English here is never flagged as untranslated.
 - `shows.ts` takes a title's details as `FetchedDetails`, its own type with the shape of `server/shows`'s `ShowDetails`, since the domain imports nothing outside itself.
 - `ListGroup` rows with `builtin` only hold a built-in section's place; rows without `position` sort at 1000, 2000, then 3000 onwards (`kitchen/list.ts`).

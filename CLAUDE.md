@@ -2,7 +2,7 @@
 Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, shopping list, cook mode), and Activities (Shows: the family's movies and series). React 18, TypeScript strict, Vite 5, Vitest 2 + jsdom, react-router 6, i18next; Supabase or a localStorage demo backend.
 
 ## Commands
-- `npm run dev`: Vite, plus `/api/import`, `/api/search`, `/api/shows` and `/api/ai` from `server/`; `vite preview` mounts all four too (`vite.config.ts`). Search needs `TAVILY_API_KEY` in `.env.local`; Shows needs `OMDB_API_KEY`; AI needs `OPENROUTER_API_KEY`, `OPENROUTER_FREE_MODELS` and `AI_KEY_SECRET` there (`.env.example`).
+- `npm run dev`: Vite, plus `/api/import`, `/api/search`, `/api/shows`, `/api/places` and `/api/ai` from `server/`; `vite preview` mounts them too (`vite.config.ts`). Search needs `TAVILY_API_KEY` in `.env.local`; Shows needs `OMDB_API_KEY`; AI needs `OPENROUTER_API_KEY`, `OPENROUTER_FREE_MODELS` and `AI_KEY_SECRET` there (`.env.example`). Places needs no key.
 - `npm run build`: `tsc --noEmit && vite build`. Refuses unless `VITE_BACKEND=supabase` and both `VITE_SUPABASE_*` are set (`vite.config.ts`); demo build: `npx vite build --mode demo`.
 - `npm test`: every suite. With `.env.test` present it also runs live Supabase suites that delete rows in both test families.
 - One file: `npx vitest run src/features/board/recurrence.test.ts`.
@@ -18,6 +18,7 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 - Import API: one `(Request) => Response` handler in `server/import/`, run by `vite.config.ts` in dev and preview and `functions/api/import.ts` on Cloudflare.
 - Search API: the same shape in `server/search/` (`functions/api/search.ts`); it returns links on recipe sites the importer reads, and the one chosen goes through `/api/import`.
 - Shows API: the same shape in `server/shows/` (`functions/api/shows.ts`): search and one title's details from a `ShowsProvider`, OMDb today, chosen only in `server/shows/provider.ts`; called only to add a show or refresh one; the details are saved as a `shows` row, so the list never calls it.
+- Places API: the same shape in `server/places/` (`functions/api/places.ts`): address suggestions from an `AddressProvider` chosen in `server/places/provider.ts` (Photon today); the browser calls only `/api/places`.
 - AI API: the same shape in `server/ai/` (`functions/api/ai/[[path]].ts`): one model call per read, validated into `ImportedRecipe`, never acted on; Supabase is called with the member's own token; family keys are encrypted by the server (`AI_KEY_SECRET`).
 - Text: UI strings come from `t()`, with keys typed from `src/i18n/locales/en.json`.
 
@@ -32,7 +33,7 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 | `src/i18n/` | i18next, locale provider, formatting, locale files | [README](src/i18n/README.md) |
 | `src/features/board/` | Kanban board, drag and drop, repeating chores | [README](src/features/board/README.md) |
 | `src/features/lists/` | Shopping list and its sections | [README](src/features/lists/README.md) |
-| `src/features/family/` | Family page: invites, members, the AI assistant card, theme, language | [README](src/features/family/README.md) |
+| `src/features/family/` | Family page: invites, members, the AI assistant card, theme, language; `addresses/`, the address book | [README](src/features/family/README.md) |
 | `src/features/larder/` | Kitchen: a folder per screen, `recipe/` shared UI, `seed/`, `timers/` | [README](src/features/larder/README.md) |
 | `src/features/activities/` | Activities: `shows/`, the family's movies and series (cards, add sheet, `/api/shows` client, writes) | [README](src/features/activities/README.md) |
 | `src/ai/` | Browser client for `/api/ai` | [README](src/ai/README.md) |
@@ -40,6 +41,7 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 | `server/import/` | Recipe import handler | [README](server/import/README.md) |
 | `server/search/` | Recipe search handler: Tavily, English and Hebrew recipe sites | [README](server/search/README.md) |
 | `server/shows/` | Shows API: a provider interface, OMDb behind it (`provider.ts` is the swap point), search, one title's details, normalising | [README](server/shows/README.md) |
+| `server/places/` | Address suggestions: the `AddressProvider` interface, Photon behind it | [README](server/places/README.md) |
 | `server/ai/` | AI recipe reading: OpenRouter, key encryption, output validation | [README](server/ai/README.md) |
 | `supabase/` | Schema, migrations, CLI config | [README](supabase/README.md) |
 | `scripts/perf/` | Performance measurements: bundle, page load, interactions, database; results in `docs/PERFORMANCE.md` | [README](scripts/perf/README.md) |
@@ -47,6 +49,7 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 
 ## Rules
 - Before editing a folder, read its README's "Rules & gotchas"; update the README on the same branch. Merges into `main` are blocked until you do (`../.claude/hooks/docs-on-merge.mjs`; `# docs-ok` only after checking).
+- Every third-party service sits behind an interface so it can be swapped: one module names the service, the rest (and all browser code) talks to the interface or the app's own `/api/*` route. A new service gets a provider interface and a swap point (`server/places/provider.ts` is the pattern).
 - Backend work stays behind the interfaces: a new backend capability is a method on `DataStore` or `Account` (`src/data/types.ts`), implemented in each adapter folder (`src/data/supabase/`, `src/data/local/` where it applies) and called through the interface. No backend SDK, table name, RPC name or backend-specific behaviour outside its adapter folder; the only file that names a backend is `src/auth/session.tsx` (`src/data/boundary.test.ts`). On the server side, only `server/ai/store.ts` names RPCs (over PostgREST, with the member's own token). If a feature needs something the interfaces cannot express, extend the interface and document what the backend must enforce, rather than reaching past it.
 - Schema change: a new file in `supabase/migrations/`, the same change in `supabase/schema.sql`, and `src/domain/types.ts`.
 - Omitting a key in a patch leaves the field; patch it to `undefined` to clear it (`src/data/cache.ts`, `src/data/supabase/supabaseStore.ts`).

@@ -1,4 +1,5 @@
 import type {
+  Address,
   AiStatus,
   Base,
   BoardColumn,
@@ -66,6 +67,8 @@ export interface DataStore {
    * opens the existing row. The local store relies on that client check alone.
    */
   shows: Collection<Show>;
+  /** The family's address book. */
+  addresses: Collection<Address>;
   photos: PhotoStore;
 }
 

@@ -1,4 +1,4 @@
-import { BookOpen, Clapperboard, CookingPot, LayoutGrid, Leaf, ListChecks, Milk, Search, Ticket, Users } from 'lucide-react';
+import { BookOpen, Clapperboard, CookingPot, LayoutGrid, Leaf, ListChecks, MapPin, Milk, Search, Settings, Ticket, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type en from '../i18n/locales/en.json';
 
@@ -50,7 +50,17 @@ export const SECTIONS: readonly Section[] = [
   },
   // Things the family does together; Shows is its first page.
   { id: 'activities', labelKey: 'nav.activities', icon: Ticket, pages: [{ path: '/shows', labelKey: 'nav.shows', icon: Clapperboard }] },
-  { id: 'family', labelKey: 'nav.family', icon: Users, pages: [{ path: '/family', labelKey: 'nav.family', icon: Users }], pinnable: false },
+  {
+    id: 'family',
+    labelKey: 'nav.family',
+    icon: Users,
+    pages: [
+      // The section is Family; its first page holds the family's settings.
+      { path: '/family', labelKey: 'nav.settings', icon: Settings },
+      { path: '/addresses', labelKey: 'nav.addresses', icon: MapPin },
+    ],
+    pinnable: false,
+  },
 ];
 
 /** Sections in the phone's bar, besides More. */

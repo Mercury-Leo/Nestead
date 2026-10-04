@@ -95,7 +95,7 @@ like Tavily's; a free key allows 1,000 requests a day.
 | Auth            | Supabase Auth, one account per person, family join code |
 | Auth (demo)     | None: pick a member, per tab       |
 | Text            | i18next: English, Hebrew           |
-| Hosting         | Cloudflare Pages, plus Pages Functions for `/api/import` and `/api/search` |
+| Hosting         | Cloudflare Pages, plus Pages Functions for `/api/import`, `/api/search` and `/api/places` |
 
 Runtime dependencies: `react`, `react-dom`, `@supabase/supabase-js`,
 `react-router-dom` (routes), `i18next` and `react-i18next` (translations),
@@ -148,6 +148,8 @@ server/search/               Recipe search: find recipe pages the importer can r
 functions/api/search.ts      The same, as a Cloudflare Pages Function.
 server/shows/                Shows API: search and one title's details (OMDb today).
 functions/api/shows.ts       The same, as a Cloudflare Pages Function.
+server/places/               Address suggestions, behind a swappable provider.
+functions/api/places.ts      The same, as a Cloudflare Pages Function.
 supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 docs/ARCHITECTURE.md         The long version, including the Supabase backend.
 docs/LARDER.md               The kitchen: design notes, decisions, deviations.

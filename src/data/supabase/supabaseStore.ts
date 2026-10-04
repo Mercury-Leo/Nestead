@@ -1,5 +1,6 @@
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import type {
+  Address,
   Base,
   BoardColumn,
   DietProfile,
@@ -34,7 +35,8 @@ type TableName =
   | 'diet_profiles'
   | 'list_items'
   | 'list_groups'
-  | 'shows';
+  | 'shows'
+  | 'addresses';
 
 /** Timestamps arrive from Postgres as e.g. 2026-09-22T10:00:00.123456+00:00. */
 const TIMESTAMP_KEYS = new Set(['createdAt', 'updatedAt', 'fetchedAt', 'watchedAt']);
@@ -249,6 +251,7 @@ export function createSupabaseStore(
     listItems: createCollection<ListItem>(client, familyId, 'list_items'),
     listGroups: createCollection<ListGroup>(client, familyId, 'list_groups'),
     shows: createCollection<Show>(client, familyId, 'shows'),
+    addresses: createCollection<Address>(client, familyId, 'addresses'),
     photos: createPhotoStore(client, familyId),
   };
 }

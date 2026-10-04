@@ -1,4 +1,5 @@
 import type {
+  Address,
   Base,
   BoardColumn,
   DietProfile,
@@ -26,7 +27,7 @@ import type { ChangeListener, Collection, DataStore, Unsubscribe } from '../type
 
 const NAMESPACE = 'nestead';
 
-type CollectionName = 'members' | 'columns' | 'tasks' | 'recipes' | 'pantry' | 'diet' | 'list' | 'listGroups' | 'shows';
+type CollectionName = 'members' | 'columns' | 'tasks' | 'recipes' | 'pantry' | 'diet' | 'list' | 'listGroups' | 'shows' | 'addresses';
 
 export function storageKey(familyId: string, collection: CollectionName): string {
   return `${NAMESPACE}:${familyId}:${collection}`;
@@ -201,6 +202,7 @@ export function createLocalStore(familyId: string): DataStore {
     listItems: createCollection<ListItem>(familyId, 'list'),
     listGroups: createCollection<ListGroup>(familyId, 'listGroups'),
     shows: createCollection<Show>(familyId, 'shows'),
+    addresses: createCollection<Address>(familyId, 'addresses'),
     photos: createLocalPhotoStore(familyId),
   };
 }

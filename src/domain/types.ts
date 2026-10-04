@@ -340,3 +340,20 @@ export interface AiStatus {
    */
   free: { used: number; limit: number; left: number };
 }
+
+/**
+ * A place the family goes, for the address book. Navigation links are built
+ * from the street and city only (src/domain/addresses/links.ts): the apartment
+ * and door code never leave the app.
+ */
+export interface Address extends Base {
+  /** What the family calls it, e.g. "Dana's house". */
+  name: string;
+  city: string;
+  /** Street and house number, as one line: "Herzl 12". */
+  street: string;
+  apartment?: string;
+  doorCode?: string;
+  /** Member id. Cleared when that member is deleted. */
+  createdBy?: string;
+}

@@ -25,7 +25,7 @@ same way the board was, without changing anything the core guarantees.
 | Auth            | Supabase Auth, one account per person | `src/auth/accountSession.tsx` over `src/data/supabase/supabaseAccount.ts` |
 | Auth (demo)     | None: pick a member per tab   | `src/auth/demoSession.tsx`                          |
 | Text            | i18next: English bundled, Hebrew fetched on first use | `src/i18n/`                 |
-| Hosting         | Cloudflare Pages               | static, plus Pages Functions: `/api/import`, `/api/search`, `/api/ai` |
+| Hosting         | Cloudflare Pages               | static, plus Pages Functions: `/api/import`, `/api/search`, `/api/places`, `/api/ai` |
 
 The deploy workflow builds with `VITE_BACKEND=supabase`
 (`.github/workflows/deploy.yml`), and `npm run build` refuses anything else
@@ -148,6 +148,9 @@ server/shows/                Shows API: search and one title's details from a
                              ShowsProvider (OMDb, chosen in provider.ts),
                              normalised; index.ts is the public surface.
 functions/api/shows.ts       The same handler as a Cloudflare Pages Function.
+server/places/               Address suggestions: the AddressProvider interface,
+                             Photon behind it, chosen in provider.ts.
+functions/api/places.ts      The same handler as a Cloudflare Pages Function.
 server/ai/                   AI recipe reading: OpenRouter client, prompt and
                              output validation, page text, key encryption, the
                              Supabase store; index.ts is the public surface.
