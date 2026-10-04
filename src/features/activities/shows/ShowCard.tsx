@@ -74,8 +74,12 @@ function StatusButton({ status, onCycle }: { status: ShowStatus; onCycle: () => 
   );
 }
 
-/** Behind the toggle: the plot, when it was read, refresh and delete. */
-function Details({ show, id, open }: { show: Show; id: string; open: boolean }): JSX.Element {
+/**
+ * Behind the toggle: the plot, when it was read, refresh and delete. Built
+ * only while the card is open: on a long list, every closed card building its
+ * hidden panel was half the page's elements (docs/PERFORMANCE.md).
+ */
+function Details({ show }: { show: Show }): JSX.Element {
   const { t } = useTranslation();
   const { store } = useSession();
   const [refreshing, setRefreshing] = useState(false);
@@ -106,7 +110,7 @@ function Details({ show, id, open }: { show: Show; id: string; open: boolean }):
   };
 
   return (
-    <div id={id} className={s.details} hidden={!open}>
+    <>
       <p className={s.plot} dir="auto">
         {show.plot ?? t('shows.card.noPlot')}
       </p>
@@ -138,7 +142,7 @@ function Details({ show, id, open }: { show: Show; id: string; open: boolean }):
       <p className={s.quiet} role="status">
         {failure !== null && `${t(`shows.failure.${failureKey(failure)}`)} ${t('shows.card.unchanged')}`}
       </p>
-    </div>
+    </>
   );
 }
 
@@ -193,7 +197,9 @@ export function ShowCard({ show, revealed }: { show: Show; revealed?: number }):
             <ChevronDown size={20} strokeWidth={2.2} aria-hidden />
           </button>
         </div>
-        <Details show={show} id={id} open={open} />
+        <div id={id} className={s.details} hidden={!open}>
+          {open && <Details show={show} />}
+        </div>
       </div>
     </article>
   );
