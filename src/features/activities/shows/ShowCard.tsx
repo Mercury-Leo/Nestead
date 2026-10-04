@@ -27,23 +27,21 @@ export function failureKey(failure: ShowsFailure): 'unavailable' | 'limit' | 'no
   return failure === 'not-found' ? 'notFound' : failure;
 }
 
-/** Year, kind, length (minutes, or seasons for a series) and IMDb rating: the one line you scan. */
+/**
+ * Year, kind, seasons (series only), length and IMDb rating: the one line you
+ * scan. A series' length is one episode's, as OMDb gives it.
+ */
 export function Facts({ show, className }: { show: OmdbDetails; className?: string }): JSX.Element {
   const { t } = useTranslation();
   const rating = show.imdbRating === undefined ? undefined : formatNumber(show.imdbRating, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const length =
-    show.kind === 'series'
-      ? show.totalSeasons === undefined
-        ? undefined
-        : t('shows.card.seasons', { count: show.totalSeasons })
-      : show.runtimeMin === undefined
-        ? undefined
-        : t('shows.card.minutes', { count: show.runtimeMin });
+  const seasons = show.kind === 'series' && show.totalSeasons !== undefined ? t('shows.card.seasons', { count: show.totalSeasons }) : undefined;
+  const length = show.runtimeMin === undefined ? undefined : t('shows.card.minutes', { count: show.runtimeMin });
   return (
     <p className={cx(s.facts, className)}>
       {/* Spaces between the items keep the words apart for screen readers; flex layout ignores them. */}
       {show.year !== undefined && <span className="tabular">{show.year}</span>}{' '}
       <span>{kindLabel(t, show.kind)}</span>{' '}
+      {seasons !== undefined && <span className="tabular">{seasons}</span>}{' '}
       {length !== undefined && <span className="tabular">{length}</span>}{' '}
       {rating !== undefined && (
         <span className={s.rating}>
