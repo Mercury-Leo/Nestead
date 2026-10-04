@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpDown, Clapperboard, Plus, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
@@ -56,7 +56,10 @@ export function Shows(): JSX.Element {
   };
 
   const collator = useMemo(() => new Intl.Collator(i18n.language, { sensitivity: 'base', numeric: true }), [i18n.language]);
-  const shown = sortShows(filterShows(rows, { query, status: view.status, kind: view.kind }), view.sort, collator.compare);
+  // The field shows each key at once; the list follows in a render that can be
+  // interrupted, since a keystroke can build up to a page of new cards.
+  const listQuery = useDeferredValue(query);
+  const shown = sortShows(filterShows(rows, { query: listQuery, status: view.status, kind: view.kind }), view.sort, collator.compare);
   // Counts follow the kind filter, so "To watch 3" means three of what is listed.
   const ofKind = filterShows(rows, { query: '', status: 'all', kind: view.kind });
   const count = (status: StatusFilter): number => (status === 'all' ? ofKind.length : ofKind.filter((row) => row.status === status).length);
