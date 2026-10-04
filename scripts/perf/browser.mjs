@@ -5,10 +5,14 @@
 // brotli, the Cache-Control rules in the build's _headers, index.html for
 // unknown paths, ETags and 304s. Chrome comes from CHROME_PATH (default: the
 // Windows install); openssl on the PATH makes a throwaway certificate.
+//
+// It also stands in for Amazon's image servers for the Shows page: the demo
+// data's posters point at /perf-posters/<name>._V1_SX<width>.jpg, answered with
+// one real OMDb poster at that width (downloaded once into the temp folder).
 
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createSecureServer } from 'node:http2';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
@@ -20,6 +24,32 @@ const TYPES = {
   '.woff': 'font/woff', '.ico': 'image/x-icon', '.txt': 'text/plain',
 };
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.webmanifest', '.svg', '.txt']);
+
+/** Kept in step with scripts/perf/fixtures.ts POSTER_ORIGIN. */
+const POSTER_ORIGIN = 'https://perf-posters.invalid';
+/** Inception's poster, as OMDb links it; the widths are the ones Amazon's servers make on request. */
+const POSTER_SOURCE = 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX{width}.jpg';
+const POSTER_WIDTHS = [100, 200, 300];
+
+/** One poster at each width, from the temp folder, fetched the first time. A width that cannot be fetched is left out (its <img> falls back to the placeholder). */
+async function posterFiles() {
+  const dir = join(tmpdir(), 'nestead-perf-posters');
+  mkdirSync(dir, { recursive: true });
+  const files = new Map();
+  for (const width of POSTER_WIDTHS) {
+    const file = join(dir, `poster-${width}.jpg`);
+    if (!existsSync(file)) {
+      try {
+        const response = await fetch(POSTER_SOURCE.replace('{width}', String(width)));
+        if (response.ok) writeFileSync(file, Buffer.from(await response.arrayBuffer()));
+      } catch {
+        // Offline: no posters, the cards show placeholders.
+      }
+    }
+    if (existsSync(file)) files.set(width, readFileSync(file));
+  }
+  return files;
+}
 
 /** The build's _headers, as far as this app uses it: path patterns (optionally ending in *) and header lines. */
 function headerRules(dist) {
@@ -70,11 +100,21 @@ export async function startServer(distDir) {
     return entry;
   };
 
+  const posters = await posterFiles();
+
   const server = createSecureServer({ ...certificate(), allowHTTP1: true }, (req, res) => {
     const path = decodeURIComponent(new URL(req.url, 'https://localhost').pathname);
     if (path === '/__blank') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       res.end('<!doctype html><title>blank</title>');
+      return;
+    }
+    const poster = /^\/perf-posters\/[\w-]+\._V1_SX(\d+)\.jpg$/.exec(path);
+    if (poster !== null) {
+      const body = posters.get(Number(poster[1]));
+      // Amazon's own headers for posters.
+      res.writeHead(body === undefined ? 404 : 200, { 'content-type': 'image/jpeg', 'cache-control': 'max-age=630720000,public' });
+      res.end(body);
       return;
     }
     let file = join(dist, path);
@@ -213,7 +253,7 @@ export async function throttle(cdp, { network, cpu }) {
 
 /** The demo backend's rows for one family size, from demodata.ts's output. */
 export async function installDemoData(cdp, origin, file, size) {
-  const data = JSON.parse(readFileSync(file, 'utf8'))[size];
+  const data = JSON.parse(readFileSync(file, 'utf8').replaceAll(POSTER_ORIGIN, origin))[size];
   if (data === undefined) throw new Error(`no "${size}" data in ${file}`);
   await cdp.navigate(`${origin}/__blank`);
   await cdp.evaluate(`(() => { localStorage.clear(); sessionStorage.clear(); const data = ${JSON.stringify(data)}; for (const [key, rows] of Object.entries(data)) localStorage.setItem(key, JSON.stringify(rows)); })()`);
@@ -223,4 +263,78 @@ export function spread(values) {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return { median: sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2, min: sorted[0], max: sorted[sorted.length - 1] };
+}
+
+/**
+ * For interact.mjs and shows.mjs: install with Page.addScriptToEvaluateOnNewDocument.
+ * Records input events (what INP is built from), long tasks, and frames on request.
+ */
+export const INTERACTION_INSTRUMENT = `(() => {
+  window.__events = [];
+  new PerformanceObserver((list) => {
+    for (const e of list.getEntries()) window.__events.push({ name: e.name, start: e.startTime, duration: e.duration, id: e.interactionId });
+  }).observe({ type: 'event', buffered: true, durationThreshold: 16 });
+  window.__longTasks = [];
+  new PerformanceObserver((list) => { for (const e of list.getEntries()) window.__longTasks.push({ start: e.startTime, duration: e.duration }); }).observe({ type: 'longtask', buffered: true });
+  window.__frames = null;
+  window.__recordFrames = () => {
+    window.__frames = [];
+    const loop = (time) => { if (window.__frames === null) return; window.__frames.push(time); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  };
+  window.__stopFrames = () => { const frames = window.__frames; window.__frames = null; return frames; };
+})();`;
+
+/** Navigation, element positions, mouse input and interaction timings on an instrumented page. */
+export function interactions(cdp) {
+  const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+  const now = () => cdp.evaluate('performance.now()');
+
+  /** Client-side navigation, the way a link does it, timed to the first frame painted after ready() holds. */
+  async function go(path, ready) {
+    await cdp.evaluate(`(() => {
+      const nav = (window.__nav = { start: performance.now(), painted: null });
+      let seen = false;
+      const check = () => {
+        if (seen || !(${ready})) return;
+        seen = true;
+        requestAnimationFrame(() => { const c = new MessageChannel(); c.port1.onmessage = () => { nav.painted = performance.now(); }; c.port2.postMessage(0); });
+      };
+      const observer = new MutationObserver(check);
+      observer.observe(document.body, { childList: true, subtree: true });
+      const poll = setInterval(() => { check(); if (nav.painted !== null) { clearInterval(poll); observer.disconnect(); } }, 50);
+      history.pushState({}, '', ${JSON.stringify(path)});
+      dispatchEvent(new PopStateEvent('popstate'));
+    })()`);
+    const began = Date.now();
+    for (;;) {
+      const nav = await cdp.evaluate('window.__nav');
+      if (nav.painted !== null) {
+        const long = await cdp.evaluate(`window.__longTasks.filter((t) => t.start >= ${nav.start} && t.start < ${nav.painted}).reduce((s, t) => s + t.duration, 0)`);
+        return { ms: nav.painted - nav.start, longTasks: long };
+      }
+      if (Date.now() - began > 30_000) throw new Error(`${path} never became ready`);
+      await sleep(25);
+    }
+  }
+
+  async function box(expression) {
+    const rect = await cdp.evaluate(`(() => { const el = ${expression}; if (!el) return null; el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; })()`);
+    if (rect === null) throw new Error(`nothing matches ${expression}`);
+    return rect;
+  }
+
+  const mouse = (type, x, y, extra = {}) => cdp.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1, ...extra });
+
+  /**
+   * The longest input event from `since` on: what INP would count for it.
+   * Pointer and mouse events count whether or not Chrome grouped them into an
+   * interaction, since a drag's release is not a tap.
+   */
+  async function slowestInteraction(since) {
+    await sleep(600);
+    return cdp.evaluate(`Math.max(0, ...window.__events.filter((e) => e.start >= ${since} && (e.id > 0 || /^(pointer|mouse)(down|up)$|^click$/.test(e.name))).map((e) => e.duration))`);
+  }
+
+  return { sleep, now, go, box, mouse, slowestInteraction };
 }
