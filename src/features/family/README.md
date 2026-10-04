@@ -1,5 +1,5 @@
 # family
-The Family section: the Family page (`/family`, labelled Settings in the nav), with members, the invite link and join code, the AI assistant card, and this device's theme and language; and the family's address book (`/addresses`, in [`addresses/`](addresses/README.md)).
+The Family section: the Family page (`/family`, titled Settings, in the nav as well), with members, the invite link and join code, the AI assistant card, and this device's theme and language; and the family's address book (`/addresses`, in [`addresses/`](addresses/README.md)).
 
 ## Files
 | File | Responsibility |
