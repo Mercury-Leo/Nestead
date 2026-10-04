@@ -37,7 +37,7 @@ export async function cycleStatus(store: DataStore, show: Show): Promise<Show> {
  * failure nothing is written and the saved details stay as they were.
  */
 export async function refreshShow(store: DataStore, show: Show, lookup: typeof lookupShow = lookupShow): Promise<{ ok: true; show: Show } | { ok: false; failure: ShowsFailure }> {
-  const answer = await lookup(show.imdbId);
+  const answer = await lookup(show.imdbId, true);
   if (!answer.ok) return answer;
   if (answer.value.imdbId !== show.imdbId) return { ok: false, failure: 'failed' };
   return { ok: true, show: await store.shows.update(show.id, refreshPatch(answer.value, new Date().toISOString())) };

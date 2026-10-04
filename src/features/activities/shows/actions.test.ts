@@ -48,7 +48,7 @@ describe('refreshShow', () => {
     const watched = await cycleStatus(store, await cycleStatus(store, show));
     const lookup = vi.fn<typeof lookupShow>(async () => ({ ok: true, value: { ...INCEPTION, imdbRating: 8.9, plot: 'Newer.' } }));
     const result = await refreshShow(store, watched, lookup);
-    expect(lookup).toHaveBeenCalledWith('tt1375666');
+    expect(lookup).toHaveBeenCalledWith('tt1375666', true);
     expect(result.ok).toBe(true);
     const [stored] = await store.shows.list();
     expect(stored?.imdbRating).toBe(8.9);

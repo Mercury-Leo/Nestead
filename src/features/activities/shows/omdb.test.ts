@@ -55,6 +55,13 @@ describe('lookupShow', () => {
     const fetchMock = answer(JSON.stringify({ show: DETAILS }));
     expect(await lookupShow('tt1375666')).toEqual({ ok: true, value: DETAILS });
     expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/shows?id=tt1375666');
+    expect(fetchMock.mock.calls[0]?.[1]?.cache).toBeUndefined();
+  });
+
+  it("skips the browser's cached answer for a refresh", async () => {
+    const fetchMock = answer(JSON.stringify({ show: DETAILS }));
+    await lookupShow('tt1375666', true);
+    expect(fetchMock.mock.calls[0]?.[1]?.cache).toBe('no-store');
   });
 
   it('says when OMDb has no such title', async () => {

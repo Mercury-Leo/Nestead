@@ -18,7 +18,7 @@ Movies and series for the Shows page, from OMDb: search by name, and one title's
 - Posters are https links on Amazon's image servers, as OMDb gives them. `img.omdbapi.com` is refused (`parsePoster()`), since it only answers with the key in the URL.
 - Error codes map to statuses: `invalid-query` 400 (no or bad `q`, `type` or `id`, or both `q` and `id`), `not-found` 404, `limit` 429 (OMDb's "Request limit reached!", or a 429), `failed` 502, `not-configured` 503 (no key, OMDb's "Invalid API key!", or a 401/403 without a body), `timeout` 504 (8 s); other methods get 405.
 - OMDb answers 401 both for a bad key and for the day's limit, so its `Error` text decides between them (`omdbError()`); that text is read, never passed on.
-- An answer may be cached by the browser for 10 minutes (`private, max-age=600`); errors are `no-store`.
+- An answer may be cached by the browser for 10 minutes (`private, max-age=600`), so searching the same title again or reopening a result costs nothing; errors are `no-store`. The app's Refresh skips that copy (`cache: 'no-store'` in `../../src/features/activities/shows/omdb.ts`).
 
 ## Connections
 - Uses: web standards only (`fetch`, `URL`, `Response`), and OMDb's API at `https://www.omdbapi.com/`.

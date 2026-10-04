@@ -12,10 +12,10 @@ export type ShowsFailure = 'unavailable' | 'limit' | 'not-found' | 'failed';
 
 export type ShowsAnswer<T> = { ok: true; value: T } | { ok: false; failure: ShowsFailure };
 
-async function ask(query: URLSearchParams): Promise<{ ok: true; body: Record<string, unknown> } | { ok: false; failure: ShowsFailure }> {
+async function ask(query: URLSearchParams, init: RequestInit = {}): Promise<{ ok: true; body: Record<string, unknown> } | { ok: false; failure: ShowsFailure }> {
   let response: Response;
   try {
-    response = await fetch(`/api/shows?${query.toString()}`, { headers: { accept: 'application/json' } });
+    response = await fetch(`/api/shows?${query.toString()}`, { ...init, headers: { accept: 'application/json' } });
   } catch {
     return { ok: false, failure: 'failed' };
   }
@@ -38,9 +38,13 @@ export async function searchShows(query: string, kind?: ShowKind): Promise<Shows
   return Array.isArray(answer.body.results) ? { ok: true, value: answer.body.results as ShowHit[] } : { ok: false, failure: 'failed' };
 }
 
-/** One title's details, with OMDb's short plot. */
-export async function lookupShow(imdbId: string): Promise<ShowsAnswer<ShowDetails>> {
-  const answer = await ask(new URLSearchParams({ id: imdbId }));
+/**
+ * One title's details, with OMDb's short plot. The server lets the browser keep
+ * an answer for ten minutes; `fresh` (a refresh someone asked for) skips that
+ * copy, so the details saved are what OMDb says now.
+ */
+export async function lookupShow(imdbId: string, fresh = false): Promise<ShowsAnswer<ShowDetails>> {
+  const answer = await ask(new URLSearchParams({ id: imdbId }), fresh ? { cache: 'no-store' } : {});
   if (!answer.ok) return answer;
   const show = answer.body.show as ShowDetails | undefined;
   return typeof show === 'object' && show !== null && show.imdbId === imdbId ? { ok: true, value: show } : { ok: false, failure: 'failed' };
