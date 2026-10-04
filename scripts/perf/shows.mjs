@@ -1,5 +1,6 @@
 // How the Shows page responds: opening it, typing a name search, cycling a
-// show's status, opening a card, and tapping a status filter. Demo build, CPU
+// show's status, opening a card, tapping a status filter, and Show more under
+// a long list. Demo build, CPU
 // 4x slower, no network throttling (the list never calls OMDb; posters come
 // from the harness server, see browser.mjs).
 //
@@ -118,6 +119,21 @@ try {
   }
   result.filter = spread(filters);
 
+  // Show more under a long list (it builds the next page); a filter and back resets it.
+  const more = `document.querySelector('main [aria-live="polite"]')?.parentElement.querySelector('button')`;
+  if (await cdp.evaluate(`${more} != null`)) {
+    const mores = [];
+    for (let run = 0; run <= RUNS; run += 1) {
+      const slowest = await clicks([more]);
+      if (run > 0) mores.push(slowest);
+      await click(chip('Watched'));
+      await sleep(300);
+      await click(chip('All'));
+      await sleep(300);
+    }
+    result.showMore = spread(mores);
+  }
+
   const f = (s) => `${s.median.toFixed(0)} ms (${s.min.toFixed(0)}–${s.max.toFixed(0)})`;
   console.log(`first visit (loads its chunk): ${result.firstVisit.ms.toFixed(0)} ms, long tasks ${result.firstVisit.longTasks.toFixed(0)} ms`);
   console.log(`open shows: ${f(result.open.ms)}, long tasks ${f(result.open.longTasks)}`);
@@ -126,6 +142,7 @@ try {
   console.log(`cycle a status: slowest click ${f(result.status)}`);
   console.log(`open and close a card: slowest click ${f(result.toggle)}`);
   console.log(`filter Watched, then All: slowest tap ${f(result.filter)}`);
+  if (result.showMore !== undefined) console.log(`show more: ${f(result.showMore)}`);
 } finally {
   if (OUT !== undefined) {
     mkdirSync(dirname(resolve(OUT)), { recursive: true });
