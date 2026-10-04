@@ -52,11 +52,11 @@
   min-width: 0;
 }
 
-/* The title, and the status badge at its end. */
+/* The title, and the status badge at its end, centred on it. */
 .top {
   display: flex;
   gap: 8px;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .title {
@@ -114,9 +114,9 @@
 /* ---------------------------------------------------------- controls -- */
 
 /*
- * A 44px target around the badge. The negative margins keep the title row as
- * tall as the badge, and keep the focus ring inside the card's padding, which
- * content-visibility would clip.
+ * A 44px target around the badge. The negative margins make it take a title
+ * line's height in the row, so the badge centres on a one-line title without
+ * moving it; the target reaches into the card's padding instead.
  */
 .statusHit {
   display: inline-flex;
@@ -125,7 +125,7 @@
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
-  margin-block: -7px;
+  margin-block: -10px;
   margin-inline-end: -6px;
   padding: 0;
   border: 0;
@@ -166,6 +166,19 @@
 
 .statusHit:hover .status {
   box-shadow: inset 0 0 0 100px var(--hover-wash);
+}
+
+/*
+ * The focus ring hugs the badge rather than the larger target, which keeps it
+ * inside the card's padding: content-visibility clips anything past it.
+ */
+.statusHit:focus-visible {
+  outline: none;
+}
+
+.statusHit:focus-visible .status {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* The details toggle: a 44px target at the end of the facts. */
