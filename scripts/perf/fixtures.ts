@@ -1,4 +1,4 @@
-import type { BoardColumn, IngredientLine, ListGroup, ListItem, NewRow, PantryItem, Recipe, Task } from '../../src/domain/types';
+import type { BoardColumn, IngredientLine, ListGroup, ListItem, NewRow, PantryItem, Recipe, Show, Task } from '../../src/domain/types';
 import { CATALOG } from '../../src/domain/kitchen/catalog';
 import { catalogFor } from '../../src/domain/kitchen/calories';
 import { GENERAL, SUPERMARKET } from '../../src/domain/kitchen/list';
@@ -21,11 +21,12 @@ export interface Size {
   photos: number;
   pantry: number;
   listItems: number;
+  shows: number;
 }
 
 export const SIZES: Record<'typical' | 'heavy', Size> = {
-  typical: { tasks: 40, recipes: 25, photos: 0, pantry: 30, listItems: 40 },
-  heavy: { tasks: 300, recipes: 150, photos: 30, pantry: 120, listItems: 200 },
+  typical: { tasks: 40, recipes: 25, photos: 0, pantry: 30, listItems: 40, shows: 40 },
+  heavy: { tasks: 300, recipes: 150, photos: 30, pantry: 120, listItems: 200, shows: 300 },
 };
 
 export const COLUMNS: NewRow<BoardColumn>[] = [
@@ -162,6 +163,53 @@ export function listRows(
   }
   // Every fifth one is already in the trolley.
   return pool.slice(from, to).map((row, index) => ({ ...row, checked: (from + index) % 5 === 4 }));
+}
+
+/**
+ * Posters as OMDb links them today: Amazon's host, an id, and a 380 px crop.
+ * The browser scripts point Amazon's host at the harness server
+ * (launchChrome({ amazon }) in browser.mjs), which answers with a real poster
+ * in the form asked for, so the app's own resizing (Poster.tsx) applies.
+ */
+const POSTER_LINK = (n: number): string => `https://m.media-amazon.com/images/M/perf-p${n}@._V1_QL75_UX380_CR0,0,380,562_.jpg`;
+
+const SHOWS: ReadonlyArray<readonly [string, Show['kind']]> = [
+  ['The Office', 'series'], ['Inception', 'movie'], ['Bluey', 'series'], ['Paddington 2', 'movie'],
+  ['The Great British Bake Off', 'series'], ['Spirited Away', 'movie'], ['Planet Earth', 'series'], ['Toy Story', 'movie'],
+  ['Only Murders in the Building', 'series'], ['Coco', 'movie'], ['Breaking Bad', 'series'], ['Wallace & Gromit', 'movie'],
+];
+const PLOT = 'A family on the edge of something new finds that the plan they made together comes apart in small, funny ways, until the one person they overlooked holds it together.';
+
+/**
+ * Movies and series as OMDb's details make them: a short plot, a poster on
+ * most (twelve distinct links, so the browser decodes each), and the
+ * statuses a family's list drifts into.
+ */
+export function showRows(from: number, to: number, memberId: string): NewRow<Show>[] {
+  const rows: NewRow<Show>[] = [];
+  for (let i = from; i < to; i += 1) {
+    const [name, kind] = SHOWS[i % SHOWS.length]!;
+    const year = 1990 + (i % 35);
+    const status: Show['status'] = i % 8 < 5 ? 'to-watch' : i % 8 === 5 ? 'watching' : 'watched';
+    const row: NewRow<Show> = {
+      imdbId: `tt${String(1000000 + i)}`,
+      kind,
+      title: `${name} #${i + 1}`,
+      plot: PLOT,
+      released: `${year}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
+      year,
+      runtimeMin: kind === 'movie' ? 85 + (i % 60) : 22 + (i % 40),
+      imdbRating: Math.round((5 + (i % 45) / 10) * 10) / 10,
+      fetchedAt: '2026-09-01T08:00:00.000Z',
+      status,
+      createdBy: memberId,
+    };
+    if (i % 5 !== 4) row.posterUrl = POSTER_LINK(i % 12);
+    if (kind === 'series') row.totalSeasons = 1 + (i % 9);
+    if (status === 'watched') row.watchedAt = '2026-09-02T20:00:00.000Z';
+    rows.push(row);
+  }
+  return rows;
 }
 
 /** A 1×1 JPEG. Signing a URL never reads the file, so size is beside the point. */

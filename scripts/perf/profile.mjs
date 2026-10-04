@@ -24,7 +24,7 @@ const DRAG = args.includes('--drag');
 const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
 
 const server = await startServer(dist);
-const browser = await launchChrome();
+const browser = await launchChrome({ amazon: server.port });
 const { cdp } = browser;
 try {
   if (DATA !== undefined) await installDemoData(cdp, server.origin, DATA, SIZE);

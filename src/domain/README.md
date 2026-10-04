@@ -1,11 +1,12 @@
 # domain
-Pure TypeScript shared by every layer: the entity types, board ordering, and the kitchen's logic. No React, no storage.
+Pure TypeScript shared by every layer: the entity types, board ordering, the kitchen's logic and the Shows page's. No React, no storage.
 
 ## Files
 | File | Responsibility |
 | --- | --- |
-| `types.ts` | `Base`, `NewRow`, `Member`, `BoardColumn`, `Task`, the recipe, pantry, diet and list types, `Address`, and `AiStatus`. |
+| `types.ts` | `Base`, `NewRow`, `Member`, `BoardColumn`, `Task`, the recipe, pantry, diet and list types, `Show`, `Address`, and `AiStatus`. |
 | `position.ts` (+ `position.test.ts`) | `positionBetween()`, `comparePosition()`, `POSITION_STEP` (1000). |
+| `shows.ts` (+ `shows.test.ts`) | `SHOW_STATUSES` (to watch, watching, watched, dropped), `filterShows()` (All leaves dropped shows out), `sortShows()`, `parseShowView()` (the stored filter and sort), `nextStatus()` (cycles the first three; dropped comes back as to watch), `statusPatch()`, `refreshPatch()` with `REFRESHED_FIELDS`, `newShow()`, and paging: `SHOWS_PAGE` (60) and `shownCount()`. |
 | `kitchen/catalog.ts` | `CATALOG`: each ingredient's section, diet flags, calories, carbs and unit weights, the water dry grains take up, which lines are cooking water; `catalogItem()`. |
 | `kitchen/normalize.ts` | `normalizeText()`, `singularize()`, `canonicalId()`, `exactCatalogId()`, `containsPhrase()`. |
 | `kitchen/hebrewNames.ts` (+ `hebrewNames.test.ts`) | `HEBREW_NAMES`: the Hebrew names of catalog items, by id, for matching. |
@@ -34,10 +35,12 @@ Pure TypeScript shared by every layer: the entity types, board ordering, and the
 - List planners return a `ListPlan` of creates, updates and removes; `../features/larder/actions.ts` applies it (`kitchen/list.ts`).
 - Calories per 100 g spread a recipe's calories, stated or estimated, over what the finished dish weighs: its ingredients, plus the water dry rice, pasta and grains take up beyond the water and stock the recipe lists. Water that boils off is not taken away, so long simmers read low (`kitchen/calories.ts`).
 - Peanuts and tree nuts are separate presets. The nut allergy used to cover peanuts, so a profile that has never set peanuts follows its nut allergy; `withPreset()` writes peanuts down with every switch (`kitchen/diet.ts`).
+- Shows sort newest added first by default; by release, a show without a date sorts by 1 January of its year, and shows missing the value sorted on go last, ties by title (`shows.ts`). The title order comes from the caller's collator, so it follows the reader's language.
+- A refresh writes every field in `REFRESHED_FIELDS`, set to `undefined` where OMDb no longer has one, so the store clears it; `status`, `watchedAt`, `createdBy`, `imdbId` and `kind` are never in the patch (`refreshPatch()` in `shows.ts`).
 - More in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#the-kitchen-larder).
 
 ## Connections
-Imports nothing outside `domain/`. Used by `../data/`, `../auth/`, `../features/board/`, `../features/lists/`, `../features/family/addresses/` and every folder in `../features/larder/`.
+Imports nothing outside `domain/`. Used by `../data/`, `../auth/`, `../features/board/`, `../features/lists/`, every folder in `../features/larder/`, `../features/activities/shows/` and `../features/family/addresses/`.
 
 ## Rules & gotchas
 - `types.ts` mirrors `../../supabase/schema.sql`: change both (`types.ts` header).
@@ -46,10 +49,11 @@ Imports nothing outside `domain/`. Used by `../data/`, `../auth/`, `../features/
 - A navigation link carries `destination()`, the street and city, and nothing else: an apartment confuses geocoding, and the door code must never leave the app (`addresses/links.ts`).
 - Address search folds text itself (`foldWords()`): `kitchen/normalize.ts`'s `normalizeText()` singularises and drops food words, which would mangle names and streets. It searches the name, street and city, never the apartment or door code; on a tie a name match ranks first, then a street match (`addresses/search.ts`).
 - `../i18n/literals.test.ts` skips `domain/`, so English here is never flagged as untranslated.
+- `shows.ts` takes OMDb's details as `OmdbDetails`, its own type with the shape of `server/shows`'s `ShowDetails`, since the domain imports nothing outside itself.
 - `ListGroup` rows with `builtin` only hold a built-in section's place; rows without `position` sort at 1000, 2000, then 3000 onwards (`kitchen/list.ts`).
 - Read presets through `presetOn()` or `activePresets()`, never `presets[id]`, and write them through `withPreset()`: an unset peanut allergy follows the nut allergy (`kitchen/diet.ts`).
 - Lines keep the `canonicalId` they were parsed with, so a new catalog item (peanut oil, satay sauce) reaches a saved recipe only once it is edited and saved again (`kitchen/calories.ts` `catalogFor()`).
 - A new catalog item needs its Hebrew names in `kitchen/hebrewNames.ts` too, or Hebrew recipes never match it. A name stands for the product itself, not for something with the same diet flags: the item decides what merges on the shopping list and what counts as in the pantry. `hebrewNames.test.ts` fails on an id the catalog lacks and on a name given to two items.
 
 ## Tests
-`position.test.ts`; `kitchen/kitchen.test.ts` (parser, normaliser, scaling, durations, diet with peanuts apart from tree nuts, calories per serving and per 100 g, list quantities, search tokens); `kitchen/parseHebrew.test.ts` (Hebrew amounts, headings, English unchanged); `kitchen/hebrewNames.test.ts` (each name's item exists and has it alone, real Hebrew lines, a Hebrew recipe's diet check and calories); `kitchen/groupOrder.test.ts`. Numbers checked against the seed are in `../features/larder/seed/seed.test.ts`.
+`position.test.ts`; `kitchen/kitchen.test.ts` (parser, normaliser, scaling, durations, diet with peanuts apart from tree nuts, calories per serving and per 100 g, list quantities, search tokens); `kitchen/parseHebrew.test.ts` (Hebrew amounts, headings, English unchanged); `kitchen/hebrewNames.test.ts` (each name's item exists and has it alone, real Hebrew lines, a Hebrew recipe's diet check and calories); `kitchen/groupOrder.test.ts`; `shows.test.ts` (each filter alone and together, the four sorts with missing values last, the stored view with junk, the status cycle and `watchedAt`, a refresh that updates OMDb's fields and keeps `status` and `watchedAt`, a new show, whole pages and reaching a show past them). Numbers checked against the seed are in `../features/larder/seed/seed.test.ts`.

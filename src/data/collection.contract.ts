@@ -198,6 +198,41 @@ export function runDataStoreContract(
       expect((await store.pantry.list()).map((row) => row.kind)).toEqual(['staple']);
     });
 
+    it('shows round-trip dates, timestamps and numbers, and clear watchedAt', async () => {
+      const fetchedAt = '2026-10-04T09:30:00.000Z';
+      const show = await store.shows.create({
+        imdbId: 'tt0903747',
+        kind: 'series',
+        title: 'Breaking Bad',
+        plot: 'A chemistry teacher turns to making methamphetamine.',
+        posterUrl: 'https://m.media-amazon.com/images/M/poster._V1_SX300.jpg',
+        released: '2008-01-20',
+        year: 2008,
+        runtimeMin: 49,
+        totalSeasons: 5,
+        imdbRating: 9.5,
+        fetchedAt,
+        status: 'to-watch',
+      });
+
+      const [stored] = await store.shows.list();
+      expect(stored).toEqual(show);
+      expect(stored?.fetchedAt).toBe(fetchedAt);
+      expect(stored?.released).toBe('2008-01-20');
+      expect(stored?.imdbRating).toBeCloseTo(9.5);
+      expect(stored?.watchedAt).toBeUndefined();
+
+      const watchedAt = '2026-10-04T21:00:00.000Z';
+      const watched = await store.shows.update(show.id, { status: 'watched', watchedAt });
+      expect(watched.watchedAt).toBe(watchedAt);
+      expect(watched.fetchedAt).toBe(fetchedAt);
+
+      // Dropped as well: the fourth status (a backend with a check on status must allow it).
+      const again = await store.shows.update(show.id, { status: 'dropped', watchedAt: undefined });
+      expect(again.watchedAt).toBeUndefined();
+      expect((await store.shows.list())[0]?.status).toBe('dropped');
+    });
+
     it('addresses round-trip, Hebrew included, and their optional fields clear', async () => {
       const address = await store.addresses.create({
         name: 'סבתא',

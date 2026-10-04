@@ -97,6 +97,7 @@ src/
   domain/
     types.ts                 Entities and Base/NewRow. Mirrors the SQL schema.
     position.ts              Sparse ordering for board rows and list sections.
+    shows.ts                 Shows: filters, sorts, the status cycle, the refresh patch.
     kitchen/                 Pure kitchen logic, unit-tested: catalog, parser,
                              pantry fit and rows, store sections, diet,
                              scaling, durations, calories, shopping list, search.
@@ -118,6 +119,7 @@ src/
                              theme and language.
     lists/                   The shopping list: page, rows, item and section
                              forms, section drag.
+    activities/shows/        Shows: page, cards, add sheet, OMDb client, writes.
     larder/
       KitchenContext.tsx     The kitchen's rows, read once for every screen.
       actions.ts             Writes that span collections (list and pantry).
@@ -142,6 +144,9 @@ functions/api/import.ts      The same handler as a Cloudflare Pages Function.
 server/search/               Recipe search: Tavily, limited to the recipe sites
                              in sites.ts; index.ts is the public surface.
 functions/api/search.ts      The same handler as a Cloudflare Pages Function.
+server/shows/                OMDb proxy for Shows: search and one title's
+                             details, normalised; index.ts is the public surface.
+functions/api/shows.ts       The same handler as a Cloudflare Pages Function.
 server/places/               Address suggestions: the AddressProvider interface,
                              Photon behind it, chosen in provider.ts.
 functions/api/places.ts      The same handler as a Cloudflare Pages Function.
@@ -158,12 +163,14 @@ supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 [src/data](../src/data/README.md) · [src/domain](../src/domain/README.md) ·
 [src/i18n](../src/i18n/README.md) · [features/board](../src/features/board/README.md) ·
 [features/family](../src/features/family/README.md) · [features/lists](../src/features/lists/README.md) ·
+[features/activities](../src/features/activities/README.md) ·
 [features/larder](../src/features/larder/README.md) and its
 [add](../src/features/larder/add/README.md), [cook](../src/features/larder/cook/README.md),
 [import](../src/features/larder/import/README.md), [pantry](../src/features/larder/pantry/README.md),
 [recipe](../src/features/larder/recipe/README.md), [search](../src/features/larder/search/README.md),
 [seed](../src/features/larder/seed/README.md), [timers](../src/features/larder/timers/README.md) ·
 [server/import](../server/import/README.md) · [server/search](../server/search/README.md) ·
+[server/shows](../server/shows/README.md) ·
 [server/ai](../server/ai/README.md) · [supabase](../supabase/README.md).
 
 Dependencies point one way: `features` use `components`, `hooks`, `i18n`, `data`

@@ -102,7 +102,7 @@ afterEach(() => {
 describe('the sidebar', () => {
   it("lists every section, and the current section's pages", async () => {
     const host = await render(<Sidebar />, '/pantry');
-    for (const key of ['nav.board', 'nav.lists', 'nav.larder', 'nav.library', 'nav.search', 'nav.pantry', 'nav.diet', 'nav.family'] as const) {
+    for (const key of ['nav.board', 'nav.lists', 'nav.larder', 'nav.library', 'nav.search', 'nav.pantry', 'nav.diet', 'nav.activities', 'nav.family'] as const) {
       expect(link(host, i18n.t(key)), key).toBeDefined();
     }
     expect(link(host, i18n.t('nav.pantry'))?.getAttribute('aria-current')).toBe('page');
@@ -135,7 +135,7 @@ describe('the tab bar', () => {
   it('shows the pinned sections and More, and lights the current section', async () => {
     const host = await render(<TabBar />, '/recipe/abc');
     const labels = [...bar(host).querySelectorAll('a')].map((a) => a.textContent);
-    expect(labels).toEqual([i18n.t('nav.board'), i18n.t('nav.lists'), i18n.t('nav.larder')]);
+    expect(labels).toEqual([i18n.t('nav.board'), i18n.t('nav.lists'), i18n.t('nav.larder'), i18n.t('nav.activities')]);
     expect(link(bar(host), i18n.t('nav.larder'))?.getAttribute('aria-current')).toBe('true');
     expect(moreButton(host).getAttribute('aria-haspopup')).toBe('dialog');
     expect(moreButton(host).getAttribute('aria-current')).toBeNull();
@@ -164,7 +164,7 @@ describe('the tab bar', () => {
     expect(lists?.getAttribute('aria-pressed')).toBe('true');
     await click(lists);
     expect(link(bar(host), i18n.t('nav.lists'))).toBeUndefined();
-    expect(document.querySelector('dialog')?.textContent).toContain(i18n.t('nav.pinnedCount', { pinned: 2, max: 4 }));
+    expect(document.querySelector('dialog')?.textContent).toContain(i18n.t('nav.pinnedCount', { pinned: 3, max: 4 }));
 
     unmount?.();
     host = await render(<TabBar />, '/');
@@ -181,7 +181,7 @@ describe('the tab bar', () => {
     await click(sheetButton(i18n.t('nav.lists')));
     expect(link(bar(host), i18n.t('nav.lists'))).toBeDefined();
     expect(sheetButton(i18n.t('nav.lists'))?.getAttribute('aria-pressed')).toBe('true');
-    expect(document.querySelector('dialog')?.textContent).toContain(i18n.t('nav.pinnedCount', { pinned: 3, max: 4 }));
+    expect(document.querySelector('dialog')?.textContent).toContain(i18n.t('nav.pinnedCount', { pinned: 4, max: 4 }));
   });
 
   it('refuses to unpin the last section, and says so', async () => {
@@ -190,6 +190,7 @@ describe('the tab bar', () => {
     await click(sheetButton(i18n.t('nav.editBar')));
     await click(sheetButton(i18n.t('nav.lists')));
     await click(sheetButton(i18n.t('nav.larder')));
+    await click(sheetButton(i18n.t('nav.activities')));
     await click(sheetButton(i18n.t('nav.board')));
     expect(link(bar(host), i18n.t('nav.board'))).toBeDefined();
     expect(document.querySelector('dialog')?.textContent).toContain(i18n.t('nav.keepOne'));

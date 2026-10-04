@@ -29,8 +29,9 @@ describe('locate', () => {
     expect(where('/profile')).toBe('larder/profile');
   });
 
-  it('finds Lists and Family', () => {
+  it('finds Lists, Shows and Family', () => {
     expect(where('/lists')).toBe('lists/lists');
+    expect(where('/shows')).toBe('activities/shows');
     expect(where('/family')).toBe('family/family');
   });
 
@@ -72,8 +73,11 @@ describe('the section list', () => {
 
 describe('resolvePins', () => {
   it('starts from the first pinnable sections', () => {
-    // Activities joins these when it lands.
-    expect(DEFAULT_PINS).toEqual(['board', 'lists', 'larder']);
+    expect(DEFAULT_PINS).toEqual(['board', 'lists', 'larder', 'activities']);
+  });
+
+  it('puts Activities after the Larder and before Family', () => {
+    expect(SECTIONS.map((section) => section.id)).toEqual(['board', 'lists', 'larder', 'activities', 'family']);
   });
 
   it('falls back to the defaults for nothing, junk or an empty list', () => {

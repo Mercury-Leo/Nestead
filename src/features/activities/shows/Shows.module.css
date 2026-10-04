@@ -1,0 +1,102 @@
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.search {
+  flex: 1;
+}
+
+/* One scrolling row on phones: the statuses, then the kind and the sort. */
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chips > * {
+  flex-shrink: 0;
+}
+
+/*
+ * Columns follow the space: a card is never narrower than the minimum, and
+ * cards keep their own height, so opening one leaves its row alone.
+ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.none {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 32px 0;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.none p {
+  margin: 0;
+}
+
+/* Under a long list: how much of it is built, and Show more. */
+.more {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 24px 0 8px;
+}
+
+.moreCount {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+/* Desktop: the search and the sort on one line, the two filters under them. */
+@media (min-width: 1024px) {
+  .toolbar {
+    display: grid;
+    grid-template-areas:
+      'search search search sort'
+      'status kind . .';
+    grid-template-columns: auto auto 1fr auto;
+    gap: 12px 16px;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+
+  .search {
+    grid-area: search;
+  }
+
+  .statusFilter {
+    grid-area: status;
+  }
+
+  .kindFilter {
+    grid-area: kind;
+  }
+
+  .sort {
+    grid-area: sort;
+  }
+
+  .grid {
+    gap: 20px;
+  }
+}

@@ -10,7 +10,7 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { installDemoData, launchChrome, spread, startServer, throttle } from './browser.mjs';
+import { INTERACTION_INSTRUMENT, installDemoData, interactions, launchChrome, spread, startServer, throttle } from './browser.mjs';
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -24,74 +24,11 @@ const SIZE = option('size', 'heavy');
 const RUNS = Number(option('runs', '5'));
 const OUT = option('out', undefined);
 
-const INSTRUMENT = `(() => {
-  window.__events = [];
-  new PerformanceObserver((list) => {
-    for (const e of list.getEntries()) window.__events.push({ name: e.name, start: e.startTime, duration: e.duration, id: e.interactionId });
-  }).observe({ type: 'event', buffered: true, durationThreshold: 16 });
-  window.__longTasks = [];
-  new PerformanceObserver((list) => { for (const e of list.getEntries()) window.__longTasks.push({ start: e.startTime, duration: e.duration }); }).observe({ type: 'longtask', buffered: true });
-  window.__frames = null;
-  window.__recordFrames = () => {
-    window.__frames = [];
-    const loop = (time) => { if (window.__frames === null) return; window.__frames.push(time); requestAnimationFrame(loop); };
-    requestAnimationFrame(loop);
-  };
-  window.__stopFrames = () => { const frames = window.__frames; window.__frames = null; return frames; };
-})();`;
-
 const server = await startServer(dist);
-const browser = await launchChrome();
+const browser = await launchChrome({ amazon: server.port });
 const { cdp } = browser;
-await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: INSTRUMENT });
-const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
-const now = () => cdp.evaluate('performance.now()');
-
-/** Client-side navigation, the way a link does it, timed to the first frame painted after ready() holds. */
-async function go(path, ready) {
-  await cdp.evaluate(`(() => {
-    const nav = (window.__nav = { start: performance.now(), painted: null });
-    let seen = false;
-    const check = () => {
-      if (seen || !(${ready})) return;
-      seen = true;
-      requestAnimationFrame(() => { const c = new MessageChannel(); c.port1.onmessage = () => { nav.painted = performance.now(); }; c.port2.postMessage(0); });
-    };
-    const observer = new MutationObserver(check);
-    observer.observe(document.body, { childList: true, subtree: true });
-    const poll = setInterval(() => { check(); if (nav.painted !== null) { clearInterval(poll); observer.disconnect(); } }, 50);
-    history.pushState({}, '', ${JSON.stringify(path)});
-    dispatchEvent(new PopStateEvent('popstate'));
-  })()`);
-  const began = Date.now();
-  for (;;) {
-    const nav = await cdp.evaluate('window.__nav');
-    if (nav.painted !== null) {
-      const long = await cdp.evaluate(`window.__longTasks.filter((t) => t.start >= ${nav.start} && t.start < ${nav.painted}).reduce((s, t) => s + t.duration, 0)`);
-      return { ms: nav.painted - nav.start, longTasks: long };
-    }
-    if (Date.now() - began > 30_000) throw new Error(`${path} never became ready`);
-    await sleep(25);
-  }
-}
-
-async function box(expression) {
-  const rect = await cdp.evaluate(`(() => { const el = ${expression}; if (!el) return null; el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; })()`);
-  if (rect === null) throw new Error(`nothing matches ${expression}`);
-  return rect;
-}
-
-const mouse = (type, x, y, extra = {}) => cdp.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1, ...extra });
-
-/**
- * The longest input event from `since` on: what INP would count for it.
- * Pointer and mouse events count whether or not Chrome grouped them into an
- * interaction, since a drag's release is not a tap.
- */
-async function slowestInteraction(since) {
-  await sleep(600);
-  return cdp.evaluate(`Math.max(0, ...window.__events.filter((e) => e.start >= ${since} && (e.id > 0 || /^(pointer|mouse)(down|up)$|^click$/.test(e.name))).map((e) => e.duration))`);
-}
+await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: INTERACTION_INSTRUMENT });
+const { sleep, now, go, box, mouse, slowestInteraction } = interactions(cdp);
 
 const result = { dist: resolve(dist), size: SIZE, runs: RUNS };
 try {

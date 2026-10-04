@@ -1,5 +1,5 @@
 # Performance
-Where Nestead spends its time, measured on 2026-09-29 on branch `perf/pass`. The scripts and how to run them are in [scripts/perf/](../scripts/perf/README.md). Every number is the median of 5 runs after one warm-up, with the min–max spread in brackets.
+Where Nestead spends its time, measured on 2026-09-29 on branch `perf/pass`. The scripts and how to run them are in [scripts/perf/](../scripts/perf/README.md). Every number is the median of 5 runs after one warm-up, with the min–max spread in brackets. The Shows page has its own pass, measured on 2026-10-04: [Shows](#shows-2026-10-04-branch-activitiesshows) at the end.
 
 ## Method
 - **Page load** (`pageload.mjs`): headless Chrome loads a production build served the way Cloudflare Pages serves it (HTTP/2, brotli, the `_headers` cache rules, 304s). The network is throttled to 150 ms per request, 1.6 Mbps down and 750 kbps up, and the CPU runs 4× slower, on a 412 px wide screen. Cold loads clear the HTTP cache first; warm loads keep it. "Usable" is the first frame painted after the first task card (demo) or the sign-in field (Supabase build) is in the page.
@@ -172,3 +172,73 @@ Each of these is outside the envelope: it changes the `Collection` contract, the
 5. **Hold the "New column" box until the columns load.** Expected gain: CLS 0.107 → 0 in the half of cold loads that shift. It changes what the board shows while loading: nothing, rather than a lone "New column" box for a moment. Risk: low. Files: `src/features/board/Board.tsx`.
 
 Not proposed: splitting the Supabase SDK into its packages (a dependency change for about 5–8 KB brotli, since `functions-js` and `iceberg-js` are the only unused parts), and the RLS helper, since server time is in the noise.
+
+## Shows (2026-10-04, branch `activities/shows`)
+The Shows page (`src/features/activities/shows/`), measured with the same scripts and throttling, before and after this pass. Before is `e027556`, the page as first built; after is `7a5114f`. Paged is `606d5bc`: the list in pages of 60 with Show more, approved after the pass (it was proposal 1 below).
+
+**Method.** `shows.mjs` (new) times opening Shows from the board, typing "office" in its name search, cycling the first card's status all the way round, opening and closing a card, and tapping the Watched filter then All. `pageload.mjs --path /shows` loads the page directly, throttled like a phone. The demo data now has shows: 40 in the typical family, 300 in the heavy one (four in five with a poster). The harness server answers their poster links with a real OMDb poster at 100, 200 or 300 px, as Amazon's servers do. Adding a show and refreshing one call OMDb, which the harness cannot reach, so they are not timed. Their request count is fixed: two to add (search, details), one to refresh, none to open the page or reload it.
+
+This machine was shared with other sessions during the pass, so some spreads are wide. A fix was kept only when its range cleared the one before it; 10 runs were used to decide close ones.
+
+### Using the page (demo, CPU 4× slower)
+| What | Heavy (300 shows): before | Heavy: after | Heavy: paged | Typical (40): before | Typical: after |
+| --- | --- | --- | --- | --- | --- |
+| Open Shows | 1210 (1135–1530) ms | **622 (590–657) ms** | **247 (222–292) ms** | 207 (197–223) ms | **152 (129–155) ms** |
+| First visit, loading its chunk | 1608 ms | 969 ms | 475 ms | 478 ms | 410 ms |
+| Elements on the page | 13,433 | **8,333** | **1,958** | 1,975 | **1,295** |
+| Type a name: slowest keystroke | 328 (296–368) ms | **32 (32–48) ms** | 24 (24–40) ms | 64 (56–80) ms | **24 (16–24) ms** |
+| Cycle a status: slowest click | **672** (640–720) ms | **40 (32–48) ms** | 40 (32–48) ms | 112 (104–200) ms | **24 (24–32) ms** |
+| Open or close a card | 96 (96–112) ms | **24 (24–32) ms** | 24 (24–24) ms | 32 (32–40) ms | 24 (16–32) ms |
+| Tap Watched, then All | **896** (864–912) ms | **512 (448–584) ms** | **164 (136–184) ms** | 152 (136–160) ms | **96 (80–104) ms** |
+| Show more (the next 60) | – | – | 216 (192–248) ms | – | – |
+
+A list of 60 or fewer shows whole, so paging leaves the typical family as it was: opening 172 (149–194) ms before it and 181 (141–258) ms after, back to back over 10 runs.
+
+### Loading the page (heavy, 300 shows, throttled like a phone)
+| Cache | Usable | LCP | Long tasks | Downloaded |
+| --- | --- | --- | --- | --- |
+| Cold, before | 2639 (2587–2763) ms | 4172 (4124–4288) ms | 1419 (1297–1446) ms | 557 KB, 9 posters 297 KB |
+| Cold, after | **2215 (2167–2352) ms** | **3124 (3092–3264) ms** | **1053 (1027–1245) ms** | **422 KB, 9 posters 162 KB** |
+| Warm, before | 1577 (1536–1645) ms | 1556 (1516–1620) ms | 1289 (1254–1351) ms | 10 KB |
+| Warm, after | **1194 (1161–1269) ms** | **1188 (1148–1252) ms** | 1113 (1088–1218) ms | 10 KB |
+| Cold, paged | **1730 (1703–1839) ms** | **1732 (1696–1836) ms** | **394 (321–461) ms** | 423 KB, 9 posters 162 KB |
+| Warm, paged | **640 (631–680) ms** | **640 (620–680) ms** | **332 (302–351) ms** | 10 KB |
+
+**Correction (posters).** The rows above used poster links in OMDb's old form, `._V1_SX300.jpg` (300 px). Testing with a real key showed OMDb now links `._V1_QL75_UX380_CR0,0,380,562_.jpg`, a 380 px crop of about 40 KB, which the first resizing rule (`7a5114f`) did not recognise: real posters were downloaded whole. `5100cbf` resizes any Amazon poster link. The harness now serves posters in OMDb's current form from Amazon's own host name (`launchChrome({ amazon })` maps it to the harness), so the app's rule runs as it does for real. Measured that way (paged, cold, 300 shows):
+
+| Posters | Usable | LCP | Downloaded | Posters done by |
+| --- | --- | --- | --- | --- |
+| Whole (`356811d`, before `5100cbf`) | 1815 (1801–1904) ms | 1812 (1796–1904) ms | 622 KB, 9 posters 361 KB | 4154 (4150–4247) ms |
+| Resized (`5100cbf`) | 1880 (1870–2006) ms | 1872 (1864–1960) ms | **400 KB, 9 posters 139 KB** | **3065 (3064–3096) ms** |
+
+Usable and LCP do not move: with the list paged, the largest paint is text, before any poster. Posters finish 1.1 s sooner, and the fonts, which share the link, 3679 → 3064 ms. In the Browser pane with a real key, a 1× screen loaded `._V1_QL75_SX100.jpg` (about 5 KB) for each 84 px card.
+
+### Bundle (demo build, brotli)
+| | Before | After |
+| --- | --- | --- |
+| First load, against `main` | +0.9 KB (the English Shows strings and two nav icons) | unchanged |
+| Shows chunk, fetched on first visit | 5.7 KB JS, 1.4 KB CSS | 5.9 KB JS, 1.4 KB CSS |
+
+### What changed
+One commit per fix, each measured against the commit before it (heavy family).
+
+| Commit | Fix | Measured on its own |
+| --- | --- | --- |
+| `c79b0b3` | A card builds its details panel (plot, date, Refresh, Delete) only while open | Elements 13,433 → 8,333. Open 1210 → 965 ms, keystroke 328 → 232 ms, status 672 → 512 ms, filter 896 → 744 ms |
+| `b1a4804` | Cards memoised on their fields (`sameShow()`), since a re-read hands back every row as a new object | Keystroke 232 → 88 ms, status 512 → 96 ms, filter 744 → 664 ms |
+| `e6cbdc7` | `content-visibility: auto` on cards, each counted as its poster's height until laid out | 10 runs: open 1078 → 622 ms, filter 640 → 400 ms, keystroke 96 → 32 ms, status 72 → 36 ms. The page's height before and after scrolling the whole list: 50,728 px both |
+| `7a5114f` | Posters at the width drawn: `srcset` with Amazon's 100 and 200 px versions of OMDb's link, then the link itself, then the placeholder. Only OMDb's old link form; `5100cbf` covers the current one (see the correction above) | Cold load: posters 297 → 162 KB, LCP 3648 → 3124 ms. A search result's 44 px thumbnail takes the 100 px file, about 6 KB against 37 KB (file sizes, not timed in the browser). Back to back over 10 runs, the filter tap read 432 (408–496) ms without it and 480 (432–704) with it: within the spread, but it may cost up to ~50 ms there |
+| `0868a02` | The list builds 60 cards at a time (`shownCount()`), with Show more; a new search, filter or sort starts from one page; a show brought into view is built wherever it sorts | Open 622 → 247 ms, filter 512 → 164 ms, elements 8,333 → 1,958; cold load usable 2215 → 1730 ms. Typing got slower, 32 → 120 ms per key, since a keystroke now builds the cards that newly make the first page (next row) |
+| `606d5bc` | The list follows the name search through `useDeferredValue`, so the field paints before the cards are built | 10 runs: slowest keystroke 120 (96–136) → 24 (24–40) ms; opening and filtering unchanged |
+
+### Tried and not kept
+- **One `t` per page instead of `useTranslation()` in each card.** The profile put 118 ms of a warm load in react-i18next's per-component wrapper, three per card. Passing the page's `t` down: open 1078 (968–1198) → 868 (756–1125) ms and filter 640 (616–688) → 588 (560–632) ms over 10 runs. Both medians improved in two batches, but the ranges overlap, so it was reverted. A quieter machine might settle it.
+
+### What is left
+- **Paging has a cost people can see:** the browser's find-in-page only finds cards already built, so a show past the first 60 needs the name search or Show more. A show just added, or one opened from Add show, is always built.
+- **On Supabase, the first open waits for one read of the `shows` table.** `preloadStore()` leaves `shows` out, on purpose, so sign-in reads no more than before. A whole-table read took 88–114 ms from here in the baseline above, and a phone pays more. The browser harness cannot sign in, and `db.perf.ts` writes to production, so this was not measured.
+
+### Waiting on your OK
+Done since: rendering a long list in pages (`0868a02`, `606d5bc`; measured above as "paged").
+
+1. **Read `shows` before the page opens.** Start the read when the Activities tab is pressed or hovered (`cacheOf(store.shows).preload()`), not at sign-in. Expected gain: the first open on Supabase up to one round trip sooner, about 100–250 ms on a phone. Risk: low; a press that never reaches the page costs one read. To measure it I would sign the headless browser in as test user A, or run `db.perf.ts`, which writes to production: say if I may. Files: `src/app/Nav.tsx`, `src/features/activities/shows/`.

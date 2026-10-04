@@ -8,7 +8,7 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 | `boundary.test.ts` | Fails if anything outside `supabase/` imports the Supabase SDK or that folder, bar `../auth/session.tsx`. |
 | `cache.ts` (+ `cache.test.ts`) | `CachedCollection`, `withCache()`, `cacheOf()`, `preloadStore()`: one shared copy per collection, writes shown at once. |
 | `useCollection.ts` | `useCollectionState()` (`rows` and `loaded`) and `useCollection()` (rows only). |
-| `collection.contract.ts` | `runDataStoreContract(name, make, reset?)`: the ten cases every backend must pass, one of them address rows (Hebrew, optional fields cleared). |
+| `collection.contract.ts` | `runDataStoreContract(name, make, reset?)`: the eleven cases every backend must pass, among them show rows and address rows (Hebrew, optional fields cleared). |
 | `local/localStore.ts` (+ `localStore.test.ts`) | localStorage backend, plus `readPreference`/`writePreference` and `readDevicePreference`/`writeDevicePreference`. |
 | `local/localPhotos.ts` | Local `PhotoStore` in IndexedDB (`nestead-photos`). |
 | `supabase/supabaseClient.ts` | Browser client from `VITE_SUPABASE_*`, remember-me session storage, email-link parsing. |
@@ -28,12 +28,13 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 - On Supabase, `photos.url()` calls made in the same task are signed in one `createSignedUrls` request once its microtasks have run, and each URL is kept for 55 minutes. A screen of recipe cards costs one request, not one per card (`supabaseStore.ts`).
 - Realtime echoes every insert and update back to the client that made it. `supabaseStore.ts` remembers the version each of its own writes returned and drops an echo carrying exactly that version, since `create()` and `update()` have already notified. A writer re-reads the table once per write, not twice.
 - `loaded` is false until the first read, so a screen can tell "no rows" from "not read yet" (`useCollection.ts`).
+- `preloadStore()` reads the board's and the kitchen's collections at sign-in, not `shows`: the Shows page reads it when first opened, and it lingers like any other (`cache.ts`).
 - Local rows are one JSON array per key `nestead:<familyId>:<collection>`; other tabs hear of changes through the `storage` event (`local/localStore.ts`).
 - The guarantees every backend owes are listed in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#collectiont).
 
 ## Connections
 - Uses: `../domain/types.ts`; `@supabase/supabase-js` in `supabase/` only.
-- Used by: `../auth/` (the `Account`, building the store), every screen through `useCollection`, and `local/localStore.ts`'s preference helpers in `../components/theme/`, `../i18n/`, `../features/board/`, `../features/lists/`, `../features/larder/timers/`, `../app/` (nav pins).
+- Used by: `../auth/` (the `Account`, building the store), every screen through `useCollection`, and `local/localStore.ts`'s preference helpers in `../components/theme/`, `../i18n/`, `../features/board/`, `../features/lists/`, `../features/larder/timers/`, `../features/activities/shows/` (filters and sort), `../app/` (nav pins).
 
 ## Rules & gotchas
 - New backend work goes through the interfaces: add a method to `DataStore` or `Account` in `types.ts`, implement it in the adapter folder, and call it through the interface. Screens, `../auth/` and `../features/` never import an adapter, a backend SDK, or name a table or RPC. A rule the backend must enforce goes in the interface's doc comment.
@@ -43,10 +44,12 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 - `supabase/familyAi.test.ts` runs against the project in `.env.test`, which is production. It stores a fake ciphertext before anything claims and removes it in `finally`, and never calls `claim_ai_request` without a key in place, since that spends one of the app's real free reads. It skips only when `family_ai_status` is missing (the migration is not applied yet; `migrationMissing()` decides, and has unit tests that run without `.env.test`); any other error fails it. Its test has a 30 s timeout so `finally` can remove the fake key.
 - A patch value of `undefined` clears the field in both backends and the cache (`cache.ts` `merge`, `supabaseStore.ts` `toRow`, and a contract case).
 - `supabaseStore.ts` converts top-level keys only (nested jsonb keeps camelCase), reads NULL as absent, and throws on an `update` that matched no row, which PostgREST reports as success.
+- `supabaseStore.ts` re-serialises every timestamptz column through `Date` (`TIMESTAMP_KEYS`: `createdAt`, `updatedAt`, and the shows' `fetchedAt` and `watchedAt`), so it reads back as the ISO string the app wrote rather than Postgres's `+00:00` form. A new timestamptz column joins that set; a `date` column (`released`, `dueDate`) is already `YYYY-MM-DD`.
+- `shows` holds one row per `imdbId` per family. Supabase enforces it with a unique constraint; the local store does not, and relies on `addShow()` checking first (`types.ts`, `../features/activities/shows/actions.ts`).
 - Another client's delete never arrives over realtime. The channel filters on `family_id`, and a DELETE event carries only the primary key, so the filter never matches. The deleting client still notifies its own listeners (`supabaseStore.ts`; measured in `../../docs/PERFORMANCE.md`).
 - `localStore.ts` calls itself the only localStorage user, but `../auth/invite.ts` and `supabase/supabaseClient.ts` use it too.
 - Photo ids are `<familyId>/<uuid>` locally and `<familyId>/<uuid>.jpg` on Supabase (`local/localPhotos.ts`, `supabase/supabaseStore.ts`).
-- With all six `SUPABASE_TEST_*` values in `.env.test`, `npm test` runs the live suites, which delete every row in both test families between cases (`supabase/supabaseStore.test.ts`). The address contract case fails there until `../../supabase/migrations/20261004120000_addresses.sql` is applied to that project.
+- With all six `SUPABASE_TEST_*` values in `.env.test`, `npm test` runs the live suites, which delete every row in both test families between cases (`supabase/supabaseStore.test.ts`). They clear and test `shows` and `addresses` too, so they fail until `../../supabase/migrations/20261004120000_shows.sql` and `20261004200000_addresses.sql` are applied to that project.
 
 ## Tests
-The contract runs three times: `local/localStore.test.ts`, `cache.test.ts` (cached local, plus ten cache cases), and `supabase/supabaseStore.test.ts` (live). The Supabase suites run in the `node` environment, not jsdom. `boundary.test.ts` reads source files only. `supabase/aiStatus.test.ts` maps `family_ai_status()` rows (with a key, free only, a setter who left, and a field it must not carry).
+The contract runs three times: `local/localStore.test.ts`, `cache.test.ts` (cached local, plus ten cache cases), and `supabase/supabaseStore.test.ts` (live). Its shows case round-trips a release date, `fetchedAt`, a decimal rating, sets then clears `watchedAt`, and ends on `dropped`, so on Supabase it needs `../../supabase/migrations/20261004150000_shows_dropped.sql` applied. The Supabase suites run in the `node` environment, not jsdom. `boundary.test.ts` reads source files only. `supabase/aiStatus.test.ts` maps `family_ai_status()` rows (with a key, free only, a setter who left, and a field it must not carry).

@@ -8,20 +8,24 @@ import { createAiHandler } from './server/ai';
 import { createImportHandler } from './server/import';
 import { createPlacesHandler, defaultAddressProvider } from './server/places';
 import { createSearchHandler } from './server/search';
+import { createShowsHandler } from './server/shows';
 
 /**
- * /api/import, /api/search, /api/places and /api/ai under `npm run dev` and `vite preview`:
- * the same handlers the Pages Functions run in production. Import and AI are
- * given Node's DNS, so they can also refuse names that resolve to private
- * addresses. Search is given the Tavily key from .env.local and AI its own keys
- * and secret; without a VITE_ prefix they stay out of the bundle. AI reaches
- * Supabase through the project the app itself uses.
+ * /api/import, /api/search, /api/shows, /api/places and /api/ai under
+ * `npm run dev` and `vite preview`: the same handlers the Pages Functions run
+ * in production. Import and AI are given Node's DNS, so they can also refuse
+ * names that resolve to private addresses. Search is given the Tavily key from
+ * .env.local, Shows the OMDb key, and AI its own keys and secret; without a
+ * VITE_ prefix they stay out of the bundle. AI reaches Supabase through the
+ * project the app itself uses. Places needs no key: its service is chosen in
+ * server/places/provider.ts.
  */
 function apiRoutes(env: Record<string, string>): Plugin {
   const resolveHost = async (host: string): Promise<string[]> => (await lookup(host, { all: true })).map((entry) => entry.address);
   const routes = [
     { path: '/api/import', failed: 'fetch-failed', handler: createImportHandler({ resolveHost }) },
     { path: '/api/search', failed: 'search-failed', handler: createSearchHandler({ apiKey: env.TAVILY_API_KEY }) },
+    { path: '/api/shows', failed: 'failed', handler: createShowsHandler({ apiKey: env.OMDB_API_KEY }) },
     { path: '/api/places', failed: 'places-failed', handler: createPlacesHandler({ provider: defaultAddressProvider() }) },
     {
       path: '/api/ai',

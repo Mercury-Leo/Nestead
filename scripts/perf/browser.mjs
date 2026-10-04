@@ -5,10 +5,15 @@
 // brotli, the Cache-Control rules in the build's _headers, index.html for
 // unknown paths, ETags and 304s. Chrome comes from CHROME_PATH (default: the
 // Windows install); openssl on the PATH makes a throwaway certificate.
+//
+// It also stands in for Amazon's image servers for the Shows page: the demo
+// data's posters are m.media-amazon.com links, which launchChrome({ amazon })
+// resolves to this server, answered with one real OMDb poster in the form asked
+// for (downloaded once into the temp folder).
 
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createSecureServer } from 'node:http2';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
@@ -20,6 +25,46 @@ const TYPES = {
   '.woff': 'font/woff', '.ico': 'image/x-icon', '.txt': 'text/plain',
 };
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.webmanifest', '.svg', '.txt']);
+
+/**
+ * The demo posters' host. launchChrome({ amazon: server.port }) points it at
+ * the harness server, which answers /images/M/perf-p<n>@._V1_<options>.jpg
+ * (scripts/perf/fixtures.ts showRows()).
+ */
+const AMAZON_HOST = 'm.media-amazon.com';
+/** Inception's poster on Amazon's servers. */
+const POSTER_SOURCE = 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@';
+/**
+ * The forms served: OMDb's links today (a 380 px crop), the older 300 px one,
+ * and the widths Poster.tsx asks Amazon for.
+ */
+const POSTER_FORMS = [
+  '._V1_QL75_UX380_CR0,0,380,562_.jpg',
+  '._V1_SX300.jpg',
+  '._V1_QL75_SX100.jpg',
+  '._V1_QL75_SX200.jpg',
+  '._V1_QL75_SX300.jpg',
+];
+
+/** The poster in each form, by form, from the temp folder, fetched the first time. A form that cannot be fetched is left out (its <img> falls back). */
+async function posterFiles() {
+  const dir = join(tmpdir(), 'nestead-perf-posters');
+  mkdirSync(dir, { recursive: true });
+  const files = new Map();
+  for (const form of POSTER_FORMS) {
+    const file = join(dir, `poster${form.replace(/[^\w.]/g, '_')}`);
+    if (!existsSync(file)) {
+      try {
+        const response = await fetch(POSTER_SOURCE + form);
+        if (response.ok) writeFileSync(file, Buffer.from(await response.arrayBuffer()));
+      } catch {
+        // Offline: no posters, the cards show placeholders.
+      }
+    }
+    if (existsSync(file)) files.set(form, readFileSync(file));
+  }
+  return files;
+}
 
 /** The build's _headers, as far as this app uses it: path patterns (optionally ending in *) and header lines. */
 function headerRules(dist) {
@@ -70,11 +115,22 @@ export async function startServer(distDir) {
     return entry;
   };
 
+  const posters = await posterFiles();
+
   const server = createSecureServer({ ...certificate(), allowHTTP1: true }, (req, res) => {
     const path = decodeURIComponent(new URL(req.url, 'https://localhost').pathname);
     if (path === '/__blank') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       res.end('<!doctype html><title>blank</title>');
+      return;
+    }
+    const poster = /^\/images\/M\/perf-p\d+@(\._V1_[^/]*\.jpg)$/.exec(path);
+    if (poster !== null) {
+      const body = posters.get(poster[1]);
+      // Amazon's own headers for posters, plus Timing-Allow-Origin: without it the
+      // page sees no transfer size for another origin's image, and pageload.mjs counts 0 bytes.
+      res.writeHead(body === undefined ? 404 : 200, { 'content-type': 'image/jpeg', 'cache-control': 'max-age=630720000,public', 'timing-allow-origin': '*' });
+      res.end(body);
       return;
     }
     let file = join(dist, path);
@@ -97,6 +153,7 @@ export async function startServer(distDir) {
   // An IP, not "localhost": Chrome would try ::1 first, which nothing listens on.
   return {
     origin: `https://127.0.0.1:${server.address().port}`,
+    port: server.address().port,
     use(otherDir) {
       dist = resolve(otherDir);
       rules = headerRules(dist);
@@ -154,11 +211,13 @@ export class Cdp {
 }
 
 /** Headless Chrome with a fresh profile, 412 px wide like a phone, and a CDP session on its tab. */
-export async function launchChrome() {
+export async function launchChrome({ amazon } = {}) {
   const chromePath = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
   const profile = mkdtempSync(join(tmpdir(), 'nestead-perf-chrome-'));
+  // With `amazon` (the harness server's port), the demo posters' host is the harness server.
+  const posters = amazon === undefined ? [] : [`--host-resolver-rules=MAP ${AMAZON_HOST}:443 127.0.0.1:${amazon}`];
   const chrome = spawn(chromePath, [
-    '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--ignore-certificate-errors',
+    '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--ignore-certificate-errors', ...posters,
     '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-background-networking',
     '--disable-component-update', '--disable-sync', '--disable-default-apps', '--mute-audio', 'about:blank',
   ], { stdio: 'ignore' });
@@ -223,4 +282,78 @@ export function spread(values) {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return { median: sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2, min: sorted[0], max: sorted[sorted.length - 1] };
+}
+
+/**
+ * For interact.mjs and shows.mjs: install with Page.addScriptToEvaluateOnNewDocument.
+ * Records input events (what INP is built from), long tasks, and frames on request.
+ */
+export const INTERACTION_INSTRUMENT = `(() => {
+  window.__events = [];
+  new PerformanceObserver((list) => {
+    for (const e of list.getEntries()) window.__events.push({ name: e.name, start: e.startTime, duration: e.duration, id: e.interactionId });
+  }).observe({ type: 'event', buffered: true, durationThreshold: 16 });
+  window.__longTasks = [];
+  new PerformanceObserver((list) => { for (const e of list.getEntries()) window.__longTasks.push({ start: e.startTime, duration: e.duration }); }).observe({ type: 'longtask', buffered: true });
+  window.__frames = null;
+  window.__recordFrames = () => {
+    window.__frames = [];
+    const loop = (time) => { if (window.__frames === null) return; window.__frames.push(time); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  };
+  window.__stopFrames = () => { const frames = window.__frames; window.__frames = null; return frames; };
+})();`;
+
+/** Navigation, element positions, mouse input and interaction timings on an instrumented page. */
+export function interactions(cdp) {
+  const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+  const now = () => cdp.evaluate('performance.now()');
+
+  /** Client-side navigation, the way a link does it, timed to the first frame painted after ready() holds. */
+  async function go(path, ready) {
+    await cdp.evaluate(`(() => {
+      const nav = (window.__nav = { start: performance.now(), painted: null });
+      let seen = false;
+      const check = () => {
+        if (seen || !(${ready})) return;
+        seen = true;
+        requestAnimationFrame(() => { const c = new MessageChannel(); c.port1.onmessage = () => { nav.painted = performance.now(); }; c.port2.postMessage(0); });
+      };
+      const observer = new MutationObserver(check);
+      observer.observe(document.body, { childList: true, subtree: true });
+      const poll = setInterval(() => { check(); if (nav.painted !== null) { clearInterval(poll); observer.disconnect(); } }, 50);
+      history.pushState({}, '', ${JSON.stringify(path)});
+      dispatchEvent(new PopStateEvent('popstate'));
+    })()`);
+    const began = Date.now();
+    for (;;) {
+      const nav = await cdp.evaluate('window.__nav');
+      if (nav.painted !== null) {
+        const long = await cdp.evaluate(`window.__longTasks.filter((t) => t.start >= ${nav.start} && t.start < ${nav.painted}).reduce((s, t) => s + t.duration, 0)`);
+        return { ms: nav.painted - nav.start, longTasks: long };
+      }
+      if (Date.now() - began > 30_000) throw new Error(`${path} never became ready`);
+      await sleep(25);
+    }
+  }
+
+  async function box(expression) {
+    const rect = await cdp.evaluate(`(() => { const el = ${expression}; if (!el) return null; el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; })()`);
+    if (rect === null) throw new Error(`nothing matches ${expression}`);
+    return rect;
+  }
+
+  const mouse = (type, x, y, extra = {}) => cdp.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1, ...extra });
+
+  /**
+   * The longest input event from `since` on: what INP would count for it.
+   * Pointer and mouse events count whether or not Chrome grouped them into an
+   * interaction, since a drag's release is not a tap.
+   */
+  async function slowestInteraction(since) {
+    await sleep(600);
+    return cdp.evaluate(`Math.max(0, ...window.__events.filter((e) => e.start >= ${since} && (e.id > 0 || /^(pointer|mouse)(down|up)$|^click$/.test(e.name))).map((e) => e.duration))`);
+  }
+
+  return { sleep, now, go, box, mouse, slowestInteraction };
 }

@@ -73,6 +73,16 @@ key (1,000 searches a month, no card): `TAVILY_API_KEY` in `.env.local` for
 `npm run dev` and `vite preview`. It is server-only, so never give it a `VITE_`
 prefix. Without it, search falls back to the recipes that ship with the app.
 
+### Activities
+
+| Screen | Route    | What it does                                                                 |
+| ------ | -------- | ---------------------------------------------------------------------------- |
+| Shows  | `/shows` | The family's movies and series, added from OMDb, marked To watch, Watching or Watched |
+
+OMDb's details are saved with each show, so the list never calls OMDb; adding a
+show and refreshing one do. That needs `OMDB_API_KEY` in `.env.local`, server-only
+like Tavily's; a free key allows 1,000 requests a day.
+
 ## Stack
 
 | Concern         | Choice                             |
@@ -129,12 +139,15 @@ src/
   features/larder/           The kitchen: a folder per screen, recipe/ for what
                              they share, timers/, and seed/ (the demo kitchen,
                              plus the offline web index every build uses).
+  features/activities/       Shows: the family's movies and series, from OMDb.
   styles/                    tokens.css (the one palette), global.css, fonts.css.
   main.tsx                   Entry point.
 server/import/               Recipe import: fetch a page, read schema.org data.
 functions/api/import.ts      The same, as a Cloudflare Pages Function.
 server/search/               Recipe search: find recipe pages the importer can read.
 functions/api/search.ts      The same, as a Cloudflare Pages Function.
+server/shows/                OMDb proxy for Shows: search and one title's details.
+functions/api/shows.ts       The same, as a Cloudflare Pages Function.
 server/places/               Address suggestions, behind a swappable provider.
 functions/api/places.ts      The same, as a Cloudflare Pages Function.
 supabase/schema.sql          Postgres schema; migrations/ for existing projects.
@@ -144,7 +157,7 @@ CLAUDE.md                    The short guide for working in this repo.
 ```
 
 Each folder under `src/` (except `hooks/` and `styles/`), plus `server/import/`,
-`server/search/` and `supabase/`, has a `README.md` with its files, how it works and its rules;
+`server/search/`, `server/shows/` and `supabase/`, has a `README.md` with its files, how it works and its rules;
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) links them all.
 
 ## Writing a feature

@@ -25,6 +25,8 @@
     "pantry": "Pantry",
     "diet": "Diet",
     "larder": "Larder",
+    "activities": "Activities",
+    "shows": "Shows",
     "family": "Family",
     "addresses": "Addresses",
     "more": "More",
@@ -943,6 +945,97 @@
       "notARecipe": "The AI didn’t find a recipe there.",
       "timeout": "That took too long. Try again.",
       "unavailable": "AI reading isn’t available right now. Try again later."
+    }
+  },
+  "shows": {
+    "title": "Shows",
+    "add": "Add show",
+    "empty": {
+      "title": "No shows yet",
+      "body": "Add the movies and series you want to watch. The whole family sees the list."
+    },
+    "searchLabel": "Search your shows",
+    "searchPlaceholder": "Title…",
+    "statusLabel": "Status",
+    "kindLabel": "Movies or series",
+    "all": "All {{count, number}}",
+    "statusCount": {
+      "toWatch": "To watch {{count, number}}",
+      "watching": "Watching {{count, number}}",
+      "watched": "Watched {{count, number}}",
+      "dropped": "Dropped {{count, number}}"
+    },
+    "status": {
+      "toWatch": "To watch",
+      "watching": "Watching",
+      "watched": "Watched",
+      "dropped": "Dropped"
+    },
+    "kinds": {
+      "all": "All",
+      "movie": "Movies",
+      "series": "Series"
+    },
+    "kind": {
+      "movie": "Movie",
+      "series": "Series"
+    },
+    "sortBy": "Sort by",
+    "sort": {
+      "added": "Recently added",
+      "title": "Title",
+      "released": "Release date",
+      "rating": "IMDb rating"
+    },
+    "sortShort": {
+      "added": "Recent",
+      "title": "Title",
+      "released": "Released",
+      "rating": "Rating"
+    },
+    "noMatch": "No shows match these filters.",
+    "showAll": "Show all",
+    "showing": "Showing {{shown, number}} of {{total, number}}",
+    "showMore": "Show {{count, number}} more",
+    "card": {
+      "onImdb": "on IMDb, opens in a new tab",
+      "more": "More about {{title}}",
+      "minutes": "{{count, number}} min",
+      "seasons_one": "{{count, number}} season",
+      "seasons_other": "{{count, number}} seasons",
+      "rating": "IMDb rating {{value}} out of 10",
+      "changeStatus": "{{status}}. Change to {{next}}",
+      "noPlot": "OMDb has no plot for this one.",
+      "fetched": "Details from OMDb, {{date}}",
+      "refresh": "Refresh from OMDb",
+      "refreshing": "Refreshing…",
+      "drop": "Drop it",
+      "restore": "Restore",
+      "unchanged": "The saved details are unchanged.",
+      "delete": "Delete show",
+      "deleteQuestion": "Delete “<item/>” for everyone in the family?"
+    },
+    "failure": {
+      "unavailable": "OMDb isn’t set up on this server.",
+      "limit": "OMDb’s daily limit is used up. Try again tomorrow.",
+      "notFound": "OMDb doesn’t have this title.",
+      "failed": "Couldn’t reach OMDb. Try again."
+    },
+    "addSheet": {
+      "title": "Add a show",
+      "query": "Title",
+      "placeholder": "Inception, The Office…",
+      "kind": "Search for",
+      "search": "Search",
+      "searching": "Searching…",
+      "results": "Results",
+      "noResults": "Nothing on OMDb by that name.",
+      "inList": "In your list",
+      "reading": "Reading the details…",
+      "back": "Back to results",
+      "save": "Add to our list",
+      "saving": "Adding…",
+      "saveFailed": "Couldn’t add it. Try again."
     }
   }
 }

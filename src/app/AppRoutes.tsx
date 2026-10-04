@@ -16,6 +16,7 @@ const CookMode = lazy(() => import('../features/larder/cook/CookMode'));
 const AddRecipe = lazy(() => import('../features/larder/add/AddRecipe'));
 const ImportRecipe = lazy(() => import('../features/larder/import/ImportRecipe'));
 const FamilyPage = lazy(() => import('../features/family/FamilyPage').then((m) => ({ default: m.FamilyPage })));
+const Shows = lazy(() => import('../features/activities/shows/Shows').then((m) => ({ default: m.Shows })));
 const AddressesPage = lazy(() => import('../features/family/addresses/AddressesPage').then((m) => ({ default: m.AddressesPage })));
 
 function Loading(): JSX.Element {
@@ -42,7 +43,8 @@ export function AppRoutes(): JSX.Element {
       <Route path="/pantry" element={page(<Pantry />)} />
       <Route path="/lists" element={page(<ShoppingList />)} />
       <Route path="/profile" element={page(<DietProfilePage />)} />
-      {/* Not a kitchen screen, so it does not wait for the kitchen's first read. */}
+      {/* Not kitchen screens, so they do not wait for the kitchen's first read. Shows waits for its own. */}
+      <Route path="/shows" element={<Suspense fallback={<Loading />}><Shows /></Suspense>} />
       <Route path="/family" element={<Suspense fallback={<Loading />}><FamilyPage /></Suspense>} />
       <Route path="/addresses" element={<Suspense fallback={<Loading />}><AddressesPage /></Suspense>} />
       <Route path="*" element={<Navigate to="/" replace />} />

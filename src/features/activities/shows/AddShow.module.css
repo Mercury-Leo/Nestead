@@ -1,0 +1,148 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.note {
+  margin: 16px 0 0;
+  color: var(--ink-2);
+}
+
+.note:empty {
+  margin: 0;
+}
+
+/* ----------------------------------------------------------- results -- */
+
+.hits {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hit {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+.hit:hover {
+  background: var(--sunk);
+}
+
+.hitPoster {
+  display: block;
+  flex-shrink: 0;
+  width: 44px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--sunk);
+  filter: var(--photo-filter);
+}
+
+.hitText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hitTitle {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hitMeta {
+  display: flex;
+  gap: 10px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.inList {
+  flex-shrink: 0;
+}
+
+/* ----------------------------------------------------------- preview -- */
+
+.preview {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.previewPoster {
+  display: block;
+  flex-shrink: 0;
+  width: 112px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--sunk);
+  filter: var(--photo-filter);
+}
+
+.previewText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.previewTitle {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.previewTitle:focus {
+  outline: none;
+}
+
+.plot {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.previewText .note {
+  margin: 0;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}

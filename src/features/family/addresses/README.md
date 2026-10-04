@@ -37,7 +37,7 @@ The family's address book (`/addresses`), the Family section's second page: save
 - Only the street and city fields go into a suggestion request: never the name, apartment or door code (tested).
 - The Android `geo:` link has no `target`: the system takes it over, and a new tab would be left open and blank (`NavigateButton.tsx`).
 - Address text comes from people, so it renders as React text through `t()` values or children, never through `<Trans>` values (`../../../i18n/README.md`).
-- On Supabase the table needs `../../../../supabase/migrations/20261004120000_addresses.sql` applied first. Until then the page's reads fail.
+- On Supabase the table needs `../../../../supabase/migrations/20261004200000_addresses.sql` applied first. Until then the page's reads fail.
 
 ## Tests
 `AddressesPage.test.tsx` (jsdom, local store):

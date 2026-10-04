@@ -10,6 +10,7 @@ import type {
   NewRow,
   PantryItem,
   Recipe,
+  Show,
   Task,
 } from '../domain/types';
 
@@ -60,6 +61,12 @@ export interface DataStore {
   listItems: Collection<ListItem>;
   /** The family's own shopping-list groups. */
   listGroups: Collection<ListGroup>;
+  /**
+   * Movies and series. At most one row per imdbId per family: the backend turns
+   * a second insert away (a unique constraint on Supabase), and addShow() then
+   * opens the existing row. The local store relies on that client check alone.
+   */
+  shows: Collection<Show>;
   /** The family's address book. */
   addresses: Collection<Address>;
   photos: PhotoStore;
