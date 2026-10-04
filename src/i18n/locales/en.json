@@ -971,6 +971,7 @@
       "refresh": "Refresh from OMDb",
       "refreshing": "Refreshing…",
       "drop": "Drop it",
+      "restore": "Restore",
       "unchanged": "The saved details are unchanged.",
       "delete": "Delete show",
       "deleteQuestion": "Delete “<item/>” for everyone in the family?"

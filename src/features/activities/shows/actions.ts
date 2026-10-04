@@ -32,9 +32,14 @@ export async function cycleStatus(store: DataStore, show: Show): Promise<Show> {
   return store.shows.update(show.id, statusPatch(nextStatus(show.status), new Date().toISOString()));
 }
 
-/** The family decided not to watch it. It leaves All for the Dropped filter; its badge brings it back. */
+/** The family decided not to watch it. It leaves All for the Dropped filter. */
 export async function dropShow(store: DataStore, show: Show): Promise<Show> {
   return store.shows.update(show.id, statusPatch('dropped', new Date().toISOString()));
+}
+
+/** A dropped show back on the list, as To watch (Restore, or a press on its badge). */
+export async function restoreShow(store: DataStore, show: Show): Promise<Show> {
+  return store.shows.update(show.id, statusPatch('to-watch', new Date().toISOString()));
 }
 
 /**

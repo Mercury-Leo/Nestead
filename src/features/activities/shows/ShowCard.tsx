@@ -1,5 +1,5 @@
 import { memo, useEffect, useId, useRef, useState } from 'react';
-import { Ban, Bookmark, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Trash2 } from 'lucide-react';
+import { Ban, Bookmark, BookmarkPlus, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Trash2 } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { Button, cx } from '../../../components/ui';
@@ -7,7 +7,7 @@ import { nextStatus } from '../../../domain/shows';
 import type { OmdbDetails } from '../../../domain/shows';
 import type { Show, ShowStatus } from '../../../domain/types';
 import { formatDate, formatNumber } from '../../../i18n';
-import { cycleStatus, dropShow, refreshShow, removeShow } from './actions';
+import { cycleStatus, dropShow, refreshShow, removeShow, restoreShow } from './actions';
 import { STATUS_KEY, imdbUrl, kindLabel, statusLabel } from './labels';
 import type { ShowsFailure } from './omdb';
 import { Poster } from './Poster';
@@ -140,8 +140,12 @@ function Details({ show }: { show: Show }): JSX.Element {
           <Button variant="ghost" icon={RefreshCw} disabled={refreshing} onClick={() => void refresh()}>
             {refreshing ? t('shows.card.refreshing') : t('shows.card.refresh')}
           </Button>
-          {/* A dropped show comes back through its badge, so it has no button here. */}
-          {show.status !== 'dropped' && (
+          {/* Drop it, or for a dropped show its way back (its badge also brings it back). */}
+          {show.status === 'dropped' ? (
+            <Button variant="ghost" icon={BookmarkPlus} onClick={() => void restoreShow(store, show).catch(() => undefined)}>
+              {t('shows.card.restore')}
+            </Button>
+          ) : (
             <Button variant="ghost" icon={Ban} onClick={() => void dropShow(store, show).catch(() => undefined)}>
               {t('shows.card.drop')}
             </Button>

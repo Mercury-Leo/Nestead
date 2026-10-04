@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLocalStore } from '../../../data/local/localStore';
 import type { DataStore } from '../../../data/types';
-import { addShow, cycleStatus, dropShow, refreshShow } from './actions';
+import { addShow, cycleStatus, dropShow, refreshShow, restoreShow } from './actions';
 import type { lookupShow } from './omdb';
 
 const INCEPTION = { imdbId: 'tt1375666', kind: 'movie' as const, title: 'Inception', year: 2010, runtimeMin: 148, imdbRating: 8.8 };
@@ -52,6 +52,13 @@ describe('dropShow', () => {
     expect(dropped.watchedAt).toBeUndefined();
     const back = await cycleStatus(store, dropped);
     expect(back.status).toBe('to-watch');
+  });
+
+  it('is undone by Restore, back to To watch', async () => {
+    const { show } = await addShow(store, [], INCEPTION, 'm1');
+    const restored = await restoreShow(store, await dropShow(store, show));
+    expect(restored.status).toBe('to-watch');
+    expect(restored.watchedAt).toBeUndefined();
   });
 });
 

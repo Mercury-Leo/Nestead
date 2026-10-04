@@ -126,6 +126,24 @@ describe('dropped shows', () => {
     expect(cards(host).every((card) => card.textContent?.includes(i18n.t('shows.status.dropped')))).toBe(true);
   });
 
+  it('offer Restore instead of Drop it, which puts them back on the list', async () => {
+    await addShows(3, (i) => (i === 0 ? 'dropped' : 'to-watch'));
+    const host = await render();
+    await act(async () => button(host, i18n.t('shows.statusCount.dropped', { count: 1 }))?.click());
+    const card = cards(host)[0] as HTMLElement;
+    await act(async () => card.querySelector<HTMLButtonElement>('button[aria-expanded]')?.click());
+    expect(button(card, i18n.t('shows.card.drop'))).toBeUndefined();
+    await act(async () => button(card, i18n.t('shows.card.restore'))?.click());
+    for (let i = 0; i < 20 && cards(host).length === 1; i += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+    // It left the Dropped filter; All has all three again.
+    expect(cards(host)).toHaveLength(0);
+    expect(button(host, i18n.t('shows.all', { count: 3 }))).toBeDefined();
+  });
+
   it('leave All when someone drops one, from its details', async () => {
     await addShows(3);
     const host = await render();
