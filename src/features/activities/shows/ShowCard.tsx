@@ -1,0 +1,202 @@
+import { useEffect, useId, useRef, useState } from 'react';
+import { Bookmark, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Trash2 } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { useSession } from '../../../auth/session';
+import { Button, cx } from '../../../components/ui';
+import { nextStatus } from '../../../domain/shows';
+import type { OmdbDetails } from '../../../domain/shows';
+import type { Show, ShowStatus } from '../../../domain/types';
+import { formatDate, formatNumber } from '../../../i18n';
+import { cycleStatus, refreshShow, removeShow } from './actions';
+import { STATUS_KEY, imdbUrl, kindLabel, statusLabel } from './labels';
+import type { ShowsFailure } from './omdb';
+import { Poster } from './Poster';
+import s from './ShowCard.module.css';
+
+/*
+ * Like a recipe card: what you scan for (title, year, length, rating, status)
+ * stays in view, and the plot, refresh and delete wait behind a per-card
+ * toggle. The title is the link (to IMDb); the poster repeats it, so it stays
+ * out of the tab order and the accessibility tree. OMDb's text is data,
+ * rendered as React text only.
+ */
+
+const STATUS_ICON = { 'to-watch': Bookmark, watching: CirclePlay, watched: CircleCheck } as const;
+
+export function failureKey(failure: ShowsFailure): 'unavailable' | 'limit' | 'notFound' | 'failed' {
+  return failure === 'not-found' ? 'notFound' : failure;
+}
+
+/** Year, kind, length (minutes, or seasons for a series) and IMDb rating: the one line you scan. */
+export function Facts({ show, className }: { show: OmdbDetails; className?: string }): JSX.Element {
+  const { t } = useTranslation();
+  const rating = show.imdbRating === undefined ? undefined : formatNumber(show.imdbRating, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const length =
+    show.kind === 'series'
+      ? show.totalSeasons === undefined
+        ? undefined
+        : t('shows.card.seasons', { count: show.totalSeasons })
+      : show.runtimeMin === undefined
+        ? undefined
+        : t('shows.card.minutes', { count: show.runtimeMin });
+  return (
+    <p className={cx(s.facts, className)}>
+      {/* Spaces between the items keep the words apart for screen readers; flex layout ignores them. */}
+      {show.year !== undefined && <span className="tabular">{show.year}</span>}{' '}
+      <span>{kindLabel(t, show.kind)}</span>{' '}
+      {length !== undefined && <span className="tabular">{length}</span>}{' '}
+      {rating !== undefined && (
+        <span className={s.rating}>
+          <Star size={14} strokeWidth={0} fill="var(--honey)" aria-hidden />
+          <span className="tabular" aria-hidden>
+            {rating}
+          </span>
+          <span className="visually-hidden">{t('shows.card.rating', { value: rating })}</span>
+        </span>
+      )}
+    </p>
+  );
+}
+
+/** Cycles To watch, Watching, Watched. The label says what a press changes it to. */
+function StatusButton({ status, onCycle }: { status: ShowStatus; onCycle: () => void }): JSX.Element {
+  const { t } = useTranslation();
+  const Icon = STATUS_ICON[status];
+  const label = statusLabel(t, status);
+  return (
+    <button
+      type="button"
+      className={cx(s.status, s[STATUS_KEY[status]])}
+      aria-label={t('shows.card.changeStatus', { status: label, next: statusLabel(t, nextStatus(status)) })}
+      onClick={onCycle}
+    >
+      <Icon size={16} strokeWidth={2.2} aria-hidden />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+/** Behind the toggle: the plot, when it was read, refresh and delete. */
+function Details({ show, id, open }: { show: Show; id: string; open: boolean }): JSX.Element {
+  const { t } = useTranslation();
+  const { store } = useSession();
+  const [refreshing, setRefreshing] = useState(false);
+  const [failure, setFailure] = useState<ShowsFailure | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const refresh = async (): Promise<void> => {
+    setRefreshing(true);
+    setFailure(null);
+    try {
+      const result = await refreshShow(store, show);
+      if (!result.ok) setFailure(result.failure);
+    } catch {
+      setFailure('failed');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const remove = async (): Promise<void> => {
+    setDeleting(true);
+    try {
+      await removeShow(store, show.id);
+    } catch {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div id={id} className={s.details} hidden={!open}>
+      <p className={s.plot} dir="auto">
+        {show.plot ?? t('shows.card.noPlot')}
+      </p>
+      <p className={s.fetched}>{t('shows.card.fetched', { date: formatDate(show.fetchedAt) })}</p>
+      {confirmDelete ? (
+        <div className={s.confirm}>
+          <span>
+            <Trans i18nKey="shows.card.deleteQuestion" components={{ item: <bdi>{show.title}</bdi> }} />
+          </span>
+          <span className={s.confirmButtons}>
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+              {t('common.keepIt')}
+            </Button>
+            <Button variant="primary" icon={Trash2} disabled={deleting} onClick={() => void remove()}>
+              {t('shows.card.delete')}
+            </Button>
+          </span>
+        </div>
+      ) : (
+        <div className={s.detailActions}>
+          <Button variant="ghost" icon={RefreshCw} disabled={refreshing} onClick={() => void refresh()}>
+            {refreshing ? t('shows.card.refreshing') : t('shows.card.refresh')}
+          </Button>
+          <Button variant="ghost" icon={Trash2} onClick={() => setConfirmDelete(true)}>
+            {t('shows.card.delete')}
+          </Button>
+        </div>
+      )}
+      <p className={s.quiet} role="status">
+        {failure !== null && `${t(`shows.failure.${failureKey(failure)}`)} ${t('shows.card.unchanged')}`}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * One show. `revealed` changes when the page asks for this card to be shown
+ * (adding a show that is already on the list): it opens, scrolls into view,
+ * takes focus and flashes once.
+ */
+export function ShowCard({ show, revealed }: { show: Show; revealed?: number }): JSX.Element {
+  const { t } = useTranslation();
+  const { store } = useSession();
+  const [open, setOpen] = useState(false);
+  const [flash, setFlash] = useState(false);
+  const id = useId();
+  const title = useRef<HTMLAnchorElement>(null);
+  const card = useRef<HTMLElement>(null);
+  const href = imdbUrl(show.imdbId);
+
+  useEffect(() => {
+    if (revealed === undefined) return undefined;
+    setOpen(true);
+    setFlash(true);
+    card.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    title.current?.focus({ preventScroll: true });
+    const timer = setTimeout(() => setFlash(false), 1600);
+    return () => clearTimeout(timer);
+  }, [revealed]);
+
+  return (
+    <article ref={card} className={cx(s.card, flash && s.flash)}>
+      <a href={href} target="_blank" rel="noopener noreferrer" className={s.poster} tabIndex={-1} aria-hidden>
+        <Poster url={show.posterUrl} kind={show.kind} />
+      </a>
+      <div className={s.body}>
+        <h3 className={s.title} dir="auto">
+          <a ref={title} href={href} target="_blank" rel="noopener noreferrer" className={s.titleLink}>
+            {show.title}
+            <span className="visually-hidden"> {t('shows.card.onImdb')}</span>
+          </a>
+        </h3>
+        <Facts show={show} />
+        <div className={s.controls}>
+          <StatusButton status={show.status} onCycle={() => void cycleStatus(store, show).catch(() => undefined)} />
+          <button
+            type="button"
+            className={cx(s.toggle, open && s.toggleOpen)}
+            aria-expanded={open}
+            aria-controls={id}
+            aria-label={t('shows.card.more', { title: show.title })}
+            onClick={() => setOpen(!open)}
+          >
+            <ChevronDown size={20} strokeWidth={2.2} aria-hidden />
+          </button>
+        </div>
+        <Details show={show} id={id} open={open} />
+      </div>
+    </article>
+  );
+}

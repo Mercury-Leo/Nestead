@@ -26,6 +26,8 @@
     "pantry": "מזווה",
     "diet": "תזונה",
     "larder": "מטבח",
+    "activities": "פעילויות",
+    "shows": "סרטים וסדרות",
     "family": "משפחה",
     "more": "עוד",
     "editBar": "עריכת הסרגל",
@@ -941,6 +943,92 @@
       "notARecipe": "ה־AI לא מצא שם מתכון.",
       "timeout": "זה לקח יותר מדי זמן. נסו שוב.",
       "unavailable": "קריאה עם AI לא זמינה כרגע. נסו שוב מאוחר יותר."
+    }
+  },
+  "shows": {
+    "title": "סרטים וסדרות",
+    "add": "הוספת סרט או סדרה",
+    "empty": {
+      "title": "עוד אין כאן סרטים או סדרות",
+      "body": "הוסיפו סרטים וסדרות שתרצו לראות. כל המשפחה רואה את הרשימה."
+    },
+    "searchLabel": "חיפוש ברשימה",
+    "searchPlaceholder": "שם…",
+    "statusLabel": "סטטוס",
+    "kindLabel": "סרטים או סדרות",
+    "all": "הכול {{count, number}}",
+    "statusCount": {
+      "toWatch": "לצפייה {{count, number}}",
+      "watching": "בצפייה {{count, number}}",
+      "watched": "נצפו {{count, number}}"
+    },
+    "status": {
+      "toWatch": "לצפייה",
+      "watching": "בצפייה",
+      "watched": "נצפה"
+    },
+    "kinds": {
+      "all": "הכול",
+      "movie": "סרטים",
+      "series": "סדרות"
+    },
+    "kind": {
+      "movie": "סרט",
+      "series": "סדרה"
+    },
+    "sortBy": "מיון לפי",
+    "sort": {
+      "added": "נוספו לאחרונה",
+      "title": "שם",
+      "released": "תאריך יציאה",
+      "rating": "דירוג IMDb"
+    },
+    "sortShort": {
+      "added": "חדשים",
+      "title": "שם",
+      "released": "יציאה",
+      "rating": "דירוג"
+    },
+    "noMatch": "אין סרטים או סדרות שמתאימים לסינון.",
+    "showAll": "הצגת הכול",
+    "card": {
+      "onImdb": "ב-IMDb, נפתח בלשונית חדשה",
+      "more": "עוד על {{title}}",
+      "minutes": "{{count, number}} דק׳",
+      "seasons_one": "עונה אחת",
+      "seasons_two": "שתי עונות",
+      "seasons_other": "{{count, number}} עונות",
+      "rating": "דירוג IMDb {{value}} מתוך 10",
+      "changeStatus": "{{status}}. הבא: {{next}}",
+      "noPlot": "אין ב-OMDb תקציר לכותר הזה.",
+      "fetched": "הפרטים מ-OMDb, {{date}}",
+      "refresh": "רענון מ-OMDb",
+      "refreshing": "ברענון…",
+      "unchanged": "הפרטים השמורים לא השתנו.",
+      "delete": "מחיקה מהרשימה",
+      "deleteQuestion": "למחוק את \"<item/>\" לכל בני המשפחה?"
+    },
+    "failure": {
+      "unavailable": "OMDb לא מוגדר בשרת הזה.",
+      "limit": "המכסה היומית של OMDb נגמרה. נסו שוב מחר.",
+      "notFound": "הכותר הזה לא נמצא ב-OMDb.",
+      "failed": "לא הצלחנו להתחבר ל-OMDb. נסו שוב."
+    },
+    "addSheet": {
+      "title": "הוספת סרט או סדרה",
+      "query": "שם",
+      "placeholder": "Inception, The Office…",
+      "kind": "סוג",
+      "search": "חיפוש",
+      "searching": "מחפשים…",
+      "results": "תוצאות",
+      "noResults": "אין ב-OMDb כותר בשם הזה.",
+      "inList": "כבר ברשימה",
+      "reading": "קוראים את הפרטים…",
+      "back": "חזרה לתוצאות",
+      "save": "הוספה לרשימה",
+      "saving": "מוסיפים…",
+      "saveFailed": "לא הצלחנו להוסיף. נסו שוב."
     }
   }
 }
