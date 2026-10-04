@@ -9,7 +9,7 @@ Measurements behind [docs/PERFORMANCE.md](../../docs/PERFORMANCE.md): bundle siz
 | `pageload.mjs` | Cold and warm loads of a build, throttled like a phone: usable, FCP, LCP, CLS, long tasks, bytes by type (images apart). `--path` opens another page than the board. With `--after <previous build>`, the first open after a deploy instead of a warm load. |
 | `redeploy.mjs` | Builds twice, the second time with a one-attribute change to the board page, and reports which files an app-only deploy makes every device download again. |
 | `interact.mjs` | The open demo build with a heavy family: opening screens, ticking list items, typing a search, dragging a task, memory over 60 screens. |
-| `shows.mjs` | The Shows page in the demo build: opening it, typing a name, cycling a status, a card's toggle, a status filter, and the page's element count. |
+| `shows.mjs` | The Shows page in the demo build: opening it, typing a name, cycling a status, a card's toggle, a status filter, Show more (when the list has more than a page), and the page's element count. |
 | `profile.mjs` | A CPU profile of one screen's load (or, with `--drag`, of a task drag), summed by function. Use an unminified build (`--minify false`) to read names. |
 | `demodata.ts` | Writes the demo backend's localStorage for a typical and a heavy family (run with `npx vite-node`). |
 | `db.perf.ts` | Database timings against the live project as test user A, through the app's own store, cache, actions and startup steps. |
