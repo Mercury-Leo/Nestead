@@ -166,11 +166,12 @@ export function listRows(
 }
 
 /**
- * Stands in for the harness server's origin in poster links: installDemoData()
- * (browser.mjs) swaps in the real one, and the server answers
- * /perf-posters/<name>._V1_SX<width>.jpg with a real OMDb poster at that width.
+ * Posters as OMDb links them today: Amazon's host, an id, and a 380 px crop.
+ * The browser scripts point Amazon's host at the harness server
+ * (launchChrome({ amazon }) in browser.mjs), which answers with a real poster
+ * in the form asked for, so the app's own resizing (Poster.tsx) applies.
  */
-export const POSTER_ORIGIN = 'https://perf-posters.invalid';
+const POSTER_LINK = (n: number): string => `https://m.media-amazon.com/images/M/perf-p${n}@._V1_QL75_UX380_CR0,0,380,562_.jpg`;
 
 const SHOWS: ReadonlyArray<readonly [string, Show['kind']]> = [
   ['The Office', 'series'], ['Inception', 'movie'], ['Bluey', 'series'], ['Paddington 2', 'movie'],
@@ -203,7 +204,7 @@ export function showRows(from: number, to: number, memberId: string): NewRow<Sho
       status,
       createdBy: memberId,
     };
-    if (i % 5 !== 4) row.posterUrl = `${POSTER_ORIGIN}/perf-posters/p${i % 12}._V1_SX300.jpg`;
+    if (i % 5 !== 4) row.posterUrl = POSTER_LINK(i % 12);
     if (kind === 'series') row.totalSeasons = 1 + (i % 9);
     if (status === 'watched') row.watchedAt = '2026-09-02T20:00:00.000Z';
     rows.push(row);

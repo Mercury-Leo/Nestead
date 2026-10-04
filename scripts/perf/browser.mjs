@@ -7,8 +7,9 @@
 // Windows install); openssl on the PATH makes a throwaway certificate.
 //
 // It also stands in for Amazon's image servers for the Shows page: the demo
-// data's posters point at /perf-posters/<name>._V1_SX<width>.jpg, answered with
-// one real OMDb poster at that width (downloaded once into the temp folder).
+// data's posters are m.media-amazon.com links, which launchChrome({ amazon })
+// resolves to this server, answered with one real OMDb poster in the form asked
+// for (downloaded once into the temp folder).
 
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -25,28 +26,42 @@ const TYPES = {
 };
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.webmanifest', '.svg', '.txt']);
 
-/** Kept in step with scripts/perf/fixtures.ts POSTER_ORIGIN. */
-const POSTER_ORIGIN = 'https://perf-posters.invalid';
-/** Inception's poster, as OMDb links it; the widths are the ones Amazon's servers make on request. */
-const POSTER_SOURCE = 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX{width}.jpg';
-const POSTER_WIDTHS = [100, 200, 300];
+/**
+ * The demo posters' host. launchChrome({ amazon: server.port }) points it at
+ * the harness server, which answers /images/M/perf-p<n>@._V1_<options>.jpg
+ * (scripts/perf/fixtures.ts showRows()).
+ */
+const AMAZON_HOST = 'm.media-amazon.com';
+/** Inception's poster on Amazon's servers. */
+const POSTER_SOURCE = 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@';
+/**
+ * The forms served: OMDb's links today (a 380 px crop), the older 300 px one,
+ * and the widths Poster.tsx asks Amazon for.
+ */
+const POSTER_FORMS = [
+  '._V1_QL75_UX380_CR0,0,380,562_.jpg',
+  '._V1_SX300.jpg',
+  '._V1_QL75_SX100.jpg',
+  '._V1_QL75_SX200.jpg',
+  '._V1_QL75_SX300.jpg',
+];
 
-/** One poster at each width, from the temp folder, fetched the first time. A width that cannot be fetched is left out (its <img> falls back to the placeholder). */
+/** The poster in each form, by form, from the temp folder, fetched the first time. A form that cannot be fetched is left out (its <img> falls back). */
 async function posterFiles() {
   const dir = join(tmpdir(), 'nestead-perf-posters');
   mkdirSync(dir, { recursive: true });
   const files = new Map();
-  for (const width of POSTER_WIDTHS) {
-    const file = join(dir, `poster-${width}.jpg`);
+  for (const form of POSTER_FORMS) {
+    const file = join(dir, `poster${form.replace(/[^\w.]/g, '_')}`);
     if (!existsSync(file)) {
       try {
-        const response = await fetch(POSTER_SOURCE.replace('{width}', String(width)));
+        const response = await fetch(POSTER_SOURCE + form);
         if (response.ok) writeFileSync(file, Buffer.from(await response.arrayBuffer()));
       } catch {
         // Offline: no posters, the cards show placeholders.
       }
     }
-    if (existsSync(file)) files.set(width, readFileSync(file));
+    if (existsSync(file)) files.set(form, readFileSync(file));
   }
   return files;
 }
@@ -109,11 +124,12 @@ export async function startServer(distDir) {
       res.end('<!doctype html><title>blank</title>');
       return;
     }
-    const poster = /^\/perf-posters\/[\w-]+\._V1_SX(\d+)\.jpg$/.exec(path);
+    const poster = /^\/images\/M\/perf-p\d+@(\._V1_[^/]*\.jpg)$/.exec(path);
     if (poster !== null) {
-      const body = posters.get(Number(poster[1]));
-      // Amazon's own headers for posters.
-      res.writeHead(body === undefined ? 404 : 200, { 'content-type': 'image/jpeg', 'cache-control': 'max-age=630720000,public' });
+      const body = posters.get(poster[1]);
+      // Amazon's own headers for posters, plus Timing-Allow-Origin: without it the
+      // page sees no transfer size for another origin's image, and pageload.mjs counts 0 bytes.
+      res.writeHead(body === undefined ? 404 : 200, { 'content-type': 'image/jpeg', 'cache-control': 'max-age=630720000,public', 'timing-allow-origin': '*' });
       res.end(body);
       return;
     }
@@ -137,6 +153,7 @@ export async function startServer(distDir) {
   // An IP, not "localhost": Chrome would try ::1 first, which nothing listens on.
   return {
     origin: `https://127.0.0.1:${server.address().port}`,
+    port: server.address().port,
     use(otherDir) {
       dist = resolve(otherDir);
       rules = headerRules(dist);
@@ -194,11 +211,13 @@ export class Cdp {
 }
 
 /** Headless Chrome with a fresh profile, 412 px wide like a phone, and a CDP session on its tab. */
-export async function launchChrome() {
+export async function launchChrome({ amazon } = {}) {
   const chromePath = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
   const profile = mkdtempSync(join(tmpdir(), 'nestead-perf-chrome-'));
+  // With `amazon` (the harness server's port), the demo posters' host is the harness server.
+  const posters = amazon === undefined ? [] : [`--host-resolver-rules=MAP ${AMAZON_HOST}:443 127.0.0.1:${amazon}`];
   const chrome = spawn(chromePath, [
-    '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--ignore-certificate-errors',
+    '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--ignore-certificate-errors', ...posters,
     '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-background-networking',
     '--disable-component-update', '--disable-sync', '--disable-default-apps', '--mute-audio', 'about:blank',
   ], { stdio: 'ignore' });
@@ -253,7 +272,7 @@ export async function throttle(cdp, { network, cpu }) {
 
 /** The demo backend's rows for one family size, from demodata.ts's output. */
 export async function installDemoData(cdp, origin, file, size) {
-  const data = JSON.parse(readFileSync(file, 'utf8').replaceAll(POSTER_ORIGIN, origin))[size];
+  const data = JSON.parse(readFileSync(file, 'utf8'))[size];
   if (data === undefined) throw new Error(`no "${size}" data in ${file}`);
   await cdp.navigate(`${origin}/__blank`);
   await cdp.evaluate(`(() => { localStorage.clear(); sessionStorage.clear(); const data = ${JSON.stringify(data)}; for (const [key, rows] of Object.entries(data)) localStorage.setItem(key, JSON.stringify(rows)); })()`);

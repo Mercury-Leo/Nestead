@@ -204,6 +204,15 @@ A list of 60 or fewer shows whole, so paging leaves the typical family as it was
 | Cold, paged | **1730 (1703–1839) ms** | **1732 (1696–1836) ms** | **394 (321–461) ms** | 423 KB, 9 posters 162 KB |
 | Warm, paged | **640 (631–680) ms** | **640 (620–680) ms** | **332 (302–351) ms** | 10 KB |
 
+**Correction (posters).** The rows above used poster links in OMDb's old form, `._V1_SX300.jpg` (300 px). Testing with a real key showed OMDb now links `._V1_QL75_UX380_CR0,0,380,562_.jpg`, a 380 px crop of about 40 KB, which the first resizing rule (`7a5114f`) did not recognise: real posters were downloaded whole. `5100cbf` resizes any Amazon poster link. The harness now serves posters in OMDb's current form from Amazon's own host name (`launchChrome({ amazon })` maps it to the harness), so the app's rule runs as it does for real. Measured that way (paged, cold, 300 shows):
+
+| Posters | Usable | LCP | Downloaded | Posters done by |
+| --- | --- | --- | --- | --- |
+| Whole (`356811d`, before `5100cbf`) | 1815 (1801–1904) ms | 1812 (1796–1904) ms | 622 KB, 9 posters 361 KB | 4154 (4150–4247) ms |
+| Resized (`5100cbf`) | 1880 (1870–2006) ms | 1872 (1864–1960) ms | **400 KB, 9 posters 139 KB** | **3065 (3064–3096) ms** |
+
+Usable and LCP do not move: with the list paged, the largest paint is text, before any poster. Posters finish 1.1 s sooner, and the fonts, which share the link, 3679 → 3064 ms. In the Browser pane with a real key, a 1× screen loaded `._V1_QL75_SX100.jpg` (about 5 KB) for each 84 px card.
+
 ### Bundle (demo build, brotli)
 | | Before | After |
 | --- | --- | --- |
@@ -218,7 +227,7 @@ One commit per fix, each measured against the commit before it (heavy family).
 | `c79b0b3` | A card builds its details panel (plot, date, Refresh, Delete) only while open | Elements 13,433 → 8,333. Open 1210 → 965 ms, keystroke 328 → 232 ms, status 672 → 512 ms, filter 896 → 744 ms |
 | `b1a4804` | Cards memoised on their fields (`sameShow()`), since a re-read hands back every row as a new object | Keystroke 232 → 88 ms, status 512 → 96 ms, filter 744 → 664 ms |
 | `e6cbdc7` | `content-visibility: auto` on cards, each counted as its poster's height until laid out | 10 runs: open 1078 → 622 ms, filter 640 → 400 ms, keystroke 96 → 32 ms, status 72 → 36 ms. The page's height before and after scrolling the whole list: 50,728 px both |
-| `7a5114f` | Posters at the width drawn: `srcset` with Amazon's 100 and 200 px versions of OMDb's link, then the link itself, then the placeholder | Cold load: posters 297 → 162 KB, LCP 3648 → 3124 ms. A search result's 44 px thumbnail takes the 100 px file, about 6 KB against 37 KB (file sizes, not timed in the browser). Back to back over 10 runs, the filter tap read 432 (408–496) ms without it and 480 (432–704) with it: within the spread, but it may cost up to ~50 ms there |
+| `7a5114f` | Posters at the width drawn: `srcset` with Amazon's 100 and 200 px versions of OMDb's link, then the link itself, then the placeholder. Only OMDb's old link form; `5100cbf` covers the current one (see the correction above) | Cold load: posters 297 → 162 KB, LCP 3648 → 3124 ms. A search result's 44 px thumbnail takes the 100 px file, about 6 KB against 37 KB (file sizes, not timed in the browser). Back to back over 10 runs, the filter tap read 432 (408–496) ms without it and 480 (432–704) with it: within the spread, but it may cost up to ~50 ms there |
 | `0868a02` | The list builds 60 cards at a time (`shownCount()`), with Show more; a new search, filter or sort starts from one page; a show brought into view is built wherever it sorts | Open 622 → 247 ms, filter 512 → 164 ms, elements 8,333 → 1,958; cold load usable 2215 → 1730 ms. Typing got slower, 32 → 120 ms per key, since a keystroke now builds the cards that newly make the first page (next row) |
 | `606d5bc` | The list follows the name search through `useDeferredValue`, so the field paints before the cards are built | 10 runs: slowest keystroke 120 (96–136) → 24 (24–40) ms; opening and filtering unchanged |
 

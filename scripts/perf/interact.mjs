@@ -25,7 +25,7 @@ const RUNS = Number(option('runs', '5'));
 const OUT = option('out', undefined);
 
 const server = await startServer(dist);
-const browser = await launchChrome();
+const browser = await launchChrome({ amazon: server.port });
 const { cdp } = browser;
 await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: INTERACTION_INSTRUMENT });
 const { sleep, now, go, box, mouse, slowestInteraction } = interactions(cdp);

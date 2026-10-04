@@ -54,7 +54,7 @@ const INSTRUMENT = `(() => {
 })();`;
 
 const server = await startServer(dist);
-const browser = await launchChrome();
+const browser = await launchChrome({ amazon: server.port });
 const { cdp } = browser;
 await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: INSTRUMENT });
 
