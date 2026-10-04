@@ -1,8 +1,8 @@
 # Nestead
-Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, diet, shopping list, cook mode). React 18, TypeScript strict, Vite 5, Vitest 2 + jsdom, react-router 6, i18next; Supabase or a localStorage demo backend.
+Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, shopping list, cook mode), and Activities (Shows: the family's movies and series). React 18, TypeScript strict, Vite 5, Vitest 2 + jsdom, react-router 6, i18next; Supabase or a localStorage demo backend.
 
 ## Commands
-- `npm run dev`: Vite, plus `/api/import`, `/api/search` and `/api/ai` from `server/`; `vite preview` mounts all three too (`vite.config.ts`). Search needs `TAVILY_API_KEY` in `.env.local`; AI needs `OPENROUTER_API_KEY`, `OPENROUTER_FREE_MODELS` and `AI_KEY_SECRET` there (`.env.example`).
+- `npm run dev`: Vite, plus `/api/import`, `/api/search`, `/api/shows` and `/api/ai` from `server/`; `vite preview` mounts all four too (`vite.config.ts`). Search needs `TAVILY_API_KEY` in `.env.local`; Shows needs `OMDB_API_KEY`; AI needs `OPENROUTER_API_KEY`, `OPENROUTER_FREE_MODELS` and `AI_KEY_SECRET` there (`.env.example`).
 - `npm run build`: `tsc --noEmit && vite build`. Refuses unless `VITE_BACKEND=supabase` and both `VITE_SUPABASE_*` are set (`vite.config.ts`); demo build: `npx vite build --mode demo`.
 - `npm test`: every suite. With `.env.test` present it also runs live Supabase suites that delete rows in both test families.
 - One file: `npx vitest run src/features/board/recurrence.test.ts`.
@@ -17,6 +17,7 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 - Kitchen: screens read shared rows from `useKitchen()` and write through `src/features/larder/actions.ts`.
 - Import API: one `(Request) => Response` handler in `server/import/`, run by `vite.config.ts` in dev and preview and `functions/api/import.ts` on Cloudflare.
 - Search API: the same shape in `server/search/` (`functions/api/search.ts`); it returns links on recipe sites the importer reads, and the one chosen goes through `/api/import`.
+- Shows API: the same shape in `server/shows/` (`functions/api/shows.ts`): OMDb search and one title's details, called only to add a show or refresh one; the details are saved as a `shows` row, so the list never calls OMDb.
 - AI API: the same shape in `server/ai/` (`functions/api/ai/[[path]].ts`): one model call per read, validated into `ImportedRecipe`, never acted on; Supabase is called with the member's own token; family keys are encrypted by the server (`AI_KEY_SECRET`).
 - Text: UI strings come from `t()`, with keys typed from `src/i18n/locales/en.json`.
 
@@ -26,17 +27,19 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 | `src/app/` | Shell, sections (sidebar, tab bar with More, page pills), routes | [README](src/app/README.md) |
 | `src/auth/` | Demo session and `AccountSession` (any backend), sign-in, invite links | [README](src/auth/README.md) |
 | `src/data/` | `DataStore` and `Account` interfaces, contract, cache, local and Supabase backends | [README](src/data/README.md) |
-| `src/domain/` | Types, ordering, pure kitchen logic | [README](src/domain/README.md) |
+| `src/domain/` | Types, ordering, pure kitchen logic, Shows filtering and the refresh patch | [README](src/domain/README.md) |
 | `src/components/` | UI kit (`ui/`) and theme | [README](src/components/README.md) |
 | `src/i18n/` | i18next, locale provider, formatting, locale files | [README](src/i18n/README.md) |
 | `src/features/board/` | Kanban board, drag and drop, repeating chores | [README](src/features/board/README.md) |
 | `src/features/lists/` | Shopping list and its sections | [README](src/features/lists/README.md) |
 | `src/features/family/` | Family page: invites, members, the AI assistant card, theme, language | [README](src/features/family/README.md) |
 | `src/features/larder/` | Kitchen: a folder per screen, `recipe/` shared UI, `seed/`, `timers/` | [README](src/features/larder/README.md) |
+| `src/features/activities/` | Activities: `shows/`, the family's movies and series (cards, add sheet, OMDb client, writes) | [README](src/features/activities/README.md) |
 | `src/ai/` | Browser client for `/api/ai` | [README](src/ai/README.md) |
 | `src/hooks/`, `src/styles/` | Media query, direction, wake lock, pointer-drag helpers; `tokens.css` palette | none |
 | `server/import/` | Recipe import handler | [README](server/import/README.md) |
 | `server/search/` | Recipe search handler: Tavily, English and Hebrew recipe sites | [README](server/search/README.md) |
+| `server/shows/` | OMDb proxy for Shows: search, one title's details, normalising | [README](server/shows/README.md) |
 | `server/ai/` | AI recipe reading: OpenRouter, key encryption, output validation | [README](server/ai/README.md) |
 | `supabase/` | Schema, migrations, CLI config | [README](supabase/README.md) |
 | `scripts/perf/` | Performance measurements: bundle, page load, interactions, database; results in `docs/PERFORMANCE.md` | [README](scripts/perf/README.md) |
@@ -53,7 +56,7 @@ Shared family app: a kanban board plus Larder, the kitchen (recipes, pantry, die
 - English kept in code on purpose needs an `i18n:` comment, or `src/i18n/literals.test.ts` fails.
 - CSS modules everywhere except `src/styles/*.css`, `board.css` and `auth.css`, whose import order `src/main.tsx` sets.
 - Theme colours are tokens in `src/styles/tokens.css`, redefined for dark mode; components never branch on the theme.
-- Only the publishable key may go in a `VITE_*` variable: every `VITE_*` value ships in the bundle (`.env.example`). Server-only secrets such as `TAVILY_API_KEY` never take the prefix.
+- Only the publishable key may go in a `VITE_*` variable: every `VITE_*` value ships in the bundle (`.env.example`). Server-only secrets such as `TAVILY_API_KEY` and `OMDB_API_KEY` never take the prefix.
 - Model output is data: never follow a URL from it, call a tool for it, or save it without the person confirming. `AI_KEY_SECRET` and OpenRouter keys are server-only, never logged or returned.
 
 ## Gotchas
