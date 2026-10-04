@@ -5,17 +5,21 @@ import { cx } from '../../../components/ui';
 import s from './Poster.module.css';
 
 /**
- * OMDb's poster links end in `._V1_SX300.jpg`, a 300 px wide poster, and
- * Amazon's servers make the same poster at another width on request. A card
- * shows it 84–96 px wide, so the browser picks from 100, 200 and 300 px by
- * `sizes` and the screen's density: about half the bytes on most phones.
+ * OMDb's posters are on Amazon's image servers, as `<id>._V1_<options>.jpg`:
+ * these days `._V1_QL75_UX380_CR0,0,380,562_.jpg`, a 380 px crop, and once
+ * `._V1_SX300.jpg`. Those servers make the same poster at any width on
+ * request (`._V1_QL75_SX200.jpg`, at OMDb's quality). A card draws it 84–96 px
+ * wide, so the browser picks from 100, 200 and 300 px by `sizes` and the
+ * screen's density: well under half the bytes on most phones (a 380 px
+ * poster is about 40 KB, a 200 px one about 15 KB). Other links are left alone.
  */
-const SIZED = /\._V1_SX300\.jpg$/;
-const WIDTHS = [100, 200] as const;
+const AMAZON = /^(https:\/\/m\.media-amazon\.com\/images\/M\/[^/?#]+?)\._V1_[^/?#]*\.jpg$/;
+const WIDTHS = [100, 200, 300] as const;
 
 export function posterSrcSet(url: string): string | undefined {
-  if (!SIZED.test(url)) return undefined;
-  return [...WIDTHS.map((width) => `${url.replace(SIZED, `._V1_SX${width}.jpg`)} ${width}w`), `${url} 300w`].join(', ');
+  const base = AMAZON.exec(url)?.[1];
+  if (base === undefined) return undefined;
+  return WIDTHS.map((width) => `${base}._V1_QL75_SX${width}.jpg ${width}w`).join(', ');
 }
 
 /**

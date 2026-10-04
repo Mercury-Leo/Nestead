@@ -5,7 +5,7 @@ import { Poster, posterSrcSet } from './Poster';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const OMDB = 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg';
+const OMDB = 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_QL75_UX380_CR0,0,380,562_.jpg';
 let unmount: (() => void) | null = null;
 
 function render(url: string | undefined): HTMLElement {
@@ -26,19 +26,26 @@ afterEach(() => {
 });
 
 describe('posterSrcSet', () => {
-  it("offers OMDb's poster at 100, 200 and its own 300 px", () => {
-    expect(posterSrcSet(OMDB)).toBe(
-      [
-        'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX100.jpg 100w',
-        'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX200.jpg 200w',
-        `${OMDB} 300w`,
-      ].join(', '),
+  const sized = (id: string): string =>
+    [100, 200, 300].map((width) => `https://m.media-amazon.com/images/M/${id}._V1_QL75_SX${width}.jpg ${width}w`).join(', ');
+
+  it("offers OMDb's poster at 100, 200 and 300 px, from the link OMDb gives today", () => {
+    // As OMDb answered on 2026-10-04: a 380 px crop at quality 75.
+    expect(posterSrcSet(OMDB)).toBe(sized('MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@'));
+    expect(posterSrcSet('https://m.media-amazon.com/images/M/MV5BOWE4NTc3YmYtNmU2Mi00ZjhkLWE1MTItZmM1M2U1ODU3YjFlXkEyXkFqcGc@._V1_QL75_UY562_CR2,0,380,562_.jpg')).toBe(
+      sized('MV5BOWE4NTc3YmYtNmU2Mi00ZjhkLWE1MTItZmM1M2U1ODU3YjFlXkEyXkFqcGc@'),
     );
   });
 
+  it('reads the older SX300 links the same way', () => {
+    expect(posterSrcSet('https://m.media-amazon.com/images/M/MV5Bx@@._V1_SX300.jpg')).toBe(sized('MV5Bx@@'));
+  });
+
   it('leaves any other link alone', () => {
-    expect(posterSrcSet('https://m.media-amazon.com/images/M/x._V1_UX182_CR0,0,182,268_AL_.jpg')).toBeUndefined();
-    expect(posterSrcSet('https://example.com/poster.jpg')).toBeUndefined();
+    expect(posterSrcSet('https://example.com/poster._V1_SX300.jpg')).toBeUndefined();
+    expect(posterSrcSet('https://m.media-amazon.com/images/M/x.jpg')).toBeUndefined();
+    expect(posterSrcSet('https://m.media-amazon.com/images/M/x._V1_SX300.jpg?x=1')).toBeUndefined();
+    expect(posterSrcSet('https://m.media-amazon.com/images/I/x._V1_SX300.jpg')).toBeUndefined();
   });
 });
 
