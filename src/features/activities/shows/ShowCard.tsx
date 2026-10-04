@@ -179,7 +179,9 @@ function ShowCardView({ show, revealed }: { show: Show; revealed?: number }): JS
     if (revealed === undefined) return undefined;
     setOpen(true);
     setFlash(true);
-    card.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    // The CSS rule for reduced motion does not reach a scroll asked for from script.
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    card.current?.scrollIntoView?.({ block: 'center', behavior: still ? 'auto' : 'smooth' });
     title.current?.focus({ preventScroll: true });
     const timer = setTimeout(() => setFlash(false), 1600);
     return () => clearTimeout(timer);
