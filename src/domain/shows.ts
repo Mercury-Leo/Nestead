@@ -6,7 +6,11 @@ import type { NewRow, Show, ShowKind, ShowStatus } from './types';
  * list works on what was saved when each show was added.
  */
 
-export const SHOW_STATUSES: readonly ShowStatus[] = ['to-watch', 'watching', 'watched'];
+/** Every status, in the order the filters list them. */
+export const SHOW_STATUSES: readonly ShowStatus[] = ['to-watch', 'watching', 'watched', 'dropped'];
+
+/** What the status badge cycles through. Dropped is set on purpose (Drop it), not by cycling past Watched. */
+const CYCLE: readonly ShowStatus[] = ['to-watch', 'watching', 'watched'];
 
 export type StatusFilter = 'all' | ShowStatus;
 export type KindFilter = 'all' | ShowKind;
@@ -37,6 +41,7 @@ export function parseShowView(raw: unknown): ShowView {
 export interface ShowFilter {
   /** Matched case-insensitively against the title. */
   query: string;
+  /** `all` is every show the family still means to watch or has: dropped ones only show under `dropped`. */
   status: StatusFilter;
   kind: KindFilter;
 }
@@ -45,7 +50,7 @@ export function filterShows(shows: readonly Show[], filter: ShowFilter): Show[] 
   const needle = filter.query.trim().toLocaleLowerCase();
   return shows.filter(
     (show) =>
-      (filter.status === 'all' || show.status === filter.status) &&
+      (filter.status === 'all' ? show.status !== 'dropped' : show.status === filter.status) &&
       (filter.kind === 'all' || show.kind === filter.kind) &&
       (needle === '' || show.title.toLocaleLowerCase().includes(needle)),
   );
@@ -102,9 +107,10 @@ export function shownCount(total: number, pages: number, include = -1): number {
   return Math.min(total, Math.max(pages, reach) * SHOWS_PAGE);
 }
 
-/** To watch, then Watching, then Watched, then round again. */
+/** To watch, then Watching, then Watched, then round again. A dropped show comes back as To watch. */
 export function nextStatus(status: ShowStatus): ShowStatus {
-  return SHOW_STATUSES[(SHOW_STATUSES.indexOf(status) + 1) % SHOW_STATUSES.length] as ShowStatus;
+  if (status === 'dropped') return 'to-watch';
+  return CYCLE[(CYCLE.indexOf(status) + 1) % CYCLE.length] as ShowStatus;
 }
 
 /**

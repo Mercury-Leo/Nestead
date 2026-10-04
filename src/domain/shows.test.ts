@@ -46,6 +46,15 @@ describe('filterShows', () => {
     expect(filterShows(all, { query: '', status: 'all', kind: 'all' })).toEqual(all);
   });
 
+  it('keeps dropped shows out of All, and shows them under Dropped', () => {
+    const dropped = show('Endless Saga', { kind: 'series', status: 'dropped' });
+    const withDropped = [...all, dropped];
+    expect(filterShows(withDropped, { query: '', status: 'all', kind: 'all' })).toEqual(all);
+    expect(filterShows(withDropped, { query: 'saga', status: 'all', kind: 'all' })).toEqual([]);
+    expect(filterShows(withDropped, { query: '', status: 'dropped', kind: 'all' })).toEqual([dropped]);
+    expect(filterShows(withDropped, { query: '', status: 'dropped', kind: 'movie' })).toEqual([]);
+  });
+
   it('narrows by status', () => {
     expect(titles(filterShows(all, { query: '', status: 'to-watch', kind: 'all' }))).toEqual(['Inception', 'Untitled Sequel']);
     expect(titles(filterShows(all, { query: '', status: 'watching', kind: 'all' }))).toEqual(['Breaking Bad']);
@@ -116,6 +125,7 @@ describe('shownCount', () => {
 describe('parseShowView', () => {
   it('keeps a valid stored view', () => {
     expect(parseShowView({ status: 'watched', kind: 'series', sort: 'rating' })).toEqual({ status: 'watched', kind: 'series', sort: 'rating' });
+    expect(parseShowView({ status: 'dropped', kind: 'all', sort: 'added' }).status).toBe('dropped');
   });
 
   it('falls back field by field for junk', () => {
@@ -127,10 +137,20 @@ describe('parseShowView', () => {
 });
 
 describe('the status cycle', () => {
-  it('goes To watch, Watching, Watched and round again', () => {
+  it('goes To watch, Watching, Watched and round again, never into Dropped', () => {
     expect(nextStatus('to-watch')).toBe('watching');
     expect(nextStatus('watching')).toBe('watched');
     expect(nextStatus('watched')).toBe('to-watch');
+  });
+
+  it('brings a dropped show back as To watch', () => {
+    expect(nextStatus('dropped')).toBe('to-watch');
+  });
+
+  it('clears watchedAt when a show is dropped', () => {
+    const dropped = statusPatch('dropped', '2026-10-04T21:00:00.000Z');
+    expect(dropped).toEqual({ status: 'dropped', watchedAt: undefined });
+    expect('watchedAt' in dropped).toBe(true);
   });
 
   it('sets watchedAt on Watched and clears it otherwise', () => {

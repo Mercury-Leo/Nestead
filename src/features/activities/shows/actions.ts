@@ -27,9 +27,14 @@ export async function addShow(store: DataStore, shows: readonly Show[], details:
   }
 }
 
-/** To watch, Watching, Watched, and round again; watchedAt follows. */
+/** To watch, Watching, Watched, and round again; watchedAt follows. A dropped show comes back as To watch. */
 export async function cycleStatus(store: DataStore, show: Show): Promise<Show> {
   return store.shows.update(show.id, statusPatch(nextStatus(show.status), new Date().toISOString()));
+}
+
+/** The family decided not to watch it. It leaves All for the Dropped filter; its badge brings it back. */
+export async function dropShow(store: DataStore, show: Show): Promise<Show> {
+  return store.shows.update(show.id, statusPatch('dropped', new Date().toISOString()));
 }
 
 /**

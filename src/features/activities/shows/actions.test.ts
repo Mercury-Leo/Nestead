@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLocalStore } from '../../../data/local/localStore';
 import type { DataStore } from '../../../data/types';
-import { addShow, cycleStatus, refreshShow } from './actions';
+import { addShow, cycleStatus, dropShow, refreshShow } from './actions';
 import type { lookupShow } from './omdb';
 
 const INCEPTION = { imdbId: 'tt1375666', kind: 'movie' as const, title: 'Inception', year: 2010, runtimeMin: 148, imdbRating: 8.8 };
@@ -39,6 +39,19 @@ describe('cycleStatus', () => {
     show = await cycleStatus(store, show);
     expect(show.status).toBe('to-watch');
     expect(show.watchedAt).toBeUndefined();
+  });
+});
+
+describe('dropShow', () => {
+  it('drops a watched show, clearing watchedAt, and its badge brings it back as To watch', async () => {
+    const { show } = await addShow(store, [], INCEPTION, 'm1');
+    const watched = await cycleStatus(store, await cycleStatus(store, show));
+    expect(watched.watchedAt).toBeDefined();
+    const dropped = await dropShow(store, watched);
+    expect(dropped.status).toBe('dropped');
+    expect(dropped.watchedAt).toBeUndefined();
+    const back = await cycleStatus(store, dropped);
+    expect(back.status).toBe('to-watch');
   });
 });
 

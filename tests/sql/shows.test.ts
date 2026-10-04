@@ -81,6 +81,11 @@ describe('shows', () => {
       `insert into shows (family_id, imdb_id, kind, title) values ($1, 'tt0000005', 'movie', 'X')`,
     ];
     for (const sql of bad) await expect(as(USER_A, sql, [FAMILY_A]), sql).rejects.toThrow();
+
+    // The four statuses the app writes.
+    for (const status of ['watching', 'watched', 'dropped', 'to-watch']) {
+      await expect(as(USER_A, `update shows set status = $1 where imdb_id = 'tt1375666' returning status`, [status])).resolves.toEqual([{ status }]);
+    }
   });
 
   it('moves updated_at on every update and leaves created_at', async () => {

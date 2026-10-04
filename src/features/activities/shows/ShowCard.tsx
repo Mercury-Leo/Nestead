@@ -1,5 +1,5 @@
 import { memo, useEffect, useId, useRef, useState } from 'react';
-import { Bookmark, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Trash2 } from 'lucide-react';
+import { Ban, Bookmark, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Trash2 } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { Button, cx } from '../../../components/ui';
@@ -7,7 +7,7 @@ import { nextStatus } from '../../../domain/shows';
 import type { OmdbDetails } from '../../../domain/shows';
 import type { Show, ShowStatus } from '../../../domain/types';
 import { formatDate, formatNumber } from '../../../i18n';
-import { cycleStatus, refreshShow, removeShow } from './actions';
+import { cycleStatus, dropShow, refreshShow, removeShow } from './actions';
 import { STATUS_KEY, imdbUrl, kindLabel, statusLabel } from './labels';
 import type { ShowsFailure } from './omdb';
 import { Poster } from './Poster';
@@ -21,7 +21,7 @@ import s from './ShowCard.module.css';
  * rendered as React text only.
  */
 
-const STATUS_ICON = { 'to-watch': Bookmark, watching: CirclePlay, watched: CircleCheck } as const;
+const STATUS_ICON = { 'to-watch': Bookmark, watching: CirclePlay, watched: CircleCheck, dropped: Ban } as const;
 
 export function failureKey(failure: ShowsFailure): 'unavailable' | 'limit' | 'notFound' | 'failed' {
   return failure === 'not-found' ? 'notFound' : failure;
@@ -140,6 +140,12 @@ function Details({ show }: { show: Show }): JSX.Element {
           <Button variant="ghost" icon={RefreshCw} disabled={refreshing} onClick={() => void refresh()}>
             {refreshing ? t('shows.card.refreshing') : t('shows.card.refresh')}
           </Button>
+          {/* A dropped show comes back through its badge, so it has no button here. */}
+          {show.status !== 'dropped' && (
+            <Button variant="ghost" icon={Ban} onClick={() => void dropShow(store, show).catch(() => undefined)}>
+              {t('shows.card.drop')}
+            </Button>
+          )}
           <Button variant="ghost" icon={Trash2} onClick={() => setConfirmDelete(true)}>
             {t('shows.card.delete')}
           </Button>

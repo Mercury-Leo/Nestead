@@ -923,12 +923,14 @@
     "statusCount": {
       "toWatch": "To watch {{count, number}}",
       "watching": "Watching {{count, number}}",
-      "watched": "Watched {{count, number}}"
+      "watched": "Watched {{count, number}}",
+      "dropped": "Dropped {{count, number}}"
     },
     "status": {
       "toWatch": "To watch",
       "watching": "Watching",
-      "watched": "Watched"
+      "watched": "Watched",
+      "dropped": "Dropped"
     },
     "kinds": {
       "all": "All",
@@ -968,6 +970,7 @@
       "fetched": "Details from OMDb, {{date}}",
       "refresh": "Refresh from OMDb",
       "refreshing": "Refreshing…",
+      "drop": "Drop it",
       "unchanged": "The saved details are unchanged.",
       "delete": "Delete show",
       "deleteQuestion": "Delete “<item/>” for everyone in the family?"

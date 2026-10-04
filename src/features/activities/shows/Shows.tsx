@@ -60,9 +60,9 @@ export function Shows(): JSX.Element {
   // interrupted, since a keystroke can build up to a page of new cards.
   const listQuery = useDeferredValue(query);
   const shown = sortShows(filterShows(rows, { query: listQuery, status: view.status, kind: view.kind }), view.sort, collator.compare);
-  // Counts follow the kind filter, so "To watch 3" means three of what is listed.
-  const ofKind = filterShows(rows, { query: '', status: 'all', kind: view.kind });
-  const count = (status: StatusFilter): number => (status === 'all' ? ofKind.length : ofKind.filter((row) => row.status === status).length);
+  // Counts follow the kind filter, so "To watch 3" means three of what is listed; All leaves dropped shows out, as its list does.
+  const ofKind = rows.filter((row) => view.kind === 'all' || row.kind === view.kind);
+  const count = (status: StatusFilter): number => ofKind.filter((row) => (status === 'all' ? row.status !== 'dropped' : row.status === status)).length;
 
   // Pages asked for, for this search, filter and sort only: any change, back
   // to an earlier one too, starts from one page. `reveal` is a show that must
@@ -89,9 +89,14 @@ export function Shows(): JSX.Element {
   const reveal = (show: Show): void => {
     setAdding(false);
     const hidden = filterShows([show], { query, status: view.status, kind: view.kind }).length === 0;
-    if (hidden) showAll();
+    // Clearing the search and filters shows it, except a dropped show, which only the Dropped filter lists.
+    const status: StatusFilter = show.status === 'dropped' ? 'dropped' : 'all';
+    if (hidden) {
+      setQuery('');
+      set({ status, kind: 'all' });
+    }
     // Keyed to the list it will show in, so clearing the filters does not drop it.
-    setPaging(hidden ? { key: keyOf('', { ...view, status: 'all', kind: 'all' }), pages: 1, reveal: show.id } : { ...current, reveal: show.id });
+    setPaging(hidden ? { key: keyOf('', { ...view, status, kind: 'all' }), pages: 1, reveal: show.id } : { ...current, reveal: show.id });
     setRevealed({ id: show.id, at: Date.now() });
   };
 

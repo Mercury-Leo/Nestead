@@ -14,14 +14,14 @@ const alex: Member = { id: 'm1', familyId: 'f-shows', name: 'Alex', color: '#4f8
 let store: DataStore;
 let unmount: (() => void) | null = null;
 
-async function addShows(count: number): Promise<void> {
+async function addShows(count: number, status: (i: number) => 'to-watch' | 'dropped' = () => 'to-watch'): Promise<void> {
   for (let i = 0; i < count; i += 1) {
     await store.shows.create({
       imdbId: `tt${String(1000000 + i)}`,
       kind: i % 2 === 0 ? 'movie' : 'series',
       title: `Show ${String(i).padStart(3, '0')}`,
       fetchedAt: '2026-10-04T08:00:00.000Z',
-      status: 'to-watch',
+      status: status(i),
     });
   }
 }
@@ -108,5 +108,36 @@ describe('a long list of shows', () => {
     expect(cards(host)).toHaveLength(40);
     expect(host.textContent).not.toContain(i18n.t('shows.showing', { shown: 40, total: 40 }));
     expect(button(host, i18n.t('shows.showMore', { count: 1 }).split(' ')[0] as string)).toBeUndefined();
+  });
+});
+
+describe('dropped shows', () => {
+  it('stay out of All and its count, and wait under Dropped', async () => {
+    // Every third show dropped: 4 of 10.
+    await addShows(10, (i) => (i % 3 === 0 ? 'dropped' : 'to-watch'));
+    const host = await render();
+    expect(cards(host)).toHaveLength(6);
+    expect(button(host, i18n.t('shows.all', { count: 6 }))).toBeDefined();
+    const dropped = button(host, i18n.t('shows.statusCount.dropped', { count: 4 }));
+    expect(dropped).toBeDefined();
+
+    await act(async () => dropped?.click());
+    expect(cards(host)).toHaveLength(4);
+    expect(cards(host).every((card) => card.textContent?.includes(i18n.t('shows.status.dropped')))).toBe(true);
+  });
+
+  it('leave All when someone drops one, from its details', async () => {
+    await addShows(3);
+    const host = await render();
+    const first = cards(host)[0] as HTMLElement;
+    await act(async () => first.querySelector<HTMLButtonElement>('button[aria-expanded]')?.click());
+    await act(async () => button(first, i18n.t('shows.card.drop'))?.click());
+    for (let i = 0; i < 20 && cards(host).length === 3; i += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+    expect(cards(host)).toHaveLength(2);
+    expect(button(host, i18n.t('shows.statusCount.dropped', { count: 1 }))).toBeDefined();
   });
 });

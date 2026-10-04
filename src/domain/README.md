@@ -6,7 +6,7 @@ Pure TypeScript shared by every layer: the entity types, board ordering, the kit
 | --- | --- |
 | `types.ts` | `Base`, `NewRow`, `Member`, `BoardColumn`, `Task`, the recipe, pantry, diet and list types, `Show`, and `AiStatus`. |
 | `position.ts` (+ `position.test.ts`) | `positionBetween()`, `comparePosition()`, `POSITION_STEP` (1000). |
-| `shows.ts` (+ `shows.test.ts`) | `filterShows()`, `sortShows()`, `parseShowView()` (the stored filter and sort), `nextStatus()`, `statusPatch()`, `refreshPatch()` with `REFRESHED_FIELDS`, `newShow()`, and paging: `SHOWS_PAGE` (60) and `shownCount()`. |
+| `shows.ts` (+ `shows.test.ts`) | `SHOW_STATUSES` (to watch, watching, watched, dropped), `filterShows()` (All leaves dropped shows out), `sortShows()`, `parseShowView()` (the stored filter and sort), `nextStatus()` (cycles the first three; dropped comes back as to watch), `statusPatch()`, `refreshPatch()` with `REFRESHED_FIELDS`, `newShow()`, and paging: `SHOWS_PAGE` (60) and `shownCount()`. |
 | `kitchen/catalog.ts` | `CATALOG`: each ingredient's section, diet flags, calories, carbs and unit weights, the water dry grains take up, which lines are cooking water; `catalogItem()`. |
 | `kitchen/normalize.ts` | `normalizeText()`, `singularize()`, `canonicalId()`, `exactCatalogId()`, `containsPhrase()`. |
 | `kitchen/hebrewNames.ts` (+ `hebrewNames.test.ts`) | `HEBREW_NAMES`: the Hebrew names of catalog items, by id, for matching. |

@@ -281,7 +281,8 @@ export interface ListGroup extends Base {
 
 export type ShowKind = 'movie' | 'series';
 
-export type ShowStatus = 'to-watch' | 'watching' | 'watched';
+/** `dropped`: the family decided not to watch it. */
+export type ShowStatus = 'to-watch' | 'watching' | 'watched' | 'dropped';
 
 /**
  * A movie or series on the family's list. OMDb's details are saved when it is

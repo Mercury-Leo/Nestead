@@ -227,9 +227,10 @@ export function runDataStoreContract(
       expect(watched.watchedAt).toBe(watchedAt);
       expect(watched.fetchedAt).toBe(fetchedAt);
 
-      const again = await store.shows.update(show.id, { status: 'to-watch', watchedAt: undefined });
+      // Dropped as well: the fourth status (a backend with a check on status must allow it).
+      const again = await store.shows.update(show.id, { status: 'dropped', watchedAt: undefined });
       expect(again.watchedAt).toBeUndefined();
-      expect((await store.shows.list())[0]?.status).toBe('to-watch');
+      expect((await store.shows.list())[0]?.status).toBe('dropped');
     });
 
     it("two families never see each other's rows", async () => {

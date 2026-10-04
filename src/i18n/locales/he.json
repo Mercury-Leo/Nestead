@@ -960,12 +960,14 @@
     "statusCount": {
       "toWatch": "לצפייה {{count, number}}",
       "watching": "בצפייה {{count, number}}",
-      "watched": "נצפו {{count, number}}"
+      "watched": "נצפו {{count, number}}",
+      "dropped": "ויתרנו {{count, number}}"
     },
     "status": {
       "toWatch": "לצפייה",
       "watching": "בצפייה",
-      "watched": "נצפה"
+      "watched": "נצפה",
+      "dropped": "ויתרנו"
     },
     "kinds": {
       "all": "הכול",
@@ -1006,6 +1008,7 @@
       "fetched": "הפרטים מ-OMDb, {{date}}",
       "refresh": "רענון מ-OMDb",
       "refreshing": "ברענון…",
+      "drop": "לוותר עליו",
       "unchanged": "הפרטים השמורים לא השתנו.",
       "delete": "מחיקה מהרשימה",
       "deleteQuestion": "למחוק את \"<item/>\" לכל בני המשפחה?"

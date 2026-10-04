@@ -2,7 +2,7 @@ import type { TFunction } from 'i18next';
 import type { ShowKind, ShowStatus } from '../../../domain/types';
 
 /** Stored statuses are kebab-case; translation keys are camelCase. */
-export const STATUS_KEY = { 'to-watch': 'toWatch', watching: 'watching', watched: 'watched' } as const satisfies Record<ShowStatus, string>;
+export const STATUS_KEY = { 'to-watch': 'toWatch', watching: 'watching', watched: 'watched', dropped: 'dropped' } as const satisfies Record<ShowStatus, string>;
 
 export function statusLabel(t: TFunction, status: ShowStatus): string {
   return t(`shows.status.${STATUS_KEY[status]}`);

@@ -787,8 +787,9 @@ create table shows (
   total_seasons integer     check (total_seasons is null or total_seasons > 0),
   imdb_rating   real        check (imdb_rating is null or imdb_rating between 0 and 10),
   fetched_at    timestamptz not null,
+  -- dropped: the family decided not to watch it.
   status        text        not null default 'to-watch'
-                            check (status in ('to-watch', 'watching', 'watched')),
+                            check (status in ('to-watch', 'watching', 'watched', 'dropped')),
   -- Set when the status becomes watched, cleared when it leaves it.
   watched_at    timestamptz,
   created_by    uuid        references members (id) on delete set null,

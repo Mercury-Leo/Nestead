@@ -13,6 +13,7 @@ The Postgres schema for the real backend, the migrations for projects that alrea
 | `migrations/20260927180000_list_group_order.sql` | `list_groups.position`, `builtin` and one row per built-in section. |
 | `migrations/20261003120000_family_ai.sql` | AI reading: `family_ai_settings`, `ai_usage`, `ai_usage_days` and their five functions. |
 | `migrations/20261004120000_shows.sql` | Activities: the `shows` table (movies and series from OMDb), its policy, trigger and realtime. |
+| `migrations/20261004150000_shows_dropped.sql` | `shows.status` may also be `dropped` (`shows_status_check` replaced). |
 | `config.toml` | Declares only `project_id`, the site URL and the `/join/**` redirect URL. |
 | `.gitignore` | Ignores the CLI's `.branches` and `.temp`. |
 
@@ -21,7 +22,7 @@ The Postgres schema for the real backend, the migrations for projects that alrea
 - Every family table has `family_id` and a policy comparing it with `current_family_id()`, a `security definer` function that returns NULL, and so denies everything, for a user in no family (`schema.sql`).
 - `create_family`, `join_family`, `rotate_join_code` and `invite_family_name` are `security definer` RPCs, since RLS makes those steps impossible from the client (`schema.sql`, `../src/data/supabase/supabaseAccount.ts`).
 - Realtime publishes `members`, `board_columns`, `tasks`, the five kitchen tables and `shows`, not `families` or the AI tables (`schema.sql`).
-- `shows` keeps OMDb's details as they were read (`fetched_at`), so the list never calls OMDb; `poster_url` is OMDb's link to Amazon's image servers, and no poster image is stored here or in Storage. One row per title per family (`shows_one_per_title`, whose index also serves the family's list); `status` defaults to `to-watch` (`schema.sql`).
+- `shows` keeps OMDb's details as they were read (`fetched_at`), so the list never calls OMDb; `poster_url` is OMDb's link to Amazon's image servers, and no poster image is stored here or in Storage. One row per title per family (`shows_one_per_title`, whose index also serves the family's list); `status` is `to-watch` (the default), `watching`, `watched` or `dropped` (`schema.sql`).
 - The AI tables have RLS with no policies and revoked privileges; only `family_ai_status`, `store_family_ai_key`, `clear_family_ai_key`, `set_family_ai_model` and `claim_ai_request` (security definer, `current_family_id()`-scoped) touch them. The key is ciphertext made by the server. `claim_ai_request()` serialises free claims on today's `ai_usage_days` row; the day is UTC (`schema.sql`, `../server/ai/store.ts`).
 - Photos live in the private `recipe-photos` bucket, one folder per family id, enforced by storage policies (`schema.sql`).
 
