@@ -7,8 +7,9 @@ The signed-in app's frame: the shell around every screen, the sidebar and tab ba
 | `App.tsx` | Wraps `Shell` in `KitchenProvider`, so kitchen rows are read once for every screen and the nav. |
 | `Shell.tsx` (+ `Shell.module.css`, also used by `Nav.tsx`) | Sidebar or tab bar, `PagePills` above the page wherever the tab bar shows, the routed page inside `ErrorBoundary`, and `TimerHost`. |
 | `sections.ts` | Every section and its pages (`SECTIONS`), `locate()` for which is lit, and the pin rules (`resolvePins()`, `togglePin()`). No React. |
-| `Nav.tsx` | `Sidebar`, `TabBar` with its More sheet, and `PagePills`, all drawn from `SECTIONS`; counts and the diet-rules link. |
-| `AppRoutes.tsx` | Every route; kitchen screens and `FamilyPage` load as `lazy()` chunks. |
+| `Nav.tsx` | `Sidebar`, `TabBar` with its More sheet, and `PagePills`, all drawn from `SECTIONS`; counts and the diet-rules link; every link warms its page (`useWarm()`). |
+| `warm.ts` (+ `warm.test.ts`) | `warmPage(path, store)`: what a page needs that sign-in did not start, begun as someone heads for its link. Today only Shows: its chunk (`loadShows()`) and its collection (`preloadCollection()`). |
+| `AppRoutes.tsx` | Every route; kitchen screens, Shows and `FamilyPage` load as `lazy()` chunks. `ShowsRoute` renders Shows directly when its chunk has already arrived. |
 
 ## How it works
 - `main.tsx` renders `LocaleProvider` → `ThemeProvider` → `BrowserRouter` → `SessionProvider` → `App`, so nothing here renders before a session exists.
@@ -18,10 +19,11 @@ The signed-in app's frame: the shell around every screen, the sidebar and tab ba
 - Phone: the bar shows the pinned sections in list order, then More. More opens a `Sheet` of every section; Edit bar pins and unpins, at most `MAX_PINS` (4) and at least one, refused rather than swapped. Pins are a per-family device preference, `navPins`. More is lit in a section that isn't pinned.
 - A section with more than one page shows its pages as pills at the top of `<main>` on phones; desktop hides them, since the sidebar lists them.
 - Desktop: the sidebar lists every section; the one you're in opens to its pages, with counts. Sections that can't be pinned (Family) sit at the foot. The diet-rules link shows under Larder's pages while you're in the Larder.
+- Warming (`warm.ts`): every nav link (sidebar, tab bar, More tiles) calls `warmPage()` on `pointerenter`, `pointerdown` and `focus`. For `/shows` that starts the page's chunk and its first read, so a hover (desktop) or the press before a tap's click (about 110 ms on a phone) is spent loading; measured in [PERFORMANCE.md](../../docs/PERFORMANCE.md#shows-warmed-from-its-link-2026-10-05-branch-showsprovider-and-preload). Other paths have nothing to warm. Nothing warms until a pointer, a press or focus reaches a link.
 - Routes and screens are listed in the [root README](../../README.md#the-kitchen-larder); why screens load lazily is in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#the-kitchen-larder).
 
 ## Connections
-- Uses: `../auth/session.tsx`, `../data/useCollection.ts`, `../data/local/localStore.ts` (preference helpers, for `navPins`), `../components/` (Brand, ErrorBoundary, ui, theme), every screen in `../features/`, `../features/larder/KitchenContext.tsx`, `../features/larder/timers/TimerHost.tsx`, `../i18n/`.
+- Uses: `../auth/session.tsx`, `../data/useCollection.ts` (rows, and `preloadCollection()` for warming), `../data/local/localStore.ts` (preference helpers, for `navPins`), `../components/` (Brand, ErrorBoundary, ui, theme), every screen in `../features/`, `../features/larder/KitchenContext.tsx`, `../features/larder/timers/TimerHost.tsx`, `../i18n/`.
 - Used by: `../main.tsx`.
 
 ## Adding a section
@@ -37,3 +39,5 @@ The signed-in app's frame: the shell around every screen, the sidebar and tab ba
 - `lazy()` needs a default export: named exports are wrapped with `.then((m) => ({ default: m.X }))`; `CookMode`, `AddRecipe` and `ImportRecipe` are default exports (`AppRoutes.tsx`).
 - Nav links are `<Link>` with `aria-current` set by hand: `NavLink` would also mark a section header as the current page. Pages get `"page"`; a phone tab or More gets `"true"`.
 - A route no page claims fails `sections.test.ts`.
+- A warmed page loads its chunk through the same function as its route (`loadShows()` in `warm.ts`), so the two share one download. `ShowsRoute` picks the direct render or `lazy()` once per visit (`useState`): switching between them on a later render would remount the page and lose its state.
+- To warm another page, add its path to `WARMERS` in `warm.ts`. Collections `preloadStore()` reads at sign-in need nothing; warming one only holds it open for the cache's linger.

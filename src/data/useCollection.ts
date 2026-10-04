@@ -21,3 +21,12 @@ export function useCollectionState<T extends Base>(collection: Collection<T>): R
 export function useCollection<T extends Base>(collection: Collection<T>): T[] {
   return useCollectionState(collection).rows;
 }
+
+/**
+ * Starts reading a collection for a screen that is about to open, so its rows
+ * can be there when it mounts. If nothing watches it, the cache closes it after
+ * its linger (cache.ts); calling again while it is open costs nothing.
+ */
+export function preloadCollection<T extends Base>(collection: Collection<T>): void {
+  cacheOf(collection).preload();
+}

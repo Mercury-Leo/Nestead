@@ -1,9 +1,10 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BoardPage } from '../features/board/BoardPage';
 import { useKitchen } from '../features/larder/KitchenContext';
+import { loadShows, loadedShows } from './warm';
 
 // The board is home, so kitchen screens load when first visited, not up front.
 const Library = lazy(() => import('../features/larder/library/Library').then((m) => ({ default: m.Library })));
@@ -16,11 +17,23 @@ const CookMode = lazy(() => import('../features/larder/cook/CookMode'));
 const AddRecipe = lazy(() => import('../features/larder/add/AddRecipe'));
 const ImportRecipe = lazy(() => import('../features/larder/import/ImportRecipe'));
 const FamilyPage = lazy(() => import('../features/family/FamilyPage').then((m) => ({ default: m.FamilyPage })));
-const Shows = lazy(() => import('../features/activities/shows/Shows').then((m) => ({ default: m.Shows })));
+// Shows also starts loading as someone heads for its link (warm.ts).
+const LazyShows = lazy(() => loadShows().then((m) => ({ default: m.Shows })));
 
 function Loading(): JSX.Element {
   const { t } = useTranslation();
   return <p className="centred">{t('common.loading')}</p>;
+}
+
+/**
+ * Shows, rendered at once when its code has already arrived (warmed from its
+ * link): lazy() suspends on its first render even then, which paints Loading
+ * for a frame. Chosen once per visit, so a later render never swaps the
+ * component and resets the page.
+ */
+function ShowsRoute(): JSX.Element {
+  const [loaded] = useState(loadedShows);
+  return loaded === undefined ? <LazyShows /> : <loaded.Shows />;
 }
 
 /** Every screen, by path. */
@@ -43,7 +56,7 @@ export function AppRoutes(): JSX.Element {
       <Route path="/lists" element={page(<ShoppingList />)} />
       <Route path="/profile" element={page(<DietProfilePage />)} />
       {/* Not kitchen screens, so they do not wait for the kitchen's first read. Shows waits for its own. */}
-      <Route path="/shows" element={<Suspense fallback={<Loading />}><Shows /></Suspense>} />
+      <Route path="/shows" element={<Suspense fallback={<Loading />}><ShowsRoute /></Suspense>} />
       <Route path="/family" element={<Suspense fallback={<Loading />}><FamilyPage /></Suspense>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

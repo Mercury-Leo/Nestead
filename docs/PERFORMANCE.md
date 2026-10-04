@@ -236,9 +236,45 @@ One commit per fix, each measured against the commit before it (heavy family).
 
 ### What is left
 - **Paging has a cost people can see:** the browser's find-in-page only finds cards already built, so a show past the first 60 needs the name search or Show more. A show just added, or one opened from Add show, is always built.
-- **On Supabase, the first open waits for one read of the `shows` table.** `preloadStore()` leaves `shows` out, on purpose, so sign-in reads no more than before. A whole-table read took 88–114 ms from here in the baseline above, and a phone pays more. The browser harness cannot sign in, and `db.perf.ts` writes to production, so this was not measured.
+- **On Supabase, the first open waits for one read of the `shows` table.** `preloadStore()` leaves `shows` out, on purpose, so sign-in reads no more than before. Since 2026-10-05 the read starts when someone heads for the Activities link: see [Shows, warmed from its link](#shows-warmed-from-its-link-2026-10-05-branch-showsprovider-and-preload).
 
 ### Waiting on your OK
-Done since: rendering a long list in pages (`0868a02`, `606d5bc`; measured above as "paged").
+Done since: rendering a long list in pages (`0868a02`, `606d5bc`; measured above as "paged"), and item 1, warming from the link ([below](#shows-warmed-from-its-link-2026-10-05-branch-showsprovider-and-preload)).
 
-1. **Read `shows` before the page opens.** Start the read when the Activities tab is pressed or hovered (`cacheOf(store.shows).preload()`), not at sign-in. Expected gain: the first open on Supabase up to one round trip sooner, about 100–250 ms on a phone. Risk: low; a press that never reaches the page costs one read. To measure it I would sign the headless browser in as test user A, or run `db.perf.ts`, which writes to production: say if I may. Files: `src/app/Nav.tsx`, `src/features/activities/shows/`.
+1. **(Done.) Read `shows` before the page opens.** Start the read when the Activities tab is pressed or hovered (`cacheOf(store.shows).preload()`), not at sign-in. Expected gain: the first open on Supabase up to one round trip sooner, about 100–250 ms on a phone. Risk: low; a press that never reaches the page costs one read. To measure it I would sign the headless browser in as test user A, or run `db.perf.ts`, which writes to production: say if I may. Files: `src/app/Nav.tsx`, `src/features/activities/shows/`.
+
+## Shows, warmed from its link (2026-10-05, branch `shows/provider-and-preload`)
+A pointer over the Activities link, a press on it, or focus now starts the Shows page's chunk and its first read of `shows` (`src/app/warm.ts`, called from every nav link in `Nav.tsx`). Before is `4f2c563`; after is the commit that adds `warm.ts`.
+
+**Method.** `warm.mjs` (new) loads the board afresh, waits a second, and opens Shows the way a person does: a tap on the phone's tab bar (finger down 90 ms before it lifts; the press comes about 110 ms before the click), or a desktop pointer resting on the sidebar link 250 ms before a click. It times the click to the first frame with cards, and notes whether Loading showed in between. "First visit" has a slow phone's network (150 ms, 1.6 Mbps) and no HTTP cache, as after a deploy; "cached" has the chunk in the HTTP cache and no network throttling. Demo build, heavy family (300 shows), CPU 4× slower, 7 runs after one discarded. The demo backend reads from localStorage, so these numbers show the chunk's part only; the read's part is timed against the live project below.
+
+| Opening Shows by its link | Before | After | Loading shown, before → after |
+| --- | --- | --- | --- |
+| Tap, first visit | 558 (522–684) ms | **449 (432–581) ms** | 7 → 7 of 7 |
+| Tap, cached | 306 (291–319) ms | 314 (292–327) ms | 7 → 7 of 7 |
+| Hover, first visit | 546 (528–580) ms | **373 (303–419) ms** | 7 → 6 of 7 |
+| Hover, cached | 345 (331–365) ms | **295 (277–318) ms** | 7 → **0** of 7 |
+
+A hover hides the chunk's download, and when the chunk is cached, the Loading frame too. A tap's 110 ms covers part of the download; it is not enough for the chunk to finish evaluating at 4× CPU, so Loading still shows for a frame and the cached case is unchanged. Most of the remaining 300 ms is building the first 60 cards, which warming cannot start.
+
+**The read, against the live project.** `showsread.ts` (new) signs in as test user A from Node and times the app's own `store.shows.list()`; it writes nothing. Family A holds no shows, so this is the round trip without a payload:
+
+| Read of `shows` | Time |
+| --- | --- |
+| First after sign-in | 82–84 ms |
+| 10 more, 300 ms apart | 86 (77–90) ms |
+| 6 more, 5 s apart | 105 (85–154) ms |
+
+A family with 300 shows adds their transfer: the demo's 300 are 198 KB of JSON, about 18 KB gzipped, so about 90 ms more on a 1.6 Mbps phone. On Supabase the whole read, about 85–245 ms, used to start only once the page had mounted; it now starts at the press or the hover, so a tap hides about 110 ms of it and a hover usually all of it. Not measured in a signed-in browser.
+
+**Bundle.** First load +216 bytes brotli (`warm.ts` and the link handlers). The Shows chunk is unchanged, 7.5 KB gzip.
+
+### What changed
+| Change | Measured on its own |
+| --- | --- |
+| `warmPage()` on `pointerenter`, `pointerdown` and `focus` of every nav link; for `/shows` it starts the chunk (`loadShows()`) and the read (`preloadCollection(store.shows)`) | Hover, first visit 546 → 381 ms; tap, first visit 558 → 436 ms. Cached: unchanged (tap 306 → 321 ms, hover 345 → 344 ms), Loading still in 7 of 7 |
+| `ShowsRoute` renders the page directly when its chunk has already arrived. `lazy()` suspends on its first render even then, which committed Loading for a frame | Hover, cached 344 → 295 ms, Loading 7 → 0 of 7; the other rows within their spread |
+
+### Risks and limits
+- A pointer crossing the sidebar on its way elsewhere costs one read of `shows` and the 7.5 KB chunk, once; the collection is then held open for the cache's 30 s linger. Nothing warms without a pointer, a press or focus on a link.
+- The production gain is inferred from the read time above, not timed: timing a real open needs the headless browser signed in as test user A.

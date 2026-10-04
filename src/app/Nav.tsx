@@ -14,14 +14,30 @@ import { formatNumber } from '../i18n';
 import { MAX_PINS, PINS_PREFERENCE, SECTIONS, isPinnable, locate, resolvePins, togglePin } from './sections';
 import type { PinRefusal, Section, SectionId, SectionPage } from './sections';
 import s from './Shell.module.css';
+import { warmPage } from './warm';
 
 /**
  * The sidebar on desktop and the tab bar on phones, both drawn from SECTIONS
  * (sections.ts). Links are plain <Link>s with aria-current set here: NavLink
  * would also mark a section header as the current page.
+ *
+ * Every link warms its page (warm.ts) when a pointer comes over it, presses
+ * it, or focus reaches it: on a phone the press comes a moment before the
+ * click, and with a mouse the hover longer still.
  */
 
 type Here = ReturnType<typeof locate>;
+
+type WarmProps = Pick<JSX.IntrinsicElements['a'], 'onPointerEnter' | 'onPointerDown' | 'onFocus'>;
+
+/** Handlers for a link that start loading its page as someone heads for it. */
+function useWarm(): (path: string) => WarmProps {
+  const { store } = useSession();
+  return (path) => {
+    const warm = (): void => warmPage(path, store);
+    return { onPointerEnter: warm, onPointerDown: warm, onFocus: warm };
+  };
+}
 
 /** Live counts by page path, beside pages in the sidebar. */
 function useSectionCounts(): Record<string, number> {
@@ -71,13 +87,14 @@ function DietCard(): JSX.Element {
 /** One section: a single line, or a header that opens to its pages while you're in it. */
 function SidebarSection({ section, here, counts }: { section: Section; here: Here; counts: Record<string, number> }): JSX.Element {
   const { t } = useTranslation();
+  const warm = useWarm();
   const open = here?.section === section;
   const single = section.pages.length === 1;
   const first = section.pages[0];
   const current = open && single;
   return (
     <li>
-      <Link to={first.path} className={cx(s.navItem, current && s.navActive, open && !single && s.navOpen)} aria-current={current ? 'page' : undefined}>
+      <Link to={first.path} className={cx(s.navItem, current && s.navActive, open && !single && s.navOpen)} aria-current={current ? 'page' : undefined} {...warm(first.path)}>
         <section.icon size={20} strokeWidth={2} aria-hidden />
         <span className={s.navLabel}>{t(section.labelKey)}</span>
         {single && <Count value={counts[first.path]} />}
@@ -88,7 +105,7 @@ function SidebarSection({ section, here, counts }: { section: Section; here: Her
             const active = here?.page === page;
             return (
               <li key={page.path}>
-                <Link to={page.path} className={cx(s.navItem, s.subItem, active && s.navActive)} aria-current={active ? 'page' : undefined}>
+                <Link to={page.path} className={cx(s.navItem, s.subItem, active && s.navActive)} aria-current={active ? 'page' : undefined} {...warm(page.path)}>
                   <page.icon size={18} strokeWidth={2} aria-hidden />
                   <span className={s.navLabel}>{t(page.labelKey)}</span>
                   <Count value={counts[page.path]} />
@@ -143,6 +160,7 @@ function usePins(): [SectionId[], (pins: SectionId[]) => void] {
 /** Every section as a tile; Edit bar turns the tiles into pin toggles. */
 function MoreSheet({ open, onClose, pins, onPins }: { open: boolean; onClose: () => void; pins: SectionId[]; onPins: (pins: SectionId[]) => void }): JSX.Element {
   const { t } = useTranslation();
+  const warm = useWarm();
   const [editing, setEditing] = useState(false);
   const [refused, setRefused] = useState<PinRefusal | undefined>(undefined);
 
@@ -190,7 +208,7 @@ function MoreSheet({ open, onClose, pins, onPins }: { open: boolean; onClose: ()
           let tile: JSX.Element;
           if (!editing) {
             tile = (
-              <Link to={section.pages[0].path} className={s.moreTile} onClick={close}>
+              <Link to={section.pages[0].path} className={s.moreTile} onClick={close} {...warm(section.pages[0].path)}>
                 {face}
               </Link>
             );
@@ -218,6 +236,7 @@ export function TabBar(): JSX.Element {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const here = locate(pathname);
+  const warm = useWarm();
   const [pins, setPins] = usePins();
   const [moreOpen, setMoreOpen] = useState(false);
   // In a section that isn't pinned, More stands in for it.
@@ -229,7 +248,13 @@ export function TabBar(): JSX.Element {
         {SECTIONS.filter((section) => pins.includes(section.id)).map((section) => {
           const active = here?.section === section;
           return (
-            <Link key={section.id} to={section.pages[0].path} className={cx(s.tab, active && s.tabActive)} aria-current={active ? 'true' : undefined}>
+            <Link
+              key={section.id}
+              to={section.pages[0].path}
+              className={cx(s.tab, active && s.tabActive)}
+              aria-current={active ? 'true' : undefined}
+              {...warm(section.pages[0].path)}
+            >
               <span className={s.tabIcon}>
                 <section.icon size={22} strokeWidth={2} aria-hidden />
               </span>

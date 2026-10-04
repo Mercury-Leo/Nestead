@@ -10,9 +10,11 @@ Measurements behind [docs/PERFORMANCE.md](../../docs/PERFORMANCE.md): bundle siz
 | `redeploy.mjs` | Builds twice, the second time with a one-attribute change to the board page, and reports which files an app-only deploy makes every device download again. |
 | `interact.mjs` | The open demo build with a heavy family: opening screens, ticking list items, typing a search, dragging a task, memory over 60 screens. |
 | `shows.mjs` | The Shows page in the demo build: opening it, typing a name, cycling a status, a card's toggle, a status filter, Show more (when the list has more than a page), and the page's element count. |
+| `warm.mjs` | Opening Shows by its link, the first time in a page load: a phone tap and a desktop hover, on a first visit and with the chunk cached; click to cards, and whether Loading showed. Run it on two builds to compare. |
 | `profile.mjs` | A CPU profile of one screen's load (or, with `--drag`, of a task drag), summed by function. Use an unminified build (`--minify false`) to read names. |
 | `demodata.ts` | Writes the demo backend's localStorage for a typical and a heavy family (run with `npx vite-node`). |
 | `db.perf.ts` | Database timings against the live project as test user A, through the app's own store, cache, actions and startup steps. |
+| `showsread.ts` | Read only: the time of the Shows page's first read against the live project, as test user A, through the app's store (run with `npx vite-node`). |
 | `fixtures.ts` | The rows both the demo data and the database runs use; shows (`showRows()`) are in the demo data only. |
 | `net.ts` | Counts and times every request the Supabase clients make, per client. |
 | `stats.ts` | Median and min–max of repeated runs. |
@@ -29,6 +31,8 @@ node scripts/perf/pageload.mjs <scratch>/prod prod --ready "form input[type=emai
 node scripts/perf/pageload.mjs <scratch>/demo demo --data <scratch>/demodata.json --size typical --out <scratch>/page-demo.json
 node scripts/perf/interact.mjs <scratch>/demo --data <scratch>/demodata.json --size heavy --out <scratch>/interact.json
 node scripts/perf/shows.mjs <scratch>/demo --data <scratch>/demodata.json --size heavy --out <scratch>/shows.json
+node scripts/perf/warm.mjs <scratch>/demo --data <scratch>/demodata.json --size heavy --out <scratch>/warm.json
+npx vite-node scripts/perf/showsread.ts -- --env .env.test --runs 10
 node scripts/perf/pageload.mjs <scratch>/demo shows --path /shows --ready "main article" --data <scratch>/demodata.json --size heavy
 node scripts/perf/redeploy.mjs <scratch> production deploy
 node scripts/perf/pageload.mjs <scratch>/deploy-b deploy --ready "form input[type=email]" --after <scratch>/deploy-a
@@ -38,6 +42,7 @@ PERF_OUT=<scratch>/db.json npx vitest run --config scripts/perf/vitest.config.ts
 `db.perf.ts` takes `PERF_RUNS` (default 5), `PERF_SIZES` (`typical,heavy`), `PERF_ONLY` (e.g. `addRecipe,sync`) and `PERF_EXTRA_LATENCY_MS`.
 
 ## Rules & gotchas
+- `showsread.ts` only reads: it signs in, reads test user A's membership and shows, and stops rather than create a family if A has none (`signInTester()` would create one). It takes the path of `.env.test` (`--env`), since a worktree has none of its own.
 - `db.perf.ts` writes to the production Supabase project, where the `.env.test` users live. It stays in test family A, seeds at most a few hundred rows and 30 tiny photos, and deletes everything it made in `afterAll`, then sweeps anything created since it started. Never raise the sizes into a load test.
 - `npm test` with `.env.test` present wipes both test families. If it runs while `db.perf.ts` is measuring, seeded rows vanish mid-run: re-run.
 - `.env.local` sets `VITE_BACKEND=supabase` and Vite loads it in every mode, so `vite build --mode demo` alone builds the Supabase app. Set `VITE_BACKEND=local` in the environment, which wins over `.env` files.

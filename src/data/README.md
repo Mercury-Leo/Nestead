@@ -7,7 +7,7 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 | `types.ts` | `Collection<T>`, `PhotoStore`, `DataStore` (every collection one family owns), and `Account` and `Family` (sign-in, families, AI settings, `openStore()`). |
 | `boundary.test.ts` | Fails if anything outside `supabase/` imports the Supabase SDK or that folder, bar `../auth/session.tsx`. |
 | `cache.ts` (+ `cache.test.ts`) | `CachedCollection`, `withCache()`, `cacheOf()`, `preloadStore()`: one shared copy per collection, writes shown at once. |
-| `useCollection.ts` | `useCollectionState()` (`rows` and `loaded`) and `useCollection()` (rows only). |
+| `useCollection.ts` | `useCollectionState()` (`rows` and `loaded`), `useCollection()` (rows only), and `preloadCollection()`, which starts a collection's read ahead of its screen (`../app/warm.ts`). |
 | `collection.contract.ts` | `runDataStoreContract(name, make, reset?)`: the ten cases every backend must pass. |
 | `local/localStore.ts` (+ `localStore.test.ts`) | localStorage backend, plus `readPreference`/`writePreference` and `readDevicePreference`/`writeDevicePreference`. |
 | `local/localPhotos.ts` | Local `PhotoStore` in IndexedDB (`nestead-photos`). |
@@ -28,7 +28,7 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 - On Supabase, `photos.url()` calls made in the same task are signed in one `createSignedUrls` request once its microtasks have run, and each URL is kept for 55 minutes. A screen of recipe cards costs one request, not one per card (`supabaseStore.ts`).
 - Realtime echoes every insert and update back to the client that made it. `supabaseStore.ts` remembers the version each of its own writes returned and drops an echo carrying exactly that version, since `create()` and `update()` have already notified. A writer re-reads the table once per write, not twice.
 - `loaded` is false until the first read, so a screen can tell "no rows" from "not read yet" (`useCollection.ts`).
-- `preloadStore()` reads the board's and the kitchen's collections at sign-in, not `shows`: the Shows page reads it when first opened, and it lingers like any other (`cache.ts`).
+- `preloadStore()` reads the board's and the kitchen's collections at sign-in, not `shows`: the Shows page reads it when someone heads for its link (`preloadCollection()` from `../app/warm.ts`) or when first opened, and it lingers like any other (`cache.ts`).
 - Local rows are one JSON array per key `nestead:<familyId>:<collection>`; other tabs hear of changes through the `storage` event (`local/localStore.ts`).
 - The guarantees every backend owes are listed in [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#collectiont).
 

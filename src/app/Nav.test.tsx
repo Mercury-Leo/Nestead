@@ -2,7 +2,7 @@ import { act } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { SessionContext } from '../auth/session';
 import type { Session } from '../auth/session';
 import { ThemeProvider } from '../components/theme/theme';
@@ -13,6 +13,10 @@ import { LocaleProvider, i18n } from '../i18n';
 import { PagePills, Sidebar, TabBar } from './Nav';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+/** The pages warmed, in order: what warm.ts would have started loading. */
+const warmed = vi.hoisted((): string[] => []);
+vi.mock('./warm', () => ({ warmPage: (path: string) => warmed.push(path) }));
 
 const alex: Member = { id: 'm-alex', familyId: 'f-test', name: 'Alex', color: '#4f8ef7', createdAt: '', updatedAt: '' };
 
@@ -97,6 +101,7 @@ afterEach(() => {
   unmount?.();
   unmount = null;
   localStorage.clear();
+  warmed.length = 0;
 });
 
 describe('the sidebar', () => {
@@ -226,5 +231,43 @@ describe('the page pills', () => {
       unmount?.();
       unmount = null;
     }
+  });
+});
+
+describe('warming a page', () => {
+  /** Dispatches a DOM event on `element` inside act(), as the browser would. */
+  async function fire(element: Element | undefined, event: Event): Promise<void> {
+    if (element === undefined) throw new Error('no element');
+    await act(async () => {
+      element.dispatchEvent(event);
+    });
+  }
+
+  it('starts on a pointer over a sidebar link, a press on it, or focus', async () => {
+    const host = await render(<Sidebar />, '/');
+    const activities = link(host, i18n.t('nav.activities'));
+    await fire(activities, new PointerEvent('pointerover', { bubbles: true }));
+    expect(warmed).toEqual(['/shows']);
+    await fire(activities, new PointerEvent('pointerdown', { bubbles: true }));
+    await act(async () => activities?.focus());
+    expect(warmed).toEqual(['/shows', '/shows', '/shows']);
+    // A section's own pages warm too, by their own path.
+    await fire(link(host, i18n.t('nav.larder')), new PointerEvent('pointerover', { bubbles: true }));
+    expect(warmed.at(-1)).toBe('/library');
+  });
+
+  it('starts on a press in the tab bar, and on a tile under More', async () => {
+    const host = await render(<TabBar />, '/');
+    await fire(link(bar(host), i18n.t('nav.activities')), new PointerEvent('pointerdown', { bubbles: true }));
+    expect(warmed).toEqual(['/shows']);
+    await click(moreButton(host));
+    await fire(link(document.querySelector('dialog') as HTMLElement, i18n.t('nav.family')), new PointerEvent('pointerover', { bubbles: true }));
+    expect(warmed).toEqual(['/shows', '/family']);
+  });
+
+  it('does not start on its own', async () => {
+    await render(<Sidebar />, '/');
+    await render(<TabBar />, '/shows');
+    expect(warmed).toEqual([]);
   });
 });
