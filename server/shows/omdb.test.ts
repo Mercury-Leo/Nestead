@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { createShowsHandler, omdbProvider, parsePoster, parseRating, parseReleased, parseRuntime, parseYear, present, toDetails, toHits } from '.';
+import { createShowsHandler, omdbProvider, parseGenres, parsePoster, parseRating, parseReleased, parseRuntime, parseYear, present, toDetails, toHits } from '.';
 
 const KEY = 'omdb-test-key';
 const POSTER = 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg';
@@ -107,6 +107,17 @@ describe('normalising OMDb', () => {
     expect(parsePoster('javascript:alert(1)')).toBeUndefined();
   });
 
+  it('reads Genre as a list, each once, at most ten', () => {
+    expect(parseGenres('Action, Comedy, Crime')).toEqual(['Action', 'Comedy', 'Crime']);
+    expect(parseGenres(' Sci-Fi ,, Drama, drama ')).toEqual(['Sci-Fi', 'Drama']);
+    expect(parseGenres('N/A')).toBeUndefined();
+    expect(parseGenres(' , ')).toBeUndefined();
+    expect(parseGenres(undefined)).toBeUndefined();
+    const many = Array.from({ length: 14 }, (_, i) => `Genre ${i}`).join(', ');
+    expect(parseGenres(many)).toHaveLength(10);
+    expect(parseGenres('x'.repeat(60))?.[0]).toHaveLength(40);
+  });
+
   it('turns a movie into ShowDetails', () => {
     expect(toDetails(INCEPTION)).toEqual({
       imdbId: 'tt1375666',
@@ -118,6 +129,7 @@ describe('normalising OMDb', () => {
       year: 2010,
       runtimeMin: 148,
       imdbRating: 8.8,
+      genres: ['Action', 'Adventure', 'Sci-Fi'],
     });
   });
 
@@ -135,6 +147,7 @@ describe('normalising OMDb', () => {
       imdbRating: 9.5,
     });
     expect(details).not.toHaveProperty('posterUrl');
+    expect(details).not.toHaveProperty('genres');
     // A movie never carries seasons, whatever OMDb sends.
     expect(toDetails({ ...INCEPTION, totalSeasons: '3' })).not.toHaveProperty('totalSeasons');
   });

@@ -22,38 +22,104 @@ export const SHOW_SORTS: readonly ShowSort[] = ['added', 'title', 'released', 'r
 export interface ShowView {
   status: StatusFilter;
   kind: KindFilter;
+  /** Genres a show must all have, as stored (in English). Empty: no genre filter. */
+  genres: string[];
   sort: ShowSort;
 }
 
-export const DEFAULT_SHOW_VIEW: ShowView = { status: 'all', kind: 'all', sort: 'added' };
+export const DEFAULT_SHOW_VIEW: ShowView = { status: 'all', kind: 'all', genres: [], sort: 'added' };
+
+/** More genres than a show can have (ten) would match nothing. */
+const MAX_GENRE_FILTER = 10;
 
 /** Rebuilds a view from a stored preference, ignoring anything malformed. */
 export function parseShowView(raw: unknown): ShowView {
   if (typeof raw !== 'object' || raw === null) return DEFAULT_SHOW_VIEW;
-  const { status, kind, sort } = raw as Record<string, unknown>;
+  const { status, kind, genres, sort } = raw as Record<string, unknown>;
   return {
     status: status === 'all' || SHOW_STATUSES.includes(status as ShowStatus) ? (status as StatusFilter) : DEFAULT_SHOW_VIEW.status,
     kind: kind === 'all' || kind === 'movie' || kind === 'series' ? kind : DEFAULT_SHOW_VIEW.kind,
+    genres: Array.isArray(genres)
+      ? [...new Set(genres.filter((genre): genre is string => typeof genre === 'string' && genre.trim() !== ''))].slice(0, MAX_GENRE_FILTER)
+      : DEFAULT_SHOW_VIEW.genres,
     sort: SHOW_SORTS.includes(sort as ShowSort) ? (sort as ShowSort) : DEFAULT_SHOW_VIEW.sort,
   };
 }
 
 export interface ShowFilter {
-  /** Matched case-insensitively against the title. */
+  /**
+   * Words, each found in the title or among the genres, whatever the case:
+   * "action comedy" finds shows with both genres, "batman action" an action
+   * show with Batman in its title. A word finds a genre by the start of one
+   * of its words ("sci" and "fi" find Sci-Fi, "man" never finds Romance), and
+   * a title anywhere in it.
+   */
   query: string;
   /** `all` is every show the family still means to watch or has: dropped ones only show under `dropped`. */
   status: StatusFilter;
   kind: KindFilter;
+  /** Genres a show must all have: Action and Comedy is action comedies. */
+  genres?: readonly string[];
+  /** What else the search finds a genre by, such as its name in the screen's language. */
+  genreName?: (genre: string) => string;
+}
+
+/** Lower case, without spaces or hyphens: "Sci-Fi" is "scifi", so "sci-fi" and "scifi" both find it. */
+function folded(text: string): string {
+  return text.toLocaleLowerCase().replace(/[\s-]+/g, '');
+}
+
+/** What a search word must start: each word of the genre and of its name, and each run together. */
+function genreStarts(genre: string, name: string | undefined): string[] {
+  const starts: string[] = [];
+  for (const text of name === undefined ? [genre] : [genre, name]) {
+    starts.push(...text.toLocaleLowerCase().split(/[\s-]+/), folded(text));
+  }
+  return starts.filter((start) => start !== '');
 }
 
 export function filterShows(shows: readonly Show[], filter: ShowFilter): Show[] {
-  const needle = filter.query.trim().toLocaleLowerCase();
-  return shows.filter(
-    (show) =>
-      (filter.status === 'all' ? show.status !== 'dropped' : show.status === filter.status) &&
-      (filter.kind === 'all' || show.kind === filter.kind) &&
-      (needle === '' || show.title.toLocaleLowerCase().includes(needle)),
-  );
+  const words = filter.query
+    .trim()
+    .toLocaleLowerCase()
+    .split(/\s+/)
+    .filter((word) => word !== '')
+    .map((word) => ({ word, folded: folded(word) }));
+  const wanted = filter.genres ?? [];
+  // A list repeats the same few genres: work out what each answers to once.
+  const starts = new Map<string, string[]>();
+  const startsOf = (genre: string): string[] => {
+    let found = starts.get(genre);
+    if (found === undefined) {
+      found = genreStarts(genre, filter.genreName?.(genre));
+      starts.set(genre, found);
+    }
+    return found;
+  };
+  return shows.filter((show) => {
+    if (filter.status === 'all' ? show.status === 'dropped' : show.status !== filter.status) return false;
+    if (filter.kind !== 'all' && show.kind !== filter.kind) return false;
+    const genres = show.genres ?? [];
+    if (!wanted.every((genre) => genres.includes(genre))) return false;
+    if (words.length === 0) return true;
+    const title = show.title.toLocaleLowerCase();
+    return words.every(
+      ({ word, folded: key }) =>
+        title.includes(word) || (key !== '' && genres.some((genre) => startsOf(genre).some((start) => start.startsWith(key)))),
+    );
+  });
+}
+
+/** Each genre among these shows, with how many have it. */
+export function genreCounts(shows: readonly Show[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const show of shows) for (const genre of show.genres ?? []) counts.set(genre, (counts.get(genre) ?? 0) + 1);
+  return counts;
+}
+
+/** A show added before genres were saved: reading its details again fills them in. */
+export function lacksGenres(show: Show): boolean {
+  return show.genres === undefined;
 }
 
 /** Ties keep a fixed order: by title, then id. */
@@ -123,10 +189,10 @@ export function statusPatch(status: ShowStatus, now: string): Pick<NewRow<Show>,
 
 /** One title's details as /api/shows gives them (server/shows ShowDetails has this shape). */
 export type FetchedDetails = Pick<Show, 'imdbId' | 'kind' | 'title'> &
-  Partial<Pick<Show, 'plot' | 'posterUrl' | 'released' | 'year' | 'runtimeMin' | 'totalSeasons' | 'imdbRating'>>;
+  Partial<Pick<Show, 'plot' | 'posterUrl' | 'released' | 'year' | 'runtimeMin' | 'totalSeasons' | 'imdbRating' | 'genres'>>;
 
 /** What a refresh may overwrite: the fetched fields and when they were read, never the family's own. */
-export const REFRESHED_FIELDS = ['title', 'plot', 'posterUrl', 'released', 'year', 'runtimeMin', 'totalSeasons', 'imdbRating', 'fetchedAt'] as const;
+export const REFRESHED_FIELDS = ['title', 'plot', 'posterUrl', 'released', 'year', 'runtimeMin', 'totalSeasons', 'imdbRating', 'genres', 'fetchedAt'] as const;
 
 export type RefreshPatch = Pick<NewRow<Show>, (typeof REFRESHED_FIELDS)[number]>;
 
@@ -145,6 +211,8 @@ export function refreshPatch(details: FetchedDetails, fetchedAt: string): Refres
     runtimeMin: details.runtimeMin,
     totalSeasons: details.totalSeasons,
     imdbRating: details.imdbRating,
+    // Empty, not cleared: the details were read and named no genre (absent means never read, lacksGenres()).
+    genres: details.genres ?? [],
     fetchedAt,
   };
 }

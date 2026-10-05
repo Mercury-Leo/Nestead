@@ -111,6 +111,17 @@
   color: var(--ink);
 }
 
+/* One line under the facts, quieter than them; the rest of a long list is cut short. */
+.genres {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---------------------------------------------------------- controls -- */
 
 /*

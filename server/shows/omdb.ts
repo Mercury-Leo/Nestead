@@ -13,6 +13,8 @@ import type { ShowDetails, ShowHit, ShowKind, ShowsProvider } from './types';
 const OMDB = 'https://www.omdbapi.com/';
 const MAX_TITLE = 300;
 const MAX_PLOT = 1_000;
+const MAX_GENRES = 10;
+const MAX_GENRE = 40;
 
 export interface OmdbOptions {
   /** The OMDb API key, OMDB_API_KEY. Without one, every question throws `not-configured` before any request. */
@@ -106,6 +108,20 @@ function parseTitle(value: unknown): string | undefined {
   return present(value)?.slice(0, MAX_TITLE);
 }
 
+/** `Genre` "Action, Comedy, Crime" as a list, each once, in OMDb's order; none is absent. */
+export function parseGenres(value: unknown): string[] | undefined {
+  const genres: string[] = [];
+  const seen = new Set<string>();
+  for (const part of (present(value) ?? '').split(',')) {
+    const genre = present(part)?.slice(0, MAX_GENRE);
+    if (genre === undefined || seen.has(genre.toLowerCase())) continue;
+    seen.add(genre.toLowerCase());
+    genres.push(genre);
+    if (genres.length === MAX_GENRES) break;
+  }
+  return genres.length === 0 ? undefined : genres;
+}
+
 /** OMDb's `Search` list as hits: movies and series with an IMDb id and a title, each once. */
 export function toHits(search: unknown): ShowHit[] {
   if (!Array.isArray(search)) return [];
@@ -147,6 +163,7 @@ export function toDetails(body: unknown): ShowDetails | undefined {
     runtimeMin: parseRuntime(row.Runtime),
     totalSeasons: kind === 'series' ? parseCount(row.totalSeasons) : undefined,
     imdbRating: parseRating(row.imdbRating),
+    genres: parseGenres(row.Genre),
   };
   // Absent, not undefined, so the JSON and the tests see the same shape.
   for (const [key, value] of Object.entries(optional)) {

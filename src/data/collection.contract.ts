@@ -251,6 +251,23 @@ export function runDataStoreContract(
       expect(cleared.street).toBe('הרצל 12');
     });
 
+    it('shows keep genres as a list, tell an empty one from none, and replace it whole', async () => {
+      const base = { kind: 'movie' as const, title: 'X', fetchedAt: '2026-10-05T08:00:00.000Z', status: 'to-watch' as const };
+      const show = await store.shows.create({ ...base, imdbId: 'tt0088763', genres: ['Adventure', 'Comedy', 'Sci-Fi'] });
+      // Read with none, and never read (added before genres): a backend keeps them apart.
+      const empty = await store.shows.create({ ...base, imdbId: 'tt0000010', genres: [] });
+      const unread = await store.shows.create({ ...base, imdbId: 'tt0000011' });
+
+      const byId = new Map((await store.shows.list()).map((row) => [row.id, row]));
+      expect(byId.get(show.id)?.genres).toEqual(['Adventure', 'Comedy', 'Sci-Fi']);
+      expect(byId.get(empty.id)?.genres).toEqual([]);
+      expect(byId.get(unread.id)?.genres).toBeUndefined();
+
+      expect((await store.shows.update(show.id, { genres: ['Comedy'] })).genres).toEqual(['Comedy']);
+      expect((await store.shows.update(unread.id, { genres: ['Drama'] })).genres).toEqual(['Drama']);
+      expect((await store.shows.list()).find((row) => row.id === show.id)?.genres).toEqual(['Comedy']);
+    });
+
     it("two families never see each other's rows", async () => {
       const other = await make('family-b');
       const theirColumnId = await aColumn(other);

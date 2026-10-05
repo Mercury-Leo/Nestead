@@ -13,7 +13,7 @@
  */
 
 export { createShowsHandler } from './handler';
-export { omdbProvider, parseKind, parsePoster, parseRating, parseReleased, parseRuntime, parseYear, present, toDetails, toHits } from './omdb';
+export { omdbProvider, parseGenres, parseKind, parsePoster, parseRating, parseReleased, parseRuntime, parseYear, present, toDetails, toHits } from './omdb';
 export type { OmdbOptions } from './omdb';
 export { defaultShowsProvider } from './provider';
 export type { ShowsEnv } from './provider';

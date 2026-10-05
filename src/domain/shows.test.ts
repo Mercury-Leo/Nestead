@@ -4,6 +4,8 @@ import {
   REFRESHED_FIELDS,
   SHOWS_PAGE,
   filterShows,
+  genreCounts,
+  lacksGenres,
   newShow,
   nextStatus,
   parseShowView,
@@ -74,6 +76,82 @@ describe('filterShows', () => {
   });
 });
 
+describe('genres', () => {
+  const rushHour = show('Rush Hour', { genres: ['Action', 'Comedy', 'Crime'] });
+  const heat = show('Heat', { genres: ['Action', 'Crime', 'Drama'] });
+  const airplane = show('Airplane!', { genres: ['Comedy'] });
+  const dune = show('Dune', { genres: ['Action', 'Adventure', 'Sci-Fi'] });
+  const romcom = show('Iron Hearts', { genres: ['Comedy', 'Romance'] });
+  const old = show('Older Entry');
+  const shelf = [rushHour, heat, airplane, dune, romcom, old];
+  const none = { query: '', status: 'all', kind: 'all' } as const;
+  const HEBREW: Record<string, string> = { Action: 'אקשן', Comedy: 'קומדיה', 'Sci-Fi': 'מדע בדיוני' };
+
+  it('keeps shows with every genre picked', () => {
+    expect(titles(filterShows(shelf, { ...none, genres: ['Action'] }))).toEqual(['Rush Hour', 'Heat', 'Dune']);
+    expect(titles(filterShows(shelf, { ...none, genres: ['Action', 'Comedy'] }))).toEqual(['Rush Hour']);
+    expect(filterShows(shelf, { ...none, genres: ['Action', 'Romance'] })).toEqual([]);
+    expect(filterShows(shelf, { ...none, genres: [] })).toEqual(shelf);
+  });
+
+  it('finds every genre typed, in any order and case', () => {
+    expect(titles(filterShows(shelf, { ...none, query: 'action comedy' }))).toEqual(['Rush Hour']);
+    expect(titles(filterShows(shelf, { ...none, query: 'COMEDY  Action ' }))).toEqual(['Rush Hour']);
+    expect(titles(filterShows(shelf, { ...none, query: 'comedy' }))).toEqual(['Rush Hour', 'Airplane!', 'Iron Hearts']);
+  });
+
+  it('mixes title words and genres', () => {
+    expect(titles(filterShows(shelf, { ...none, query: 'rush action' }))).toEqual(['Rush Hour']);
+    expect(filterShows(shelf, { ...none, query: 'heat comedy' })).toEqual([]);
+    // Each word in the title, in any order: wider than the title as typed, never narrower.
+    expect(titles(filterShows(shelf, { ...none, query: 'hour rush' }))).toEqual(['Rush Hour']);
+  });
+
+  it('finds a genre by the start of its words, never by the middle', () => {
+    expect(titles(filterShows(shelf, { ...none, query: 'act' }))).toEqual(['Rush Hour', 'Heat', 'Dune']);
+    for (const query of ['sci', 'fi', 'sci-fi', 'scifi', 'Sci Fi']) {
+      expect(titles(filterShows(shelf, { ...none, query })), query).toEqual(['Dune']);
+    }
+    // "man" is inside Romance, but starts none of its words: only titles count.
+    expect(filterShows(shelf, { ...none, query: 'man' })).toEqual([]);
+    expect(titles(filterShows(shelf, { ...none, query: 'iron' }))).toEqual(['Iron Hearts']);
+  });
+
+  it('finds a genre by its name in the screen language too', () => {
+    const genreName = (genre: string): string => HEBREW[genre] ?? genre;
+    expect(titles(filterShows(shelf, { ...none, query: 'קומדיה אקשן', genreName }))).toEqual(['Rush Hour']);
+    expect(titles(filterShows(shelf, { ...none, query: 'בדיוני', genreName }))).toEqual(['Dune']);
+    // English still works beside it.
+    expect(titles(filterShows(shelf, { ...none, query: 'sci-fi', genreName }))).toEqual(['Dune']);
+    expect(filterShows(shelf, { ...none, query: 'קומדיה' })).toEqual([]);
+  });
+
+  it('combines genres with the search, status and kind', () => {
+    const series = show('Brooklyn Nine-Nine', { kind: 'series', genres: ['Comedy', 'Crime'], status: 'watched' });
+    const withSeries = [...shelf, series];
+    expect(titles(filterShows(withSeries, { ...none, genres: ['Crime'], query: 'comedy' }))).toEqual(['Rush Hour', 'Brooklyn Nine-Nine']);
+    expect(titles(filterShows(withSeries, { ...none, kind: 'series', genres: ['Crime'] }))).toEqual(['Brooklyn Nine-Nine']);
+    expect(titles(filterShows(withSeries, { ...none, status: 'to-watch', genres: ['Crime'] }))).toEqual(['Rush Hour', 'Heat']);
+  });
+
+  it('leaves out shows without genres once a genre is asked for', () => {
+    expect(filterShows(shelf, { ...none, genres: ['Drama'] })).toEqual([heat]);
+    expect(filterShows([old], { ...none, query: 'drama' })).toEqual([]);
+    expect(filterShows([old], { ...none, query: 'older' })).toEqual([old]);
+  });
+
+  it('counts each genre', () => {
+    expect(Object.fromEntries(genreCounts(shelf))).toEqual({ Action: 3, Comedy: 3, Crime: 2, Drama: 1, Adventure: 1, 'Sci-Fi': 1, Romance: 1 });
+    expect(genreCounts([]).size).toBe(0);
+  });
+
+  it('tells a show never read for genres from one read with none', () => {
+    expect(lacksGenres(old)).toBe(true);
+    expect(lacksGenres(show('Silent Short', { genres: [] }))).toBe(false);
+    expect(lacksGenres(heat)).toBe(false);
+  });
+});
+
 describe('sortShows', () => {
   it('puts the newest additions first', () => {
     expect(titles(sortShows(all, 'added'))).toEqual(['Untitled Sequel', 'The Office', 'Breaking Bad', 'Inception']);
@@ -124,7 +202,8 @@ describe('shownCount', () => {
 
 describe('parseShowView', () => {
   it('keeps a valid stored view', () => {
-    expect(parseShowView({ status: 'watched', kind: 'series', sort: 'rating' })).toEqual({ status: 'watched', kind: 'series', sort: 'rating' });
+    expect(parseShowView({ status: 'watched', kind: 'series', sort: 'rating' })).toEqual({ status: 'watched', kind: 'series', genres: [], sort: 'rating' });
+    expect(parseShowView({ status: 'all', kind: 'all', genres: ['Action', 'Comedy'], sort: 'added' }).genres).toEqual(['Action', 'Comedy']);
     expect(parseShowView({ status: 'dropped', kind: 'all', sort: 'added' }).status).toBe('dropped');
   });
 
@@ -133,6 +212,10 @@ describe('parseShowView', () => {
     expect(parseShowView('watched')).toEqual(DEFAULT_SHOW_VIEW);
     expect(parseShowView({ status: 'seen', kind: 'game', sort: 'random' })).toEqual(DEFAULT_SHOW_VIEW);
     expect(parseShowView({ status: 'watching', kind: 3 })).toEqual({ ...DEFAULT_SHOW_VIEW, status: 'watching' });
+    // Views saved before genres had none.
+    expect(parseShowView({ status: 'all', kind: 'all', sort: 'added' }).genres).toEqual([]);
+    expect(parseShowView({ genres: 'Action' }).genres).toEqual([]);
+    expect(parseShowView({ genres: ['Action', 3, '', ' ', null, 'Action', 'Drama'] }).genres).toEqual(['Action', 'Drama']);
   });
 });
 
@@ -215,6 +298,14 @@ describe('refreshPatch', () => {
     expect(after.imdbRating).toBeUndefined();
     expect(after.title).toBe('Breaking Bad');
   });
+
+  it('saves the genres, and an empty list when the service names none', () => {
+    expect(apply(breakingBad, refreshPatch({ ...fresh, genres: ['Crime', 'Drama'] }, fetchedAt)).genres).toEqual(['Crime', 'Drama']);
+    const withGenres = { ...breakingBad, genres: ['Crime'] };
+    // Read and empty, so it no longer counts as never read (lacksGenres()).
+    expect(apply(withGenres, refreshPatch(fresh, fetchedAt)).genres).toEqual([]);
+    expect(lacksGenres(apply(breakingBad, refreshPatch(fresh, fetchedAt)))).toBe(false);
+  });
 });
 
 describe('newShow', () => {
@@ -226,10 +317,12 @@ describe('newShow', () => {
       title: 'Inception',
       year: 2010,
       imdbRating: 8.8,
+      genres: [],
       fetchedAt: '2026-10-04T12:00:00.000Z',
       status: 'to-watch',
       createdBy: 'm1',
     });
+    expect(newShow({ imdbId: 'tt1375666', kind: 'movie', title: 'Inception', genres: ['Action', 'Sci-Fi'] }, '2026-10-04T12:00:00.000Z').genres).toEqual(['Action', 'Sci-Fi']);
     expect(row).not.toHaveProperty('watchedAt');
     expect(row).not.toHaveProperty('posterUrl');
   });

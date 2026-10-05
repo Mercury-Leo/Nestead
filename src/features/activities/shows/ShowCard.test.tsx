@@ -6,7 +6,7 @@ import { createLocalStore } from '../../../data/local/localStore';
 import type { FetchedDetails } from '../../../domain/shows';
 import type { Member, Show } from '../../../domain/types';
 import { i18n, loadLocale, localeReady } from '../../../i18n';
-import { Facts, ShowCard, sameShow } from './ShowCard';
+import { Facts, Genres, ShowCard, sameShow } from './ShowCard';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -67,6 +67,53 @@ describe('sameShow', () => {
     const { fetchedAt: _fetchedAt, ...without } = show;
     expect(sameShow(show, { ...without, plot: 'x' } as Show)).toBe(false);
     expect(sameShow({ ...show, plot: 'x' }, show)).toBe(false);
+  });
+
+  it('compares genres item by item, so a re-read list is the same', () => {
+    const withGenres = { ...show, genres: ['Action', 'Sci-Fi'] };
+    expect(sameShow(withGenres, { ...withGenres, genres: ['Action', 'Sci-Fi'] })).toBe(true);
+    expect(sameShow(withGenres, { ...withGenres, genres: ['Action'] })).toBe(false);
+    expect(sameShow(withGenres, { ...withGenres, genres: ['Sci-Fi', 'Action'] })).toBe(false);
+    expect(sameShow(withGenres, { ...withGenres, genres: [] })).toBe(false);
+    expect(sameShow({ ...show, genres: [] }, show)).toBe(false);
+  });
+});
+
+describe('Genres', () => {
+  function genres(list: string[] | undefined): HTMLElement {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() => root.render(<Genres genres={list} />));
+    unmount = () => {
+      act(() => root.unmount());
+      host.remove();
+    };
+    return host;
+  }
+
+  it('lists the genres, and translates the ones it knows', async () => {
+    expect(genres(['Action', 'Sci-Fi', 'Film-Noir']).textContent).toBe('Action, Sci-fi, Film noir');
+    unmount?.();
+    try {
+      await loadLocale('he');
+      await act(async () => {
+        await i18n.changeLanguage('he');
+      });
+      // A genre the app has no name for shows as the service stored it.
+      expect(genres(['Comedy', 'Space Opera']).textContent).toBe(`${i18n.t('shows.genre.comedy')}, Space Opera`);
+      expect(i18n.t('shows.genre.comedy')).not.toBe('Comedy');
+    } finally {
+      await act(async () => {
+        await i18n.changeLanguage('en');
+      });
+    }
+  });
+
+  it('draws nothing without genres', () => {
+    expect(genres(undefined).innerHTML).toBe('');
+    unmount?.();
+    expect(genres([]).innerHTML).toBe('');
   });
 });
 

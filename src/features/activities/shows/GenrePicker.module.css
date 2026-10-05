@@ -1,0 +1,77 @@
+/* Desktop: drawn like the sort's SelectButton beside it (../../../components/ui/SelectButton.module.css). */
+.button {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 8px;
+  align-items: center;
+  max-width: 320px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--sunk);
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Genres picked: dark, like a chosen chip or segment. */
+.buttonOn,
+.buttonOn:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-accent);
+}
+
+.buttonOn .chevron {
+  color: inherit;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--ink-2);
+}
+
+/* Phones: a chip in the scrolling row; a long list of names is cut short. */
+.chip {
+  max-width: 240px;
+}
+
+.text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hint {
+  margin: 0 0 16px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}

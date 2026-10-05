@@ -67,6 +67,17 @@ describe('shows', () => {
     await expect(as(USER_B, INSERT, [FAMILY_B, 'tt1375666'])).resolves.toHaveLength(1);
   });
 
+  it('keeps genres as a list of up to ten, NULL until read', async () => {
+    const [row] = await as<{ genres: string[] | null }>(USER_A, INSERT, [FAMILY_A, 'tt1375666']);
+    expect(row?.genres).toBeNull();
+    const set = `update shows set genres = $1 where imdb_id = 'tt1375666' returning genres`;
+    for (const genres of [['Action', 'Adventure', 'Sci-Fi'], [], Array.from({ length: 10 }, (_, i) => `G${i}`)]) {
+      await expect(as(USER_A, set, [genres])).resolves.toEqual([{ genres }]);
+    }
+    await expect(as(USER_A, set, [Array.from({ length: 11 }, (_, i) => `G${i}`)])).rejects.toThrow(/shows_genres_check/);
+    await expect(as(USER_A, set, [['Action', null]])).rejects.toThrow(/shows_genres_check/);
+  });
+
   it('starts at to-watch and refuses values the app never writes', async () => {
     const [row] = await as<{ status: string; watched_at: string | null }>(USER_A, INSERT, [FAMILY_A, 'tt1375666']);
     expect(row?.status).toBe('to-watch');

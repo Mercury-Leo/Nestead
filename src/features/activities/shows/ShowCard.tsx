@@ -8,7 +8,7 @@ import type { FetchedDetails } from '../../../domain/shows';
 import type { Show, ShowStatus } from '../../../domain/types';
 import { formatDate, formatNumber } from '../../../i18n';
 import { cycleStatus, dropShow, refreshShow, removeShow, restoreShow } from './actions';
-import { STATUS_KEY, imdbUrl, kindLabel, statusLabel } from './labels';
+import { STATUS_KEY, genreLabel, imdbUrl, kindLabel, statusLabel } from './labels';
 import type { ShowsFailure } from './client';
 import { Poster } from './Poster';
 import s from './ShowCard.module.css';
@@ -54,6 +54,13 @@ export function Facts({ show, className }: { show: FetchedDetails; className?: s
       )}
     </p>
   );
+}
+
+/** The genres in the screen's language, under the facts; nothing when there are none. */
+export function Genres({ genres, className }: { genres: readonly string[] | undefined; className?: string }): JSX.Element | null {
+  const { t } = useTranslation();
+  if (genres === undefined || genres.length === 0) return null;
+  return <p className={cx(s.genres, className)}>{genres.map((genre) => genreLabel(t, genre)).join(', ')}</p>;
 }
 
 /**
@@ -163,14 +170,19 @@ function Details({ show }: { show: Show }): JSX.Element {
 }
 
 /**
- * The same show, field by field. A show's fields are all plain values, and a
- * re-read hands every row back as a new object, so identity alone would
- * re-render every card after any write.
+ * The same show, field by field. A re-read hands every row back as a new
+ * object, so identity alone would re-render every card after any write. The
+ * fields are plain values, bar genres, a list compared item by item.
  */
 export function sameShow(a: Show, b: Show): boolean {
   if (a === b) return true;
   const keys = Object.keys(a) as (keyof Show)[];
-  return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
+  return keys.length === Object.keys(b).length && keys.every((key) => (key === 'genres' ? sameList(a.genres, b.genres) : a[key] === b[key]));
+}
+
+function sameList(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {
+  if (a === undefined || b === undefined) return a === b;
+  return a.length === b.length && a.every((item, index) => item === b[index]);
 }
 
 /**
@@ -219,6 +231,7 @@ function ShowCardView({ show, revealed }: { show: Show; revealed?: number }): JS
           <StatusBadge status={show.status} onCycle={() => void cycleStatus(store, show).catch(() => undefined)} />
         </div>
         <Facts show={show} />
+        <Genres genres={show.genres} />
         <div id={id} className={s.details} hidden={!open}>
           {open && <Details show={show} />}
         </div>

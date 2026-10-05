@@ -67,14 +67,14 @@
   font-size: 14px;
 }
 
-/* Desktop: the search and the sort on one line, the two filters under them. */
+/* Desktop: the search and the sort on one line, the three filters under them. */
 @media (min-width: 1024px) {
   .toolbar {
     display: grid;
     grid-template-areas:
-      'search search search sort'
-      'status kind . .';
-    grid-template-columns: auto auto 1fr auto;
+      'search search search search sort'
+      'status kind genres . .';
+    grid-template-columns: auto auto auto 1fr auto;
     gap: 12px 16px;
     align-items: center;
     margin-bottom: 28px;
@@ -90,6 +90,10 @@
 
   .kindFilter {
     grid-area: kind;
+  }
+
+  .genreFilter {
+    grid-area: genres;
   }
 
   .sort {

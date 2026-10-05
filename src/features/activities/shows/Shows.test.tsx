@@ -1,11 +1,11 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionContext } from '../../../auth/session';
 import { createLocalStore } from '../../../data/local/localStore';
 import type { DataStore } from '../../../data/types';
 import type { Member } from '../../../domain/types';
-import { i18n, localeReady } from '../../../i18n';
+import { i18n, loadLocale, localeReady } from '../../../i18n';
 import { Shows } from './Shows';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -58,6 +58,13 @@ beforeAll(async () => {
   await localeReady;
   window.matchMedia ??= (query: string) =>
     ({ matches: false, media: query, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList;
+  // jsdom has no modal dialogs; the Sheet opens and closes its <dialog> with these.
+  HTMLDialogElement.prototype.showModal ??= function showModal(this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close ??= function close(this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  };
 });
 
 beforeEach(() => {
@@ -68,6 +75,7 @@ beforeEach(() => {
 afterEach(() => {
   unmount?.();
   unmount = null;
+  vi.unstubAllGlobals();
 });
 
 describe('a long list of shows', () => {
@@ -157,5 +165,153 @@ describe('dropped shows', () => {
     }
     expect(cards(host)).toHaveLength(2);
     expect(button(host, i18n.t('shows.statusCount.dropped', { count: 1 }))).toBeDefined();
+  });
+});
+
+describe('genres', () => {
+  const SHELF: [string, string[] | undefined][] = [
+    ['Rush Hour', ['Action', 'Comedy', 'Crime']],
+    ['Heat', ['Action', 'Crime', 'Drama']],
+    ['Airplane!', ['Comedy']],
+    ['Dune', ['Action', 'Adventure', 'Sci-Fi']],
+    ['Older Entry', undefined],
+  ];
+
+  async function addShelf(): Promise<void> {
+    for (const [i, [title, genres]] of SHELF.entries()) {
+      await store.shows.create({
+        imdbId: `tt${String(3000000 + i)}`,
+        kind: 'movie',
+        title,
+        fetchedAt: '2026-10-04T08:00:00.000Z',
+        status: 'to-watch',
+        ...(genres === undefined ? {} : { genres }),
+      });
+    }
+  }
+
+  const titles = (host: HTMLElement): string[] => cards(host).map((card) => card.querySelector('h3 a')?.firstChild?.textContent ?? '');
+  const sheet = (): HTMLDialogElement | null => document.querySelector('dialog[open]');
+  const chip = (root: ParentNode, text: string): HTMLButtonElement | undefined =>
+    [...root.querySelectorAll<HTMLButtonElement>('button[aria-pressed]')].find((b) => b.textContent === text);
+
+  async function type(host: HTMLElement, text: string): Promise<void> {
+    const field = host.querySelector<HTMLInputElement>('input[type="search"]') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, text);
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  it('shows each card its genres, in the screen language', async () => {
+    await addShelf();
+    const host = await render();
+    const rushHour = cards(host).find((card) => card.textContent?.includes('Rush Hour'));
+    expect(rushHour?.textContent).toContain('Action, Comedy, Crime');
+    try {
+      await loadLocale('he');
+      await act(async () => {
+        await i18n.changeLanguage('he');
+      });
+      expect(rushHour?.textContent).toContain(`${i18n.t('shows.genre.action')}, ${i18n.t('shows.genre.comedy')}`);
+      // The search finds a genre by its Hebrew name as well as its English one.
+      await type(host, i18n.t('shows.genre.sciFi'));
+      expect(titles(host)).toEqual(['Dune']);
+      await type(host, 'sci-fi');
+      expect(titles(host)).toEqual(['Dune']);
+    } finally {
+      await act(async () => {
+        await i18n.changeLanguage('en');
+      });
+    }
+  });
+
+  it('keeps only shows with every genre picked, and offers only genres that leave some', async () => {
+    await addShelf();
+    const host = await render();
+    await act(async () => button(host, i18n.t('shows.genres.label'))?.click());
+    const picker = sheet() as HTMLDialogElement;
+    expect(picker).not.toBeNull();
+    // Every genre on the list, A to Z, with how many shows have it.
+    expect([...picker.querySelectorAll('[role="group"] button')].map((b) => b.textContent)).toEqual([
+      'Action 3', 'Adventure 1', 'Comedy 2', 'Crime 2', 'Drama 1', 'Sci-fi 1',
+    ]);
+
+    await act(async () => chip(picker, 'Action 3')?.click());
+    expect(titles(host)).toEqual(['Dune', 'Heat', 'Rush Hour']);
+    // Picked stays offered; Action leaves no show for nothing but Comedy alone, so counts follow.
+    expect([...picker.querySelectorAll('[role="group"] button')].map((b) => b.textContent)).toEqual([
+      'Action 3', 'Adventure 1', 'Comedy 1', 'Crime 2', 'Drama 1', 'Sci-fi 1',
+    ]);
+
+    await act(async () => chip(picker, 'Comedy 1')?.click());
+    expect(titles(host)).toEqual(['Rush Hour']);
+    // Genres no action comedy has would list nothing, so they are no longer offered.
+    expect([...picker.querySelectorAll('[role="group"] button')].map((b) => b.textContent)).toEqual(['Action 1', 'Comedy 1', 'Crime 1']);
+    expect(button(picker, i18n.t('shows.genres.done', { count: 1 }))).toBeDefined();
+    await act(async () => button(picker, i18n.t('shows.genres.done', { count: 1 }))?.click());
+    expect(sheet()).toBeNull();
+    // The chip names what is picked, and the status counts follow the genres.
+    expect(host.textContent).toContain('Action and Comedy');
+    expect(button(host, i18n.t('shows.all', { count: 1 }))).toBeDefined();
+
+    // Clear, in the sheet the chip opens again, takes every genre off.
+    await act(async () => button(host, 'Action and Comedy')?.click());
+    await act(async () => button(sheet() as HTMLDialogElement, i18n.t('shows.genres.clear'))?.click());
+    expect(cards(host)).toHaveLength(5);
+    expect(button(host, i18n.t('shows.genres.label'))).toBeDefined();
+  });
+
+  it('finds "action comedy" typed in the search, and mixes title words in', async () => {
+    await addShelf();
+    const host = await render();
+    await type(host, 'action comedy');
+    expect(titles(host)).toEqual(['Rush Hour']);
+    await type(host, 'crime');
+    expect(titles(host)).toEqual(['Heat', 'Rush Hour']);
+    await type(host, 'heat action');
+    expect(titles(host)).toEqual(['Heat']);
+    await type(host, 'older');
+    expect(titles(host)).toEqual(['Older Entry']);
+  });
+
+  it('offers to read genres for shows added before them, once each, then goes away', async () => {
+    await addShelf();
+    const asked: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const id = new URL(url, 'http://localhost').searchParams.get('id') ?? '';
+        asked.push(id);
+        return new Response(JSON.stringify({ show: { imdbId: id, kind: 'movie', title: 'Older Entry', genres: ['Mystery'] } }));
+      }),
+    );
+    const host = await render();
+    expect(host.textContent).toContain(i18n.t('shows.genres.missing', { count: 1 }));
+
+    await act(async () => button(host, i18n.t('shows.genres.fetch'))?.click());
+    for (let i = 0; i < 20 && host.textContent?.includes(i18n.t('shows.genres.fetch')); i += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+    expect(asked).toEqual(['tt3000004']);
+    expect(button(host, i18n.t('shows.genres.fetch'))).toBeUndefined();
+    expect(cards(host).find((card) => card.textContent?.includes('Older Entry'))?.textContent).toContain('Mystery');
+  });
+
+  it('says why when the lookups stop, and keeps offering the rest', async () => {
+    await addShelf();
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'limit' }), { status: 429 })));
+    const host = await render();
+    await act(async () => button(host, i18n.t('shows.genres.fetch'))?.click());
+    for (let i = 0; i < 20 && !host.textContent?.includes(i18n.t('shows.failure.limit')); i += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+    expect(host.textContent).toContain(i18n.t('shows.failure.limit'));
+    expect(host.textContent).toContain(i18n.t('shows.genres.missing', { count: 1 }));
+    expect(button(host, i18n.t('shows.genres.fetch'))?.disabled).toBe(false);
   });
 });

@@ -308,6 +308,12 @@ export interface Show extends Base {
   totalSeasons?: number;
   /** 0 to 10. */
   imdbRating?: number;
+  /**
+   * In English, as the service names them ("Action", "Sci-Fi"); screens
+   * translate them. Empty when the details were read and named none; absent
+   * on a show added before genres were saved, until its details are read again.
+   */
+  genres?: string[];
   /** ISO timestamp of the read these details came from. */
   fetchedAt: string;
   status: ShowStatus;

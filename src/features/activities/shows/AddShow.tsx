@@ -11,7 +11,7 @@ import { kindLabel } from './labels';
 import { lookupShow, searchShows } from './client';
 import type { ShowsFailure } from './client';
 import { Poster } from './Poster';
-import { Facts, failureKey } from './ShowCard';
+import { Facts, Genres, failureKey } from './ShowCard';
 import s from './AddShow.module.css';
 
 /**
@@ -175,6 +175,7 @@ export function AddShow({ shows, onClose, onShow }: { shows: readonly Show[]; on
               {chosen.details?.title ?? chosen.hit.title}
             </h3>
             {chosen.details !== undefined && <Facts show={chosen.details} />}
+            <Genres genres={chosen.details?.genres} />
             {chosen.details?.plot !== undefined && (
               <p className={s.plot} dir="auto">
                 {chosen.details.plot}

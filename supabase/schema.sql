@@ -821,6 +821,9 @@ create table shows (
   -- Series only.
   total_seasons integer     check (total_seasons is null or total_seasons > 0),
   imdb_rating   real        check (imdb_rating is null or imdb_rating between 0 and 10),
+  -- In English, as the service names them; the app translates them. Empty
+  -- when a read named none; NULL on rows from before genres, until read again.
+  genres        text[]      check (genres is null or (cardinality(genres) <= 10 and array_position(genres, null) is null)),
   fetched_at    timestamptz not null,
   -- dropped: the family decided not to watch it.
   status        text        not null default 'to-watch'

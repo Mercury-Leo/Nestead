@@ -35,6 +35,8 @@ export interface ShowDetails {
   totalSeasons?: number;
   /** 0 to 10. */
   imdbRating?: number;
+  /** In English, as the service names them ("Action", "Sci-Fi"), each once: at most ten, each under 40 characters. */
+  genres?: string[];
 }
 
 export type ShowsError = 'invalid-query' | 'not-configured' | 'limit' | 'not-found' | 'failed' | 'timeout';
@@ -57,7 +59,8 @@ export interface ShowsSearch {
  * provider out (`signal`) and turns its answers into responses; the provider
  * only asks its service and normalises the answer: movies and series with an
  * IMDb id and a title, each once, absent fields left out, titles under 300
- * characters and plots under 1,000, posters https and free of any key. It
+ * characters and plots under 1,000, posters https and free of any key, genres
+ * in English with IMDb's names (the app translates those), at most ten. It
  * throws `ShowsProviderError` for what the app should hear about, and nothing
  * it throws ever reaches a response. Chosen in `provider.ts`.
  */
