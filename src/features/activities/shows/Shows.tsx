@@ -6,7 +6,7 @@ import { PageHeader } from '../../../components/PageHeader';
 import { Button, Chip, EmptyState, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
 import { readPreference, writePreference } from '../../../data/local/localStore';
 import { useCollectionState } from '../../../data/useCollection';
-import { SHOWS_PAGE, SHOW_SORTS, SHOW_STATUSES, filterShows, genreCounts, hasTags, lacksGenres, parseShowView, shownCount, sortShows, tagCounts } from '../../../domain/shows';
+import { SHOWS_PAGE, SHOW_SORTS, SHOW_STATUSES, filterShows, familyTags, genreCounts, hasTags, lacksGenres, parseShowView, shownCount, sortShows, spelledAs, tagCounts } from '../../../domain/shows';
 import type { KindFilter, ShowView, StatusFilter } from '../../../domain/shows';
 import type { Show } from '../../../domain/types';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
@@ -135,6 +135,8 @@ export function Shows(): JSX.Element {
   );
   // Shown once any show has a tag, or while one is picked, so a tag picked on an earlier visit can come off.
   const anyTags = view.tags.length > 0 || rows.some((row) => (row.tags?.length ?? 0) > 0);
+  // The family's spellings name each tag, so a list narrowed to shows that spell one another way still shows (and presses) the picked one.
+  const family = useMemo(() => familyTags(rows), [rows]);
   const tagFilter = (shape: 'button' | 'chip'): JSX.Element | null =>
     anyTags ? (
       <ChipFilter
@@ -143,8 +145,8 @@ export function Shows(): JSX.Element {
         icon={TagIcon}
         hint={t('shows.tags.filterHint')}
         empty={t('shows.tags.none')}
-        picked={view.tags}
-        counts={tagCounts(shown)}
+        picked={spelledAs(view.tags, family)}
+        counts={tagCounts(shown, family)}
         listed={shown.length}
         name={asTyped}
         pickedLabel={(tags) => t('shows.tags.picked', { tags })}

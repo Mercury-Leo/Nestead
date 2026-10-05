@@ -177,21 +177,42 @@ export function hasTags(show: Show, tags: readonly string[]): boolean {
   return tags.every((tag) => own.includes(tagKey(tag)));
 }
 
+/** Each tag by its case-folded key, in the first spelling met. */
+function spellings(tags: readonly string[]): Map<string, string> {
+  const named = new Map<string, string>();
+  for (const tag of tags) if (!named.has(tagKey(tag))) named.set(tagKey(tag), tag);
+  return named;
+}
+
 /**
  * Each tag among these shows, with how many have it. Spellings that differ
- * only in case count as one tag, spelled as first met.
+ * only in case count as one tag, named as in `spelling` when it has the tag
+ * in any case (the family's tags, for a list narrowed to a few shows), and
+ * otherwise as first met.
  */
-export function tagCounts(shows: readonly Show[]): Map<string, number> {
-  const spelling = new Map<string, string>();
+export function tagCounts(shows: readonly Show[], spelling: readonly string[] = []): Map<string, number> {
+  const named = spellings(spelling);
   const counts = new Map<string, number>();
   for (const show of shows) {
     for (const tag of show.tags ?? []) {
-      const name = spelling.get(tagKey(tag)) ?? tag;
-      spelling.set(tagKey(tag), name);
+      const name = named.get(tagKey(tag)) ?? tag;
+      named.set(tagKey(tag), name);
       counts.set(name, (counts.get(name) ?? 0) + 1);
     }
   }
   return counts;
+}
+
+/**
+ * A picked list of tags in the family's spellings: each tag becomes the entry
+ * of `spelling` that matches it in any case (kept as it is when none does),
+ * each once, in order.
+ */
+export function spelledAs(tags: readonly string[], spelling: readonly string[]): string[] {
+  const named = spellings(spelling);
+  const result = new Map<string, string>();
+  for (const tag of tags) if (!result.has(tagKey(tag))) result.set(tagKey(tag), named.get(tagKey(tag)) ?? tag);
+  return [...result.values()];
 }
 
 /** Every tag the family uses, each once, spelled as first met. Screens sort it. */

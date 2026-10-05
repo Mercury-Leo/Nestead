@@ -380,4 +380,25 @@ describe('tags', () => {
     await type(host, 'ovie');
     expect(cards(host)).toHaveLength(0);
   });
+
+  it('names a picked tag as the family spells it, when the shows left spell it another way', async () => {
+    // One tag in two spellings. The family spells it as its first show does ("Bad movie", added first); the show that comes first in the list spells it "bad movie".
+    const base = { kind: 'movie', fetchedAt: '2026-10-04T08:00:00.000Z', status: 'to-watch' } as const;
+    await store.shows.create({ ...base, imdbId: 'tt4100000', title: 'Sharknado', tags: ['Bad movie'] });
+    await store.shows.create({ ...base, imdbId: 'tt4100001', title: 'Santa Claus Conquers the Martians', tags: ['bad movie'] });
+    const host = await render();
+    await act(async () => button(host, i18n.t('shows.tags.label'))?.click());
+    const picker = sheet() as HTMLDialogElement;
+    expect(chip(picker, 'Bad movie 2')).toBeDefined();
+    await act(async () => chip(picker, 'Bad movie 2')?.click());
+    await act(async () => button(picker, i18n.t('shows.filter.done', { count: 2 }))?.click());
+
+    // Only the show that spells it "bad movie" is left; the tag is still "Bad movie", picked.
+    await type(host, 'santa');
+    expect(titles(host)).toEqual(['Santa Claus Conquers the Martians']);
+    await act(async () => button(host, 'Bad movie')?.click());
+    const chips = [...(sheet() as HTMLDialogElement).querySelectorAll<HTMLButtonElement>('[role="group"] button')];
+    expect(chips.map((b) => b.textContent)).toEqual(['Bad movie 1']);
+    expect(chips[0]?.getAttribute('aria-pressed')).toBe('true');
+  });
 });

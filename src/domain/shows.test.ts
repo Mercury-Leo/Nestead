@@ -17,6 +17,7 @@ import {
   sameTag,
   shownCount,
   sortShows,
+  spelledAs,
   statusPatch,
   tagCounts,
   tidyTag,
@@ -193,6 +194,22 @@ describe('tags', () => {
   it('counts each tag, two spellings as one, spelled as first met', () => {
     expect(Object.fromEntries(tagCounts(shelf))).toEqual({ 'Bad movie': 2, 'Movie night': 1, Christmas: 2 });
     expect(tagCounts([]).size).toBe(0);
+  });
+
+  it("names a tag the family's way when given the spellings, whatever the case", () => {
+    // Santa alone has "bad movie": counted as first met, then as the family spells it.
+    const narrowed = [elf, santa, plain];
+    expect(Object.fromEntries(tagCounts(narrowed))).toEqual({ Christmas: 2, 'bad movie': 1 });
+    expect(Object.fromEntries(tagCounts(narrowed, ['Bad movie']))).toEqual({ Christmas: 2, 'Bad movie': 1 });
+    // A tag the spellings lack is named as first met.
+    expect(Object.fromEntries(tagCounts(narrowed, ['Movie night']))).toEqual({ Christmas: 2, 'bad movie': 1 });
+  });
+
+  it("maps a picked list to the family's spellings, each once, in order", () => {
+    expect(spelledAs(['bad movie', 'Christmas', 'BAD MOVIE'], ['Bad movie', 'Christmas'])).toEqual(['Bad movie', 'Christmas']);
+    // A tag the family does not have is kept as it is.
+    expect(spelledAs(['Cult classic', 'christmas'], ['Bad movie', 'Christmas'])).toEqual(['Cult classic', 'Christmas']);
+    expect(spelledAs([], ['Bad movie'])).toEqual([]);
   });
 
   it("lists the family's tags once each", () => {
