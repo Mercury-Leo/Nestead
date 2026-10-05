@@ -248,8 +248,8 @@ describe('genres', () => {
     expect(titles(host)).toEqual(['Rush Hour']);
     // Genres no action comedy has would list nothing, so they are no longer offered.
     expect([...picker.querySelectorAll('[role="group"] button')].map((b) => b.textContent)).toEqual(['Action 1', 'Comedy 1', 'Crime 1']);
-    expect(button(picker, i18n.t('shows.genres.done', { count: 1 }))).toBeDefined();
-    await act(async () => button(picker, i18n.t('shows.genres.done', { count: 1 }))?.click());
+    expect(button(picker, i18n.t('shows.filter.done', { count: 1 }))).toBeDefined();
+    await act(async () => button(picker, i18n.t('shows.filter.done', { count: 1 }))?.click());
     expect(sheet()).toBeNull();
     // The chip names what is picked, and the status counts follow the genres.
     expect(host.textContent).toContain('Action and Comedy');
@@ -257,7 +257,7 @@ describe('genres', () => {
 
     // Clear, in the sheet the chip opens again, takes every genre off.
     await act(async () => button(host, 'Action and Comedy')?.click());
-    await act(async () => button(sheet() as HTMLDialogElement, i18n.t('shows.genres.clear'))?.click());
+    await act(async () => button(sheet() as HTMLDialogElement, i18n.t('shows.filter.clear'))?.click());
     expect(cards(host)).toHaveLength(5);
     expect(button(host, i18n.t('shows.genres.label'))).toBeDefined();
   });

@@ -1,5 +1,5 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUpDown, Clapperboard, Plus, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
+import { ArrowUpDown, Clapperboard, Drama, Plus, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
@@ -12,7 +12,7 @@ import type { Show } from '../../../domain/types';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { AddShow } from './AddShow';
 import { GenreFill } from './GenreFill';
-import { GenrePicker } from './GenrePicker';
+import { ChipFilter } from './ChipFilter';
 import { STATUS_KEY, genreLabel } from './labels';
 import { ShowCard } from './ShowCard';
 import s from './Shows.module.css';
@@ -108,12 +108,18 @@ export function Shows(): JSX.Element {
   const statuses: StatusFilter[] = ['all', ...SHOW_STATUSES];
   const kinds = (['all', 'movie', 'series'] as const).map((value) => ({ value, label: t(`shows.kinds.${value}`) }));
   const sorts = SHOW_SORTS.map((value) => ({ value, label: t(`shows.sort.${value}`) }));
-  const genrePicker = (shape: 'button' | 'chip'): JSX.Element => (
-    <GenrePicker
+  const genreFilter = (shape: 'button' | 'chip'): JSX.Element => (
+    <ChipFilter
       shape={shape}
+      label={t('shows.genres.label')}
+      icon={Drama}
+      hint={t('shows.genres.hint')}
+      empty={t('shows.genres.none')}
       picked={view.genres}
       counts={genreCounts(shown)}
       listed={shown.length}
+      name={genreName}
+      pickedLabel={(genres) => t('shows.genres.picked', { genres })}
       onChange={(genres) => set({ genres })}
     />
   );
@@ -174,7 +180,7 @@ export function Shows(): JSX.Element {
                 options={statuses.map((value) => ({ value, label: statusLabel(value) }))}
               />
               <Segmented<KindFilter> label={t('shows.kindLabel')} value={view.kind} onChange={(kind) => set({ kind })} options={kinds} />
-              {genrePicker('button')}
+              {genreFilter('button')}
             </div>
             <SelectButton label={t('shows.sortBy')} icon={ArrowUpDown} className={s.sort} value={view.sort} onChange={(sort) => set({ sort })} options={sorts} />
           </>
@@ -193,7 +199,7 @@ export function Shows(): JSX.Element {
               onChange={(kind) => set({ kind })}
               options={kinds}
             />
-            {genrePicker('chip')}
+            {genreFilter('chip')}
             <SelectButton
               label={t('shows.sortBy')}
               icon={ArrowUpDown}

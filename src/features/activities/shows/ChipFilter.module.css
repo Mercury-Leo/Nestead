@@ -1,5 +1,5 @@
 /*
- * Both shapes hold the screen-reader label for the genres picked, which is
+ * Both shapes hold the screen-reader label for what is picked, which is
  * absolutely positioned (.visually-hidden). Each is its containing block:
  * without one, the label escaped the phone's scrolling chip row, widened the
  * page, and the browser laid the sheet and the tab bar out off screen.
@@ -38,7 +38,7 @@
   outline-offset: 2px;
 }
 
-/* Genres picked: dark, like a chosen chip or segment. */
+/* Something picked: dark, like a chosen chip or segment. */
 .buttonOn,
 .buttonOn:hover {
   border-color: var(--ink);

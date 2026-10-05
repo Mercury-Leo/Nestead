@@ -1000,15 +1000,17 @@
     "showAll": "Show all",
     "showing": "Showing {{shown, number}} of {{total, number}}",
     "showMore": "Show {{count, number}} more",
+    "filter": {
+      "option": "{{name}} {{count, number}}",
+      "clear": "Clear",
+      "done_one": "Show {{count, number}} show",
+      "done_other": "Show {{count, number}} shows"
+    },
     "genres": {
       "label": "Genres",
       "picked": "Genres: {{genres}}",
       "hint": "Shows with every genre you pick: Action and Comedy finds action comedies.",
-      "option": "{{genre}} {{count, number}}",
       "none": "No genres yet. They come with each show’s details.",
-      "clear": "Clear",
-      "done_one": "Show {{count, number}} show",
-      "done_other": "Show {{count, number}} shows",
       "missing_one": "{{count, number}} show has no genres yet: it was added before genres were saved.",
       "missing_other": "{{count, number}} shows have no genres yet: they were added before genres were saved.",
       "fetch": "Get their genres",
