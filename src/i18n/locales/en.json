@@ -1046,6 +1046,12 @@
       "war": "War",
       "western": "Western"
     },
+    "tags": {
+      "label": "Tags",
+      "picked": "Tags: {{tags}}",
+      "filterHint": "Shows with every tag you pick.",
+      "none": "None of the shows listed has a tag."
+    },
     "card": {
       "onImdb": "on IMDb, opens in a new tab",
       "more": "More about {{title}}",

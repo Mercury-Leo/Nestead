@@ -1,12 +1,12 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUpDown, Clapperboard, Drama, Plus, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
+import { ArrowUpDown, Clapperboard, Drama, Plus, Search as SearchIcon, SlidersHorizontal, Tag as TagIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { PageHeader } from '../../../components/PageHeader';
 import { Button, Chip, EmptyState, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
 import { readPreference, writePreference } from '../../../data/local/localStore';
 import { useCollectionState } from '../../../data/useCollection';
-import { SHOWS_PAGE, SHOW_SORTS, SHOW_STATUSES, filterShows, genreCounts, lacksGenres, parseShowView, shownCount, sortShows } from '../../../domain/shows';
+import { SHOWS_PAGE, SHOW_SORTS, SHOW_STATUSES, filterShows, genreCounts, hasTags, lacksGenres, parseShowView, shownCount, sortShows, tagCounts } from '../../../domain/shows';
 import type { KindFilter, ShowView, StatusFilter } from '../../../domain/shows';
 import type { Show } from '../../../domain/types';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
@@ -17,7 +17,7 @@ import { STATUS_KEY, genreLabel } from './labels';
 import { ShowCard } from './ShowCard';
 import s from './Shows.module.css';
 
-/** The status, kind and genre filters and the sort, remembered per family on this device. */
+/** The status, kind, genre and tag filters and the sort, remembered per family on this device. */
 const VIEW_PREFERENCE = 'showsView';
 
 /** Pages built of one list (one search, filter and sort), and a show it must include. */
@@ -27,7 +27,11 @@ interface Paging {
   reveal?: string;
 }
 
-const keyOf = (query: string, view: ShowView): string => [query, view.status, view.kind, view.genres.join('\u0001'), view.sort].join('\u0000');
+const keyOf = (query: string, view: ShowView): string =>
+  [query, view.status, view.kind, view.genres.join('\u0001'), view.tags.join('\u0001'), view.sort].join('\u0000');
+
+/** A tag's name on screen: as typed. */
+const asTyped = (tag: string): string => tag;
 
 /**
  * The family's movies and series. Everything here works on saved rows: the
@@ -54,7 +58,7 @@ export function Shows(): JSX.Element {
   const set = (patch: Partial<ShowView>): void => setView((current) => ({ ...current, ...patch }));
   const showAll = (): void => {
     setQuery('');
-    set({ status: 'all', kind: 'all', genres: [] });
+    set({ status: 'all', kind: 'all', genres: [], tags: [] });
   };
   // The search finds a genre by its name on screen too: "קומדיה" as well as "comedy".
   const genreName = useCallback((genre: string): string => genreLabel(t, genre), [t]);
@@ -63,9 +67,15 @@ export function Shows(): JSX.Element {
   // The field shows each key at once; the list follows in a render that can be
   // interrupted, since a keystroke can build up to a page of new cards.
   const listQuery = useDeferredValue(query);
-  const shown = sortShows(filterShows(rows, { query: listQuery, status: view.status, kind: view.kind, genres: view.genres, genreName }), view.sort, collator.compare);
-  // Counts follow the kind and genre filters, so "To watch 3" means three of what is listed; All leaves dropped shows out, as its list does.
-  const ofKind = rows.filter((row) => (view.kind === 'all' || row.kind === view.kind) && view.genres.every((genre) => row.genres?.includes(genre) === true));
+  const shown = sortShows(
+    filterShows(rows, { query: listQuery, status: view.status, kind: view.kind, genres: view.genres, tags: view.tags, genreName }),
+    view.sort,
+    collator.compare,
+  );
+  // Counts follow the kind, genre and tag filters, so "To watch 3" means three of what is listed; All leaves dropped shows out, as its list does.
+  const ofKind = rows.filter(
+    (row) => (view.kind === 'all' || row.kind === view.kind) && view.genres.every((genre) => row.genres?.includes(genre) === true) && hasTags(row, view.tags),
+  );
   const count = (status: StatusFilter): number => ofKind.filter((row) => (status === 'all' ? row.status !== 'dropped' : row.status === status)).length;
 
   // Pages asked for, for this search, filter and sort only: any change, back
@@ -92,15 +102,15 @@ export function Shows(): JSX.Element {
   /** Brings a show into view after adding it, or after trying to add one already here. */
   const reveal = (show: Show): void => {
     setAdding(false);
-    const hidden = filterShows([show], { query, status: view.status, kind: view.kind, genres: view.genres, genreName }).length === 0;
+    const hidden = filterShows([show], { query, status: view.status, kind: view.kind, genres: view.genres, tags: view.tags, genreName }).length === 0;
     // Clearing the search and filters shows it, except a dropped show, which only the Dropped filter lists.
     const status: StatusFilter = show.status === 'dropped' ? 'dropped' : 'all';
     if (hidden) {
       setQuery('');
-      set({ status, kind: 'all', genres: [] });
+      set({ status, kind: 'all', genres: [], tags: [] });
     }
     // Keyed to the list it will show in, so clearing the filters does not drop it.
-    setPaging(hidden ? { key: keyOf('', { ...view, status, kind: 'all', genres: [] }), pages: 1, reveal: show.id } : { ...current, reveal: show.id });
+    setPaging(hidden ? { key: keyOf('', { ...view, status, kind: 'all', genres: [], tags: [] }), pages: 1, reveal: show.id } : { ...current, reveal: show.id });
     setRevealed({ id: show.id, at: Date.now() });
   };
 
@@ -123,6 +133,24 @@ export function Shows(): JSX.Element {
       onChange={(genres) => set({ genres })}
     />
   );
+  // Shown once any show has a tag, or while one is picked, so a tag picked on an earlier visit can come off.
+  const anyTags = view.tags.length > 0 || rows.some((row) => (row.tags?.length ?? 0) > 0);
+  const tagFilter = (shape: 'button' | 'chip'): JSX.Element | null =>
+    anyTags ? (
+      <ChipFilter
+        shape={shape}
+        label={t('shows.tags.label')}
+        icon={TagIcon}
+        hint={t('shows.tags.filterHint')}
+        empty={t('shows.tags.none')}
+        picked={view.tags}
+        counts={tagCounts(shown)}
+        listed={shown.length}
+        name={asTyped}
+        pickedLabel={(tags) => t('shows.tags.picked', { tags })}
+        onChange={(tags) => set({ tags })}
+      />
+    ) : null;
 
   const addAction = desktop ? (
     <Button variant="primary" size="lg" icon={Plus} onClick={() => setAdding(true)}>
@@ -181,6 +209,7 @@ export function Shows(): JSX.Element {
               />
               <Segmented<KindFilter> label={t('shows.kindLabel')} value={view.kind} onChange={(kind) => set({ kind })} options={kinds} />
               {genreFilter('button')}
+              {tagFilter('button')}
             </div>
             <SelectButton label={t('shows.sortBy')} icon={ArrowUpDown} className={s.sort} value={view.sort} onChange={(sort) => set({ sort })} options={sorts} />
           </>
@@ -200,6 +229,7 @@ export function Shows(): JSX.Element {
               options={kinds}
             />
             {genreFilter('chip')}
+            {tagFilter('chip')}
             <SelectButton
               label={t('shows.sortBy')}
               icon={ArrowUpDown}

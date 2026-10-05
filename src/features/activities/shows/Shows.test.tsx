@@ -53,6 +53,18 @@ async function render(): Promise<HTMLElement> {
 const cards = (host: HTMLElement): HTMLElement[] => [...host.querySelectorAll<HTMLElement>('main article, article')];
 const button = (host: HTMLElement, text: string): HTMLButtonElement | undefined =>
   [...host.querySelectorAll('button')].find((b) => b.textContent?.startsWith(text));
+const titles = (host: HTMLElement): string[] => cards(host).map((card) => card.querySelector('h3 a')?.firstChild?.textContent ?? '');
+const sheet = (): HTMLDialogElement | null => document.querySelector('dialog[open]');
+const chip = (root: ParentNode, text: string): HTMLButtonElement | undefined =>
+  [...root.querySelectorAll<HTMLButtonElement>('button[aria-pressed]')].find((b) => b.textContent === text);
+
+async function type(host: HTMLElement, text: string): Promise<void> {
+  const field = host.querySelector<HTMLInputElement>('input[type="search"]') as HTMLInputElement;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, text);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
 
 beforeAll(async () => {
   await localeReady;
@@ -190,19 +202,6 @@ describe('genres', () => {
     }
   }
 
-  const titles = (host: HTMLElement): string[] => cards(host).map((card) => card.querySelector('h3 a')?.firstChild?.textContent ?? '');
-  const sheet = (): HTMLDialogElement | null => document.querySelector('dialog[open]');
-  const chip = (root: ParentNode, text: string): HTMLButtonElement | undefined =>
-    [...root.querySelectorAll<HTMLButtonElement>('button[aria-pressed]')].find((b) => b.textContent === text);
-
-  async function type(host: HTMLElement, text: string): Promise<void> {
-    const field = host.querySelector<HTMLInputElement>('input[type="search"]') as HTMLInputElement;
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, text);
-      field.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-  }
-
   it('shows each card its genres, in the screen language', async () => {
     await addShelf();
     const host = await render();
@@ -313,5 +312,72 @@ describe('genres', () => {
     expect(host.textContent).toContain(i18n.t('shows.failure.limit'));
     expect(host.textContent).toContain(i18n.t('shows.genres.missing', { count: 1 }));
     expect(button(host, i18n.t('shows.genres.fetch'))?.disabled).toBe(false);
+  });
+});
+
+describe('tags', () => {
+  // Added in reverse A to Z, so newest first and A to Z (the tie-break when two share a millisecond) agree.
+  const SHELF: [string, string[]][] = [
+    ['Sharknado', ['Bad movie', 'Movie night']],
+    ['Santa Claus Conquers the Martians', ['Bad movie', 'Christmas']],
+    ['Inception', []],
+    ['Elf', ['Christmas']],
+  ];
+
+  async function addShelf(): Promise<void> {
+    for (const [i, [title, tags]] of SHELF.entries()) {
+      await store.shows.create({ imdbId: `tt${String(4000000 + i)}`, kind: 'movie', title, fetchedAt: '2026-10-04T08:00:00.000Z', status: 'to-watch', tags });
+    }
+  }
+
+  it('has no Tags control until a show has a tag', async () => {
+    await addShows(3);
+    const host = await render();
+    expect(button(host, i18n.t('shows.tags.label'))).toBeUndefined();
+  });
+
+  it('keeps only shows with every tag picked, and the status counts follow', async () => {
+    await addShelf();
+    const host = await render();
+    await act(async () => button(host, i18n.t('shows.tags.label'))?.click());
+    const picker = sheet() as HTMLDialogElement;
+    expect([...picker.querySelectorAll('[role="group"] button')].map((b) => b.textContent)).toEqual(['Bad movie 2', 'Christmas 2', 'Movie night 1']);
+
+    await act(async () => chip(picker, 'Bad movie 2')?.click());
+    expect(titles(host)).toEqual(['Santa Claus Conquers the Martians', 'Sharknado']);
+    await act(async () => chip(picker, 'Christmas 1')?.click());
+    expect(titles(host)).toEqual(['Santa Claus Conquers the Martians']);
+    await act(async () => button(picker, i18n.t('shows.filter.done', { count: 1 }))?.click());
+    expect(sheet()).toBeNull();
+    expect(host.textContent).toContain('Bad movie and Christmas');
+    expect(button(host, i18n.t('shows.all', { count: 1 }))).toBeDefined();
+
+    await act(async () => button(host, 'Bad movie and Christmas')?.click());
+    await act(async () => button(sheet() as HTMLDialogElement, i18n.t('shows.filter.clear'))?.click());
+    expect(cards(host)).toHaveLength(4);
+  });
+
+  it('are cleared by Show all', async () => {
+    await addShelf();
+    const host = await render();
+    await act(async () => button(host, i18n.t('shows.tags.label'))?.click());
+    await act(async () => chip(sheet() as HTMLDialogElement, 'Christmas 2')?.click());
+    await act(async () => button(sheet() as HTMLDialogElement, i18n.t('shows.filter.done', { count: 2 }))?.click());
+    await type(host, 'sharknado');
+    expect(cards(host)).toHaveLength(0);
+    await act(async () => button(host, i18n.t('shows.showAll'))?.click());
+    expect(cards(host)).toHaveLength(4);
+    expect(button(host, i18n.t('shows.tags.label'))).toBeDefined();
+  });
+
+  it('finds a tag typed in the search, by the start of its words', async () => {
+    await addShelf();
+    const host = await render();
+    await type(host, 'bad');
+    expect(titles(host)).toEqual(['Santa Claus Conquers the Martians', 'Sharknado']);
+    await type(host, 'christmas bad');
+    expect(titles(host)).toEqual(['Santa Claus Conquers the Martians']);
+    await type(host, 'ovie');
+    expect(cards(host)).toHaveLength(0);
   });
 });
