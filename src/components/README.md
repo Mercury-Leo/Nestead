@@ -15,7 +15,7 @@ App-wide UI: the generic kit in `ui/`, the light and dark theme in `theme/`, and
 | `ui/controls.tsx` (+ `controls.module.css`) | `Segmented`, `Switch`, `Checkbox`, `RadioList`, `TextField`, `Stepper` over native inputs. |
 | `ui/EmptyState.tsx` (+ `EmptyState.module.css`) | Icon, title, body and actions for an empty screen. |
 | `ui/SelectButton.tsx` (+ `SelectButton.module.css`) | A native `<select>` dressed as a button. |
-| `ui/Sheet.tsx` (+ `Sheet.module.css`) | Modal on `<dialog>`: a bottom sheet on phones, a dialog on desktop. |
+| `ui/Sheet.tsx` (+ `Sheet.module.css`) | Modal on `<dialog>`: a bottom sheet on phones, a dialog on desktop. On phones the page behind it stays still while it is open. |
 | `ui/icons.tsx` | `BackArrow`, `ForwardArrow`, `ForwardChevron`, `SignOutIcon`, mirrored in RTL. |
 | `ui/cx.ts` | Joins truthy class names. |
 
@@ -23,6 +23,7 @@ App-wide UI: the generic kit in `ui/`, the light and dark theme in `theme/`, and
 - `ThemeProvider` sets `data-theme` on `<html>`, which switches the tokens in `../styles/tokens.css`; the choice is a device preference (`theme/theme.tsx`).
 - `index.html` applies the stored theme before first paint from `nestead:device:pref:theme`, the key `theme/theme.tsx` writes.
 - Mirrored icons carry `flipRtl`, which `../styles/global.css` flips under `[dir='rtl']` (`ui/icons.tsx`).
+- A sheet's `<dialog>` blocks clicks on the page behind it, not scrolling. Below 1024 px, `html:has(.sheet:modal)` hides the page's overflow while one is open, so a swipe on the backdrop or a short sheet leaves the page where it was, and closing it keeps the scroll position. Desktop is left alone: hiding a classic scrollbar there would shift the page sideways (`ui/Sheet.module.css`).
 - `../app/Shell.tsx` wraps the routes in `ErrorBoundary`; the usual failure is a lazy chunk gone after a deploy (`ErrorBoundary.tsx`).
 
 ## Connections
@@ -33,6 +34,7 @@ App-wide UI: the generic kit in `ui/`, the light and dark theme in `theme/`, and
 - Only generic pieces go in `ui/`; anything that knows about recipes lives in `features/larder/recipe/` (`ui/index.ts`).
 - Real `<button>`, `<a>` and `<input>` throughout, with touch targets of at least 44px (`ui/index.ts`).
 - Colours differ between themes only through tokens; components never branch on the theme (`../styles/tokens.css` header).
+- A `.visually-hidden` label is absolutely positioned: put it inside something positioned (`position: relative`), above all in a horizontally scrolling row. Otherwise it escapes the row's clipping and widens the page, and on a phone the browser then lays out fixed elements, the tab bar and every open sheet, against the wider page, partly off screen (`../features/activities/shows/GenrePicker.module.css`). `SelectButton` is already positioned.
 - Files inside `ui/` import each other by file (`./cx`), never through the barrel `./`: the cycle makes `vite build` warn that the export "will end up in different chunks" once per lazy screen (`ui/SelectButton.tsx`).
 
 ## Tests

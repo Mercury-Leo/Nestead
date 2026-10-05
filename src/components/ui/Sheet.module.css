@@ -88,4 +88,13 @@
   .sheetBody {
     padding: 8px 20px 20px;
   }
+
+  /*
+   * A bottom sheet holds the page behind it still: <dialog> blocks clicks
+   * there, not scrolling. Phones only, where scrollbars overlay the page;
+   * on desktop, hiding a classic scrollbar would shift the page sideways.
+   */
+  :global(html):has(.sheet:modal) {
+    overflow: hidden;
+  }
 }

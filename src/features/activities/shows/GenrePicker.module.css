@@ -1,3 +1,14 @@
+/*
+ * Both shapes hold the screen-reader label for the genres picked, which is
+ * absolutely positioned (.visually-hidden). Each is its containing block:
+ * without one, the label escaped the phone's scrolling chip row, widened the
+ * page, and the browser laid the sheet and the tab bar out off screen.
+ */
+.button,
+.chip {
+  position: relative;
+}
+
 /* Desktop: drawn like the sort's SelectButton beside it (../../../components/ui/SelectButton.module.css). */
 .button {
   display: inline-flex;
