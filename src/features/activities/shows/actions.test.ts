@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLocalStore } from '../../../data/local/localStore';
 import type { DataStore } from '../../../data/types';
-import { addShow, cycleStatus, dropShow, fillGenres, refreshShow, restoreShow, toggleFavorite } from './actions';
+import { addShow, cycleStatus, dropShow, fillGenres, refreshShow, restoreShow, setTags, toggleFavorite } from './actions';
 import type { lookupShow } from './client';
 
 const INCEPTION = { imdbId: 'tt1375666', kind: 'movie' as const, title: 'Inception', year: 2010, runtimeMin: 148, imdbRating: 8.8 };
@@ -178,5 +178,28 @@ describe('fillGenres', () => {
     const lookup = vi.fn<typeof lookupShow>();
     expect(await fillGenres(store, await store.shows.list(), undefined, lookup)).toEqual({ done: 0 });
     expect(lookup).not.toHaveBeenCalled();
+  });
+});
+
+describe('setTags', () => {
+  it('saves the tags, and an empty list once the last is off', async () => {
+    const { show } = await addShow(store, [], INCEPTION, 'm1');
+    expect((await setTags(store, show, ['Bad movie', 'Christmas'])).tags).toEqual(['Bad movie', 'Christmas']);
+    expect((await store.shows.list())[0]?.tags).toEqual(['Bad movie', 'Christmas']);
+    expect((await setTags(store, show, [])).tags).toEqual([]);
+    expect((await store.shows.list())[0]?.tags).toEqual([]);
+  });
+
+  it('keeps the tags through a status change, a drop and a restore, starring and a refresh', async () => {
+    const { show } = await addShow(store, [], INCEPTION, 'm1');
+    let tagged = await setTags(store, show, ['Bad movie']);
+    tagged = await cycleStatus(store, tagged);
+    tagged = await restoreShow(store, await dropShow(store, tagged));
+    tagged = await toggleFavorite(store, tagged);
+    expect(tagged.tags).toEqual(['Bad movie']);
+    const lookup = vi.fn<typeof lookupShow>(async () => ({ ok: true, value: { ...INCEPTION, imdbRating: 8.9 } }));
+    const refreshed = await refreshShow(store, tagged, lookup);
+    expect(refreshed.ok && refreshed.show.tags).toEqual(['Bad movie']);
+    expect(refreshed.ok && refreshed.show.favorite).toBe(true);
   });
 });

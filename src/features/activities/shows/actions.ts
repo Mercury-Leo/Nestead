@@ -48,6 +48,14 @@ export async function toggleFavorite(store: DataStore, show: Show): Promise<Show
 }
 
 /**
+ * Saves a show's tags, for the whole family. Removing the last writes [],
+ * never a cleared field: the backend's column is not null.
+ */
+export async function setTags(store: DataStore, show: Show, tags: readonly string[]): Promise<Show> {
+  return store.shows.update(show.id, { tags: [...tags] });
+}
+
+/**
  * Reads this one show's details again and saves only the fetched fields. On any
  * failure nothing is written and the saved details stay as they were.
  */
