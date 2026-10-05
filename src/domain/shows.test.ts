@@ -1,18 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SHOW_VIEW,
+  MAX_TAGS,
+  MAX_TAG_LENGTH,
   REFRESHED_FIELDS,
   SHOWS_PAGE,
+  familyTags,
   filterShows,
   genreCounts,
+  hasTags,
   lacksGenres,
   newShow,
   nextStatus,
   parseShowView,
   refreshPatch,
+  sameTag,
   shownCount,
   sortShows,
   statusPatch,
+  tagCounts,
+  tidyTag,
+  withTag,
 } from './shows';
 import type { FetchedDetails } from './shows';
 import type { Show } from './types';
@@ -152,6 +160,83 @@ describe('genres', () => {
   });
 });
 
+describe('tags', () => {
+  const sharknado = show('Sharknado', { genres: ['Action', 'Comedy'], tags: ['Bad movie', 'Movie night'] });
+  const elf = show('Elf', { genres: ['Comedy'], tags: ['Christmas'] });
+  const santa = show('Santa Claus Conquers the Martians', { genres: ['Sci-Fi'], tags: ['bad movie', 'Christmas'] });
+  const plain = show('Plain Entry');
+  const shelf = [sharknado, elf, santa, plain];
+  const none = { query: '', status: 'all', kind: 'all' } as const;
+
+  it('keeps shows with every tag picked, whatever the case', () => {
+    expect(titles(filterShows(shelf, { ...none, tags: ['Bad movie'] }))).toEqual(['Sharknado', 'Santa Claus Conquers the Martians']);
+    expect(titles(filterShows(shelf, { ...none, tags: ['BAD MOVIE', 'christmas'] }))).toEqual(['Santa Claus Conquers the Martians']);
+    expect(filterShows(shelf, { ...none, tags: ['Bad movie', 'Nope'] })).toEqual([]);
+    expect(filterShows(shelf, { ...none, tags: [] })).toEqual(shelf);
+    expect(hasTags(plain, [])).toBe(true);
+    expect(hasTags(plain, ['Christmas'])).toBe(false);
+  });
+
+  it('combines tags with genres', () => {
+    expect(titles(filterShows(shelf, { ...none, tags: ['Christmas'], genres: ['Comedy'] }))).toEqual(['Elf']);
+  });
+
+  it('finds a tag by the start of its words, never by the middle', () => {
+    expect(titles(filterShows(shelf, { ...none, query: 'bad' }))).toEqual(['Sharknado', 'Santa Claus Conquers the Martians']);
+    expect(titles(filterShows(shelf, { ...none, query: 'mov' }))).toEqual(['Sharknado', 'Santa Claus Conquers the Martians']);
+    expect(titles(filterShows(shelf, { ...none, query: 'christmas bad' }))).toEqual(['Santa Claus Conquers the Martians']);
+    expect(titles(filterShows(shelf, { ...none, query: 'badmovie' }))).toEqual(['Sharknado', 'Santa Claus Conquers the Martians']);
+    // "ovie" is inside Movie, but starts none of its words, and no title has it.
+    expect(filterShows(shelf, { ...none, query: 'ovie' })).toEqual([]);
+  });
+
+  it('counts each tag, two spellings as one, spelled as first met', () => {
+    expect(Object.fromEntries(tagCounts(shelf))).toEqual({ 'Bad movie': 2, 'Movie night': 1, Christmas: 2 });
+    expect(tagCounts([]).size).toBe(0);
+  });
+
+  it("lists the family's tags once each", () => {
+    expect(familyTags(shelf)).toEqual(['Bad movie', 'Movie night', 'Christmas']);
+    expect(familyTags([plain])).toEqual([]);
+  });
+
+  it('tells two spellings of one tag apart from two tags', () => {
+    expect(sameTag('Bad movie', 'BAD MOVIE')).toBe(true);
+    expect(sameTag('Bad movie', 'Bad movies')).toBe(false);
+  });
+});
+
+describe('tidyTag', () => {
+  it('trims, keeps one space between words, and cuts at 30 characters', () => {
+    expect(tidyTag('  Bad   movie \n')).toBe('Bad movie');
+    expect(tidyTag('   ')).toBe('');
+    expect(tidyTag('x'.repeat(40))).toBe('x'.repeat(MAX_TAG_LENGTH));
+    // Cut, then trimmed again, so no tag ends in a space.
+    expect(tidyTag(`${'a'.repeat(29)} b`)).toBe('a'.repeat(29));
+    expect(tidyTag('סרט  רע')).toBe('סרט רע');
+  });
+});
+
+describe('withTag', () => {
+  const known = ['Bad movie', 'Christmas'];
+
+  it('adds a new tag, tidied', () => {
+    expect(withTag([], '  Cult  classic ', known)).toEqual(['Cult classic']);
+  });
+
+  it("spells a known tag the family's way", () => {
+    expect(withTag(['Christmas'], 'BAD MOVIE', known)).toEqual(['Christmas', 'Bad movie']);
+  });
+
+  it('changes nothing for an empty tag, one already there in any case, or a full show', () => {
+    const tags = ['Bad movie'];
+    expect(withTag(tags, '  ', known)).toBe(tags);
+    expect(withTag(tags, 'bad movie', known)).toBe(tags);
+    const full = Array.from({ length: MAX_TAGS }, (_, i) => `T${i}`);
+    expect(withTag(full, 'One more', known)).toBe(full);
+  });
+});
+
 describe('sortShows', () => {
   it('puts the newest additions first', () => {
     expect(titles(sortShows(all, 'added'))).toEqual(['Untitled Sequel', 'The Office', 'Breaking Bad', 'Inception']);
@@ -209,8 +294,9 @@ describe('shownCount', () => {
 
 describe('parseShowView', () => {
   it('keeps a valid stored view', () => {
-    expect(parseShowView({ status: 'watched', kind: 'series', sort: 'rating' })).toEqual({ status: 'watched', kind: 'series', genres: [], sort: 'rating' });
+    expect(parseShowView({ status: 'watched', kind: 'series', sort: 'rating' })).toEqual({ status: 'watched', kind: 'series', genres: [], tags: [], sort: 'rating' });
     expect(parseShowView({ status: 'all', kind: 'all', genres: ['Action', 'Comedy'], sort: 'added' }).genres).toEqual(['Action', 'Comedy']);
+    expect(parseShowView({ status: 'all', kind: 'all', tags: ['Bad movie', 'סרט רע'], sort: 'added' }).tags).toEqual(['Bad movie', 'סרט רע']);
     expect(parseShowView({ status: 'dropped', kind: 'all', sort: 'added' }).status).toBe('dropped');
     expect(parseShowView({ status: 'all', kind: 'all', sort: 'favorites' }).sort).toBe('favorites');
   });
@@ -224,6 +310,11 @@ describe('parseShowView', () => {
     expect(parseShowView({ status: 'all', kind: 'all', sort: 'added' }).genres).toEqual([]);
     expect(parseShowView({ genres: 'Action' }).genres).toEqual([]);
     expect(parseShowView({ genres: ['Action', 3, '', ' ', null, 'Action', 'Drama'] }).genres).toEqual(['Action', 'Drama']);
+    // Views saved before tags had none.
+    expect(parseShowView({ status: 'all', kind: 'all', sort: 'added' }).tags).toEqual([]);
+    expect(parseShowView({ tags: 'Bad movie' }).tags).toEqual([]);
+    expect(parseShowView({ tags: ['Bad movie', 3, '', ' ', null, 'Bad movie', 'Christmas'] }).tags).toEqual(['Bad movie', 'Christmas']);
+    expect(parseShowView({ tags: Array.from({ length: 25 }, (_, i) => `T${i}`) }).tags).toHaveLength(MAX_TAGS);
   });
 });
 
@@ -278,7 +369,7 @@ describe('refreshPatch', () => {
   }
 
   it("updates the fetched fields and fetchedAt, and keeps status, watchedAt and the star", () => {
-    const watched = { ...breakingBad, status: 'watched' as const, watchedAt: '2026-09-01T20:00:00.000Z', favorite: true };
+    const watched = { ...breakingBad, status: 'watched' as const, watchedAt: '2026-09-01T20:00:00.000Z', favorite: true, tags: ['Bad movie'] };
     const after = apply(watched, refreshPatch(fresh, fetchedAt));
     expect(after.imdbRating).toBe(9.6);
     expect(after.runtimeMin).toBe(47);
@@ -288,6 +379,7 @@ describe('refreshPatch', () => {
     expect(after.status).toBe('watched');
     expect(after.watchedAt).toBe('2026-09-01T20:00:00.000Z');
     expect(after.favorite).toBe(true);
+    expect(after.tags).toEqual(['Bad movie']);
     expect(after.createdBy).toBe(watched.createdBy);
     expect(after.id).toBe(watched.id);
   });
@@ -295,7 +387,7 @@ describe('refreshPatch', () => {
   it('writes exactly the refreshed fields, never status, watchedAt, the star or who added it', () => {
     const patch = refreshPatch({ ...fresh, status: 'to-watch', watchedAt: undefined, favorite: false, createdBy: 'm2' } as FetchedDetails, fetchedAt);
     expect(Object.keys(patch).sort()).toEqual([...REFRESHED_FIELDS].sort());
-    for (const key of ['status', 'watchedAt', 'favorite', 'createdBy', 'imdbId', 'kind', 'id', 'familyId', 'createdAt', 'updatedAt']) {
+    for (const key of ['status', 'watchedAt', 'favorite', 'tags', 'createdBy', 'imdbId', 'kind', 'id', 'familyId', 'createdAt', 'updatedAt']) {
       expect(patch, key).not.toHaveProperty(key);
     }
   });

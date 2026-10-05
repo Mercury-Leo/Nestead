@@ -24,35 +24,48 @@ export interface ShowView {
   kind: KindFilter;
   /** Genres a show must all have, as stored (in English). Empty: no genre filter. */
   genres: string[];
+  /** Tags a show must all have, as typed. Empty: no tag filter. */
+  tags: string[];
   sort: ShowSort;
 }
 
-export const DEFAULT_SHOW_VIEW: ShowView = { status: 'all', kind: 'all', genres: [], sort: 'added' };
+export const DEFAULT_SHOW_VIEW: ShowView = { status: 'all', kind: 'all', genres: [], tags: [], sort: 'added' };
 
 /** More genres than a show can have (ten) would match nothing. */
 const MAX_GENRE_FILTER = 10;
 
+/** Tags one show can have; the backend's check allows no more. */
+export const MAX_TAGS = 20;
+
+/** Characters in one tag. */
+export const MAX_TAG_LENGTH = 30;
+
 /** Rebuilds a view from a stored preference, ignoring anything malformed. */
 export function parseShowView(raw: unknown): ShowView {
   if (typeof raw !== 'object' || raw === null) return DEFAULT_SHOW_VIEW;
-  const { status, kind, genres, sort } = raw as Record<string, unknown>;
+  const { status, kind, genres, tags, sort } = raw as Record<string, unknown>;
   return {
     status: status === 'all' || SHOW_STATUSES.includes(status as ShowStatus) ? (status as StatusFilter) : DEFAULT_SHOW_VIEW.status,
     kind: kind === 'all' || kind === 'movie' || kind === 'series' ? kind : DEFAULT_SHOW_VIEW.kind,
-    genres: Array.isArray(genres)
-      ? [...new Set(genres.filter((genre): genre is string => typeof genre === 'string' && genre.trim() !== ''))].slice(0, MAX_GENRE_FILTER)
-      : DEFAULT_SHOW_VIEW.genres,
+    genres: storedNames(genres, MAX_GENRE_FILTER),
+    tags: storedNames(tags, MAX_TAGS),
     sort: SHOW_SORTS.includes(sort as ShowSort) ? (sort as ShowSort) : DEFAULT_SHOW_VIEW.sort,
   };
 }
 
+/** A stored list of names: strings with something in them, each once, at most `max`. Anything else is none. */
+function storedNames(raw: unknown, max: number): string[] {
+  return Array.isArray(raw) ? [...new Set(raw.filter((item): item is string => typeof item === 'string' && item.trim() !== ''))].slice(0, max) : [];
+}
+
 export interface ShowFilter {
   /**
-   * Words, each found in the title or among the genres, whatever the case:
-   * "action comedy" finds shows with both genres, "batman action" an action
-   * show with Batman in its title. A word finds a genre by the start of one
-   * of its words ("sci" and "fi" find Sci-Fi, "man" never finds Romance), and
-   * a title anywhere in it.
+   * Words, each found in the title, among the genres or among the tags,
+   * whatever the case: "action comedy" finds shows with both genres, "batman
+   * action" an action show with Batman in its title, "bad" a show tagged Bad
+   * movie. A word finds a genre or a tag by the start of one of its words
+   * ("sci" and "fi" find Sci-Fi, "man" never finds Romance), and a title
+   * anywhere in it.
    */
   query: string;
   /** `all` is every show the family still means to watch or has: dropped ones only show under `dropped`. */
@@ -60,6 +73,8 @@ export interface ShowFilter {
   kind: KindFilter;
   /** Genres a show must all have: Action and Comedy is action comedies. */
   genres?: readonly string[];
+  /** Tags a show must all have, whatever the case: Bad movie and Christmas is bad Christmas movies. */
+  tags?: readonly string[];
   /** What else the search finds a genre by, such as its name in the screen's language. */
   genreName?: (genre: string) => string;
 }
@@ -69,13 +84,24 @@ function folded(text: string): string {
   return text.toLocaleLowerCase().replace(/[\s-]+/g, '');
 }
 
-/** What a search word must start: each word of the genre and of its name, and each run together. */
-function genreStarts(genre: string, name: string | undefined): string[] {
+/** What a search word must start: each word of each text, and each text run together. */
+function wordStarts(texts: readonly string[]): string[] {
   const starts: string[] = [];
-  for (const text of name === undefined ? [genre] : [genre, name]) {
-    starts.push(...text.toLocaleLowerCase().split(/[\s-]+/), folded(text));
-  }
+  for (const text of texts) starts.push(...text.toLocaleLowerCase().split(/[\s-]+/), folded(text));
   return starts.filter((start) => start !== '');
+}
+
+/** `compute` worked out once per key: a list repeats the same few genres and tags. */
+function once(compute: (key: string) => string[]): (key: string) => string[] {
+  const found = new Map<string, string[]>();
+  return (key) => {
+    let value = found.get(key);
+    if (value === undefined) {
+      value = compute(key);
+      found.set(key, value);
+    }
+    return value;
+  };
 }
 
 export function filterShows(shows: readonly Show[], filter: ShowFilter): Show[] {
@@ -86,26 +112,24 @@ export function filterShows(shows: readonly Show[], filter: ShowFilter): Show[] 
     .filter((word) => word !== '')
     .map((word) => ({ word, folded: folded(word) }));
   const wanted = filter.genres ?? [];
-  // A list repeats the same few genres: work out what each answers to once.
-  const starts = new Map<string, string[]>();
-  const startsOf = (genre: string): string[] => {
-    let found = starts.get(genre);
-    if (found === undefined) {
-      found = genreStarts(genre, filter.genreName?.(genre));
-      starts.set(genre, found);
-    }
-    return found;
-  };
+  const wantedTags = filter.tags ?? [];
+  const genreStarts = once((genre) => wordStarts(filter.genreName === undefined ? [genre] : [genre, filter.genreName(genre)]));
+  const tagStarts = once((tag) => wordStarts([tag]));
   return shows.filter((show) => {
     if (filter.status === 'all' ? show.status === 'dropped' : show.status !== filter.status) return false;
     if (filter.kind !== 'all' && show.kind !== filter.kind) return false;
     const genres = show.genres ?? [];
     if (!wanted.every((genre) => genres.includes(genre))) return false;
+    if (!hasTags(show, wantedTags)) return false;
     if (words.length === 0) return true;
     const title = show.title.toLocaleLowerCase();
+    const tags = show.tags ?? [];
     return words.every(
       ({ word, folded: key }) =>
-        title.includes(word) || (key !== '' && genres.some((genre) => startsOf(genre).some((start) => start.startsWith(key)))),
+        title.includes(word) ||
+        (key !== '' &&
+          (genres.some((genre) => genreStarts(genre).some((start) => start.startsWith(key))) ||
+            tags.some((tag) => tagStarts(tag).some((start) => start.startsWith(key))))),
     );
   });
 }
@@ -120,6 +144,59 @@ export function genreCounts(shows: readonly Show[]): Map<string, number> {
 /** A show added before genres were saved: reading its details again fills them in. */
 export function lacksGenres(show: Show): boolean {
   return show.genres === undefined;
+}
+
+const tagKey = (tag: string): string => tag.toLocaleLowerCase();
+
+/** One tag, however each is capitalised: "Bad movie" and "bad movie". */
+export function sameTag(a: string, b: string): boolean {
+  return tagKey(a) === tagKey(b);
+}
+
+/** A typed tag as it is saved: trimmed, one space between words, at most MAX_TAG_LENGTH characters. Empty: no tag. */
+export function tidyTag(text: string): string {
+  return Array.from(text.trim().replace(/\s+/g, ' ')).slice(0, MAX_TAG_LENGTH).join('').trimEnd();
+}
+
+/**
+ * A show's tags with one more: `typed` tidied, spelled as the family already
+ * spells it when `known` has it in any case ("bad movie" saves as "Bad
+ * movie"). The same array back when the tag is empty, the show already has
+ * it in any case, or the show has MAX_TAGS.
+ */
+export function withTag(tags: readonly string[], typed: string, known: readonly string[]): readonly string[] {
+  const tidy = tidyTag(typed);
+  if (tidy === '' || tags.length >= MAX_TAGS || tags.some((tag) => sameTag(tag, tidy))) return tags;
+  return [...tags, known.find((tag) => sameTag(tag, tidy)) ?? tidy];
+}
+
+/** Whether a show has every one of `tags`, whatever the case. */
+export function hasTags(show: Show, tags: readonly string[]): boolean {
+  if (tags.length === 0) return true;
+  const own = (show.tags ?? []).map(tagKey);
+  return tags.every((tag) => own.includes(tagKey(tag)));
+}
+
+/**
+ * Each tag among these shows, with how many have it. Spellings that differ
+ * only in case count as one tag, spelled as first met.
+ */
+export function tagCounts(shows: readonly Show[]): Map<string, number> {
+  const spelling = new Map<string, string>();
+  const counts = new Map<string, number>();
+  for (const show of shows) {
+    for (const tag of show.tags ?? []) {
+      const name = spelling.get(tagKey(tag)) ?? tag;
+      spelling.set(tagKey(tag), name);
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+/** Every tag the family uses, each once, spelled as first met. Screens sort it. */
+export function familyTags(shows: readonly Show[]): string[] {
+  return [...tagCounts(shows).keys()];
 }
 
 /** Ties keep a fixed order: by title, then id. */
