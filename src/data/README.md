@@ -8,7 +8,7 @@ The only way screens reach stored rows: the `Collection` and `DataStore` contrac
 | `boundary.test.ts` | Fails if anything outside `supabase/` imports the Supabase SDK or that folder, bar `../auth/session.tsx`. |
 | `cache.ts` (+ `cache.test.ts`) | `CachedCollection`, `withCache()`, `cacheOf()`, `preloadStore()`: one shared copy per collection, writes shown at once. |
 | `useCollection.ts` | `useCollectionState()` (`rows` and `loaded`), `useCollection()` (rows only), and `preloadCollection()`, which starts a collection's read ahead of its screen (`../app/warm.ts`). |
-| `collection.contract.ts` | `runDataStoreContract(name, make, reset?)`: the twelve cases every backend must pass, among them show rows and address rows (Hebrew, optional fields cleared). |
+| `collection.contract.ts` | `runDataStoreContract(name, make, reset?)`: the thirteen cases every backend must pass, among them show rows and address rows (Hebrew, optional fields cleared). |
 | `local/localStore.ts` (+ `localStore.test.ts`) | localStorage backend, plus `readPreference`/`writePreference` and `readDevicePreference`/`writeDevicePreference`. |
 | `local/localPhotos.ts` | Local `PhotoStore` in IndexedDB (`nestead-photos`). |
 | `supabase/supabaseClient.ts` | Browser client from `VITE_SUPABASE_*`, remember-me session storage, email-link parsing. |
