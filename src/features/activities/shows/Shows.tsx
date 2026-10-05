@@ -111,7 +111,6 @@ export function Shows(): JSX.Element {
   const genrePicker = (shape: 'button' | 'chip'): JSX.Element => (
     <GenrePicker
       shape={shape}
-      className={shape === 'button' ? s.genreFilter : undefined}
       picked={view.genres}
       counts={genreCounts(shown)}
       listed={shown.length}
@@ -167,15 +166,16 @@ export function Shows(): JSX.Element {
         />
         {desktop ? (
           <>
-            <Segmented<StatusFilter>
-              label={t('shows.statusLabel')}
-              className={s.statusFilter}
-              value={view.status}
-              onChange={(status) => set({ status })}
-              options={statuses.map((value) => ({ value, label: statusLabel(value) }))}
-            />
-            <Segmented<KindFilter> label={t('shows.kindLabel')} className={s.kindFilter} value={view.kind} onChange={(kind) => set({ kind })} options={kinds} />
-            {genrePicker('button')}
+            <div className={s.filters}>
+              <Segmented<StatusFilter>
+                label={t('shows.statusLabel')}
+                value={view.status}
+                onChange={(status) => set({ status })}
+                options={statuses.map((value) => ({ value, label: statusLabel(value) }))}
+              />
+              <Segmented<KindFilter> label={t('shows.kindLabel')} value={view.kind} onChange={(kind) => set({ kind })} options={kinds} />
+              {genrePicker('button')}
+            </div>
             <SelectButton label={t('shows.sortBy')} icon={ArrowUpDown} className={s.sort} value={view.sort} onChange={(sort) => set({ sort })} options={sorts} />
           </>
         ) : (
