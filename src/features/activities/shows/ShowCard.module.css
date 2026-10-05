@@ -134,6 +134,12 @@
   list-style: none;
 }
 
+/* Without these, a chip keeps its whole text's width and a long tag runs past the card (and can widen the page on a phone). */
+.tags > li {
+  min-width: 0;
+  max-width: 100%;
+}
+
 /*
  * 28px tall: above the 24px minimum target (WCAG 2.5.8), without a 44px
  * target's height on every tagged card.
