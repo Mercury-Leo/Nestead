@@ -135,11 +135,11 @@ function FavoriteStar({ show, onToggle }: { show: Show; onToggle: () => void }):
 }
 
 /**
- * Behind the toggle: the plot, when it was read, refresh and delete. Built
- * only while the card is open: on a long list, every closed card building its
- * hidden panel was half the page's elements (docs/PERFORMANCE.md).
+ * Behind the toggle: the plot, when it was read, Tags, refresh and delete.
+ * Built only while the card is open: on a long list, every closed card
+ * building its hidden panel was half the page's elements (docs/PERFORMANCE.md).
  */
-function Details({ show }: { show: Show }): JSX.Element {
+function Details({ show, onEditTags }: { show: Show; onEditTags: () => void }): JSX.Element {
   const { t } = useTranslation();
   const { store } = useSession();
   const [refreshing, setRefreshing] = useState(false);
@@ -191,6 +191,9 @@ function Details({ show }: { show: Show }): JSX.Element {
         </div>
       ) : (
         <div className={s.detailActions}>
+          <Button variant="ghost" icon={TagIcon} onClick={onEditTags}>
+            {t('shows.tags.edit')}
+          </Button>
           <Button variant="ghost" icon={RefreshCw} disabled={refreshing} onClick={() => void refresh()}>
             {refreshing ? t('shows.card.refreshing') : t('shows.card.refresh')}
           </Button>
@@ -236,23 +239,26 @@ function sameList(a: readonly string[] | undefined, b: readonly string[] | undef
  * One show. `revealed` changes when the page asks for this card to be shown
  * (adding a show that is already on the list): it opens, scrolls into view,
  * takes focus and flashes once. Memoised on the show's fields and the page's
- * callback, which the page keeps the same between renders, so a status change
- * or a keystroke re-renders the cards it changes, not all of them.
+ * two callbacks, which the page keeps the same between renders, so a status
+ * change or a keystroke re-renders the cards it changes, not all of them.
  */
 export const ShowCard = memo(
   ShowCardView,
-  (before, after) => before.revealed === after.revealed && before.onTag === after.onTag && sameShow(before.show, after.show),
+  (before, after) => before.revealed === after.revealed && before.onTag === after.onTag && before.onEditTags === after.onEditTags && sameShow(before.show, after.show),
 );
 
 function ShowCardView({
   show,
   revealed,
   onTag,
+  onEditTags,
 }: {
   show: Show;
   revealed?: number;
   /** Adds a tag to the page's filter. */
   onTag: (tag: string) => void;
+  /** Opens the page's Tags sheet for this show. */
+  onEditTags: (show: Show) => void;
 }): JSX.Element {
   const { t } = useTranslation();
   const { store } = useSession();
@@ -295,7 +301,7 @@ function ShowCardView({
         <Genres genres={show.genres} />
         <Tags tags={show.tags} onTag={onTag} />
         <div id={id} className={s.details} hidden={!open}>
-          {open && <Details show={show} />}
+          {open && <Details show={show} onEditTags={() => onEditTags(show)} />}
         </div>
         {/* At the card's bottom corner, after the details, so a card closes from where its reader ends. */}
         <button

@@ -15,6 +15,7 @@ import { GenreFill } from './GenreFill';
 import { ChipFilter } from './ChipFilter';
 import { STATUS_KEY, genreLabel } from './labels';
 import { ShowCard } from './ShowCard';
+import { TagSheet } from './TagSheet';
 import s from './Shows.module.css';
 
 /** The status, kind, genre and tag filters and the sort, remembered per family on this device. */
@@ -70,6 +71,10 @@ export function Shows(): JSX.Element {
     const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
     toolbar.current?.scrollIntoView?.({ block: 'start', behavior: still ? 'auto' : 'smooth' });
   }, []);
+  // The Tags sheet is the page's, not the card's: the grid keeps one card per child (Show more's focus).
+  const [tagging, setTagging] = useState<string | null>(null);
+  const editTags = useCallback((show: Show): void => setTagging(show.id), []);
+  const taggingShow = tagging === null ? undefined : rows.find((row) => row.id === tagging);
 
   const collator = useMemo(() => new Intl.Collator(i18n.language, { sensitivity: 'base', numeric: true }), [i18n.language]);
   // The field shows each key at once; the list follows in a render that can be
@@ -266,7 +271,7 @@ export function Shows(): JSX.Element {
         <>
           <div className={s.grid} ref={grid}>
             {shown.slice(0, built).map((show) => (
-              <ShowCard key={show.id} show={show} revealed={revealed?.id === show.id ? revealed.at : undefined} onTag={filterByTag} />
+              <ShowCard key={show.id} show={show} revealed={revealed?.id === show.id ? revealed.at : undefined} onTag={filterByTag} onEditTags={editTags} />
             ))}
           </div>
           {shown.length > SHOWS_PAGE && (
@@ -283,6 +288,7 @@ export function Shows(): JSX.Element {
           )}
         </>
       )}
+      {taggingShow !== undefined && <TagSheet show={taggingShow} shows={rows} onClose={() => setTagging(null)} />}
       {sheet}
     </div>
   );

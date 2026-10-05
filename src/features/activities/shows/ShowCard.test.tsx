@@ -175,7 +175,7 @@ describe('ShowCard', () => {
     act(() =>
       root.render(
         <SessionContext.Provider value={{ store: createLocalStore('f'), me: alex, members: [alex], signOut: async () => {} }}>
-          <ShowCard show={show} onTag={noop} />
+          <ShowCard show={show} onTag={noop} onEditTags={noop} />
         </SessionContext.Provider>,
       ),
     );
@@ -211,7 +211,7 @@ describe('ShowCard', () => {
       act(() =>
         root.render(
           <SessionContext.Provider value={{ store, me: alex, members: [alex], signOut: async () => {} }}>
-            <ShowCard show={show} onTag={noop} />
+            <ShowCard show={show} onTag={noop} onEditTags={noop} />
           </SessionContext.Provider>,
         ),
       );

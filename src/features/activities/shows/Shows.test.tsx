@@ -435,4 +435,18 @@ describe('tags', () => {
     expect(host.textContent).toContain(i18n.t('shows.tags.picked', { tags: 'Bad movie' }));
     expect((readPreference('f-shows', 'showsView') as { tags: string[] }).tags).toEqual(['Bad movie']);
   });
+
+  it("adds a tag from a card's details, and the card shows it", async () => {
+    await addShelf();
+    const host = await render();
+    const inception = (): HTMLElement => cards(host).find((card) => card.textContent?.includes('Inception')) as HTMLElement;
+    await act(async () => inception().querySelector<HTMLButtonElement>('button[aria-expanded]')?.click());
+    await act(async () => button(inception(), i18n.t('shows.tags.edit'))?.click());
+    const editor = sheet() as HTMLDialogElement;
+    expect(editor.querySelector('h2')?.textContent).toBe('Tags for Inception');
+    await act(async () => chip(editor, 'Bad movie')?.click());
+    expect(inception().querySelector(`button[aria-label="${i18n.t('shows.tags.filterBy', { tag: 'Bad movie' })}"]`)).not.toBeNull();
+    await act(async () => button(editor, i18n.t('shows.tags.done'))?.click());
+    expect(sheet()).toBeNull();
+  });
 });

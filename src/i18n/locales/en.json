@@ -1051,7 +1051,16 @@
       "picked": "Tags: {{tags}}",
       "filterHint": "Shows with every tag you pick.",
       "none": "None of the shows listed has a tag.",
-      "filterBy": "Show only shows tagged {{tag}}"
+      "filterBy": "Show only shows tagged {{tag}}",
+      "edit": "Tags",
+      "sheetTitle": "Tags for <item/>",
+      "hint": "Shared with your family. Tap to add or remove.",
+      "firstHint": "Group shows your own way, like Bad movie or Christmas. Tags are shared with your family.",
+      "field": "Add a tag",
+      "placeholder": "Add a tag",
+      "add": "Add “{{tag}}”",
+      "full": "A show can have up to {{max, number}} tags.",
+      "done": "Done"
     },
     "card": {
       "onImdb": "on IMDb, opens in a new tab",

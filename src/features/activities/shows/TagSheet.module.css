@@ -1,0 +1,38 @@
+.hint {
+  margin: 0 0 16px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.add {
+  margin: 0 0 16px;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* A long tag ends in an ellipsis rather than widening the sheet on a phone. */
+.options > button {
+  max-width: 100%;
+}
+
+.options > button > :last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Add "…": a tag that does not exist yet, set apart from the family's. */
+.new {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
