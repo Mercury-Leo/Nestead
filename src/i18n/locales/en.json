@@ -984,12 +984,14 @@
     "sortBy": "Sort by",
     "sort": {
       "added": "Recently added",
+      "favorites": "Favourites first",
       "title": "Title",
       "released": "Release date",
       "rating": "IMDb rating"
     },
     "sortShort": {
       "added": "Recent",
+      "favorites": "Favourites",
       "title": "Title",
       "released": "Released",
       "rating": "Rating"
@@ -1050,6 +1052,8 @@
       "seasons_other": "{{count, number}} seasons",
       "rating": "IMDb rating {{value}} out of 10",
       "changeStatus": "{{status}}. Change to {{next}}",
+      "favorite": "Favourite: {{title}}",
+      "favoriteHint": "Favourite: one you’d watch again",
       "noPlot": "No plot for this one.",
       "fetched": "Details as of {{date}}",
       "refresh": "Refresh details",

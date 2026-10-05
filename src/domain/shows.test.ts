@@ -157,6 +157,13 @@ describe('sortShows', () => {
     expect(titles(sortShows(all, 'added'))).toEqual(['Untitled Sequel', 'The Office', 'Breaking Bad', 'Inception']);
   });
 
+  it('puts favourites first, each group newest added first', () => {
+    const starred = [{ ...inception, favorite: true }, breakingBad, { ...office, favorite: true }, { ...upcoming, favorite: false }];
+    expect(titles(sortShows(starred, 'favorites'))).toEqual(['The Office', 'Inception', 'Untitled Sequel', 'Breaking Bad']);
+    // With none starred, it is the newest-added order.
+    expect(titles(sortShows(all, 'favorites'))).toEqual(titles(sortShows(all, 'added')));
+  });
+
   it('sorts titles A to Z', () => {
     expect(titles(sortShows(all, 'title'))).toEqual(['Breaking Bad', 'Inception', 'The Office', 'Untitled Sequel']);
   });
@@ -205,6 +212,7 @@ describe('parseShowView', () => {
     expect(parseShowView({ status: 'watched', kind: 'series', sort: 'rating' })).toEqual({ status: 'watched', kind: 'series', genres: [], sort: 'rating' });
     expect(parseShowView({ status: 'all', kind: 'all', genres: ['Action', 'Comedy'], sort: 'added' }).genres).toEqual(['Action', 'Comedy']);
     expect(parseShowView({ status: 'dropped', kind: 'all', sort: 'added' }).status).toBe('dropped');
+    expect(parseShowView({ status: 'all', kind: 'all', sort: 'favorites' }).sort).toBe('favorites');
   });
 
   it('falls back field by field for junk', () => {
@@ -269,8 +277,8 @@ describe('refreshPatch', () => {
     return out as unknown as Show;
   }
 
-  it("updates the fetched fields and fetchedAt, and keeps status and watchedAt", () => {
-    const watched = { ...breakingBad, status: 'watched' as const, watchedAt: '2026-09-01T20:00:00.000Z' };
+  it("updates the fetched fields and fetchedAt, and keeps status, watchedAt and the star", () => {
+    const watched = { ...breakingBad, status: 'watched' as const, watchedAt: '2026-09-01T20:00:00.000Z', favorite: true };
     const after = apply(watched, refreshPatch(fresh, fetchedAt));
     expect(after.imdbRating).toBe(9.6);
     expect(after.runtimeMin).toBe(47);
@@ -279,14 +287,15 @@ describe('refreshPatch', () => {
     expect(after.fetchedAt).toBe(fetchedAt);
     expect(after.status).toBe('watched');
     expect(after.watchedAt).toBe('2026-09-01T20:00:00.000Z');
+    expect(after.favorite).toBe(true);
     expect(after.createdBy).toBe(watched.createdBy);
     expect(after.id).toBe(watched.id);
   });
 
-  it('writes exactly the refreshed fields, never status, watchedAt or who added it', () => {
-    const patch = refreshPatch({ ...fresh, status: 'to-watch', watchedAt: undefined, createdBy: 'm2' } as FetchedDetails, fetchedAt);
+  it('writes exactly the refreshed fields, never status, watchedAt, the star or who added it', () => {
+    const patch = refreshPatch({ ...fresh, status: 'to-watch', watchedAt: undefined, favorite: false, createdBy: 'm2' } as FetchedDetails, fetchedAt);
     expect(Object.keys(patch).sort()).toEqual([...REFRESHED_FIELDS].sort());
-    for (const key of ['status', 'watchedAt', 'createdBy', 'imdbId', 'kind', 'id', 'familyId', 'createdAt', 'updatedAt']) {
+    for (const key of ['status', 'watchedAt', 'favorite', 'createdBy', 'imdbId', 'kind', 'id', 'familyId', 'createdAt', 'updatedAt']) {
       expect(patch, key).not.toHaveProperty(key);
     }
   });
@@ -325,5 +334,7 @@ describe('newShow', () => {
     expect(newShow({ imdbId: 'tt1375666', kind: 'movie', title: 'Inception', genres: ['Action', 'Sci-Fi'] }, '2026-10-04T12:00:00.000Z').genres).toEqual(['Action', 'Sci-Fi']);
     expect(row).not.toHaveProperty('watchedAt');
     expect(row).not.toHaveProperty('posterUrl');
+    // Unstarred by leaving it out: the backend's default, and absent counts as false.
+    expect(row).not.toHaveProperty('favorite');
   });
 });
