@@ -78,6 +78,18 @@ describe('shows', () => {
     await expect(as(USER_A, set, [['Action', null]])).rejects.toThrow(/shows_genres_check/);
   });
 
+  it('keeps tags as a list of up to twenty, empty by default and never NULL', async () => {
+    const [row] = await as<{ tags: string[] }>(USER_A, INSERT, [FAMILY_A, 'tt1375666']);
+    expect(row?.tags).toEqual([]);
+    const set = `update shows set tags = $1 where imdb_id = 'tt1375666' returning tags`;
+    for (const tags of [['Bad movie', 'סרט רע'], [], Array.from({ length: 20 }, (_, i) => `T${i}`)]) {
+      await expect(as(USER_A, set, [tags])).resolves.toEqual([{ tags }]);
+    }
+    await expect(as(USER_A, set, [Array.from({ length: 21 }, (_, i) => `T${i}`)])).rejects.toThrow(/shows_tags_check/);
+    await expect(as(USER_A, set, [['Bad movie', null]])).rejects.toThrow(/shows_tags_check/);
+    await expect(as(USER_A, set, [null])).rejects.toThrow(/null value in column "tags"/);
+  });
+
   it('starts at to-watch and refuses values the app never writes', async () => {
     const [row] = await as<{ status: string; watched_at: string | null; favorite: boolean }>(USER_A, INSERT, [FAMILY_A, 'tt1375666']);
     expect(row?.status).toBe('to-watch');

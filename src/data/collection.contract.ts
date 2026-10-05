@@ -275,6 +275,19 @@ export function runDataStoreContract(
       expect((await store.shows.list()).find((row) => row.id === show.id)?.genres).toEqual(['Comedy']);
     });
 
+    it('shows keep tags as a list, replace it whole, and clear it with an empty one', async () => {
+      const base = { kind: 'movie' as const, title: 'X', fetchedAt: '2026-10-05T08:00:00.000Z', status: 'to-watch' as const };
+      const show = await store.shows.create({ ...base, imdbId: 'tt0088764' });
+      // None yet: absent on a new local row, [] where the backend defaults the column.
+      expect(show.tags ?? []).toEqual([]);
+
+      expect((await store.shows.update(show.id, { tags: ['Bad movie', 'סרט רע'] })).tags).toEqual(['Bad movie', 'סרט רע']);
+      expect((await store.shows.list())[0]?.tags).toEqual(['Bad movie', 'סרט רע']);
+      expect((await store.shows.update(show.id, { tags: ['Christmas'] })).tags).toEqual(['Christmas']);
+      expect((await store.shows.update(show.id, { tags: [] })).tags).toEqual([]);
+      expect((await store.shows.list())[0]?.tags).toEqual([]);
+    });
+
     it("two families never see each other's rows", async () => {
       const other = await make('family-b');
       const theirColumnId = await aColumn(other);

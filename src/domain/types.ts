@@ -314,6 +314,12 @@ export interface Show extends Base {
    * on a show added before genres were saved, until its details are read again.
    */
   genres?: string[];
+  /**
+   * The family's own labels ("Bad movie"), kept as typed and never translated.
+   * Absent counts as none; removing the last one writes [], since the backend's
+   * column is not null.
+   */
+  tags?: string[];
   /** ISO timestamp of the read these details came from. */
   fetchedAt: string;
   status: ShowStatus;
