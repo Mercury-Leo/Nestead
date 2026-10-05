@@ -6,7 +6,7 @@ import { PageHeader } from '../../../components/PageHeader';
 import { Button, Chip, EmptyState, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
 import { readPreference, writePreference } from '../../../data/local/localStore';
 import { useCollectionState } from '../../../data/useCollection';
-import { SHOWS_PAGE, SHOW_SORTS, SHOW_STATUSES, filterShows, familyTags, genreCounts, hasTags, lacksGenres, parseShowView, shownCount, sortShows, spelledAs, tagCounts } from '../../../domain/shows';
+import { SHOWS_PAGE, SHOW_SORTS, SHOW_STATUSES, filterShows, familyTags, genreCounts, hasTags, lacksGenres, parseShowView, sameTag, shownCount, sortShows, spelledAs, tagCounts } from '../../../domain/shows';
 import type { KindFilter, ShowView, StatusFilter } from '../../../domain/shows';
 import type { Show } from '../../../domain/types';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
@@ -62,6 +62,14 @@ export function Shows(): JSX.Element {
   };
   // The search finds a genre by its name on screen too: "קומדיה" as well as "comedy".
   const genreName = useCallback((genre: string): string => genreLabel(t, genre), [t]);
+  // A tag pressed on a card joins the tag filter, and the page goes back up to the filters, which now name it.
+  // The filter treats spellings that differ only in case as one tag, so "already picked" does too.
+  const toolbar = useRef<HTMLDivElement>(null);
+  const filterByTag = useCallback((tag: string): void => {
+    setView((current) => (current.tags.some((picked) => sameTag(picked, tag)) ? current : { ...current, tags: [...current.tags, tag] }));
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    toolbar.current?.scrollIntoView?.({ block: 'start', behavior: still ? 'auto' : 'smooth' });
+  }, []);
 
   const collator = useMemo(() => new Intl.Collator(i18n.language, { sensitivity: 'base', numeric: true }), [i18n.language]);
   // The field shows each key at once; the list follows in a render that can be
@@ -189,7 +197,7 @@ export function Shows(): JSX.Element {
     <div>
       <PageHeader title={t('shows.title')} actions={addAction} />
 
-      <div className={s.toolbar} role="search">
+      <div className={s.toolbar} role="search" ref={toolbar}>
         <TextField
           label={t('shows.searchLabel')}
           icon={SearchIcon}
@@ -258,7 +266,7 @@ export function Shows(): JSX.Element {
         <>
           <div className={s.grid} ref={grid}>
             {shown.slice(0, built).map((show) => (
-              <ShowCard key={show.id} show={show} revealed={revealed?.id === show.id ? revealed.at : undefined} />
+              <ShowCard key={show.id} show={show} revealed={revealed?.id === show.id ? revealed.at : undefined} onTag={filterByTag} />
             ))}
           </div>
           {shown.length > SHOWS_PAGE && (

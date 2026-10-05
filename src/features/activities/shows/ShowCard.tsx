@@ -1,5 +1,5 @@
 import { memo, useEffect, useId, useRef, useState } from 'react';
-import { Ban, Bookmark, BookmarkPlus, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Trash2 } from 'lucide-react';
+import { Ban, Bookmark, BookmarkPlus, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Tag as TagIcon, Trash2 } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { Button, cx } from '../../../components/ui';
@@ -61,6 +61,28 @@ export function Genres({ genres, className }: { genres: readonly string[] | unde
   const { t } = useTranslation();
   if (genres === undefined || genres.length === 0) return null;
   return <p className={cx(s.genres, className)}>{genres.map((genre) => genreLabel(t, genre)).join(', ')}</p>;
+}
+
+/**
+ * The family's tags, under the genres; nothing when there are none. Each is a
+ * button that adds its tag to the page's filter (`onTag`). Tags show as typed.
+ */
+export function Tags({ tags, onTag }: { tags: readonly string[] | undefined; onTag: (tag: string) => void }): JSX.Element | null {
+  const { t } = useTranslation();
+  if (tags === undefined || tags.length === 0) return null;
+  return (
+    // role="list" because list-style: none drops the list's role in Safari.
+    <ul className={s.tags} role="list">
+      {tags.map((tag) => (
+        <li key={tag}>
+          <button type="button" className={s.tag} aria-label={t('shows.tags.filterBy', { tag })} onClick={() => onTag(tag)}>
+            <TagIcon size={13} strokeWidth={2.2} aria-hidden />
+            <bdi>{tag}</bdi>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /**
@@ -197,12 +219,12 @@ function Details({ show }: { show: Show }): JSX.Element {
 /**
  * The same show, field by field. A re-read hands every row back as a new
  * object, so identity alone would re-render every card after any write. The
- * fields are plain values, bar genres, a list compared item by item.
+ * fields are plain values, bar genres and tags, lists compared item by item.
  */
 export function sameShow(a: Show, b: Show): boolean {
   if (a === b) return true;
   const keys = Object.keys(a) as (keyof Show)[];
-  return keys.length === Object.keys(b).length && keys.every((key) => (key === 'genres' ? sameList(a.genres, b.genres) : a[key] === b[key]));
+  return keys.length === Object.keys(b).length && keys.every((key) => (key === 'genres' || key === 'tags' ? sameList(a[key], b[key]) : a[key] === b[key]));
 }
 
 function sameList(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {
@@ -213,12 +235,25 @@ function sameList(a: readonly string[] | undefined, b: readonly string[] | undef
 /**
  * One show. `revealed` changes when the page asks for this card to be shown
  * (adding a show that is already on the list): it opens, scrolls into view,
- * takes focus and flashes once. Memoised on the show's fields, so a status
- * change or a keystroke re-renders the cards it changes, not all of them.
+ * takes focus and flashes once. Memoised on the show's fields and the page's
+ * callback, which the page keeps the same between renders, so a status change
+ * or a keystroke re-renders the cards it changes, not all of them.
  */
-export const ShowCard = memo(ShowCardView, (before, after) => before.revealed === after.revealed && sameShow(before.show, after.show));
+export const ShowCard = memo(
+  ShowCardView,
+  (before, after) => before.revealed === after.revealed && before.onTag === after.onTag && sameShow(before.show, after.show),
+);
 
-function ShowCardView({ show, revealed }: { show: Show; revealed?: number }): JSX.Element {
+function ShowCardView({
+  show,
+  revealed,
+  onTag,
+}: {
+  show: Show;
+  revealed?: number;
+  /** Adds a tag to the page's filter. */
+  onTag: (tag: string) => void;
+}): JSX.Element {
   const { t } = useTranslation();
   const { store } = useSession();
   const [open, setOpen] = useState(false);
@@ -258,6 +293,7 @@ function ShowCardView({ show, revealed }: { show: Show; revealed?: number }): JS
         <FavoriteStar show={show} onToggle={() => void toggleFavorite(store, show).catch(() => undefined)} />
         <Facts show={show} />
         <Genres genres={show.genres} />
+        <Tags tags={show.tags} onTag={onTag} />
         <div id={id} className={s.details} hidden={!open}>
           {open && <Details show={show} />}
         </div>

@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionContext } from '../../../auth/session';
-import { createLocalStore } from '../../../data/local/localStore';
+import { createLocalStore, readPreference } from '../../../data/local/localStore';
 import type { DataStore } from '../../../data/types';
 import type { Member } from '../../../domain/types';
 import { i18n, loadLocale, localeReady } from '../../../i18n';
@@ -88,6 +88,7 @@ afterEach(() => {
   unmount?.();
   unmount = null;
   vi.unstubAllGlobals();
+  delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
 });
 
 describe('a long list of shows', () => {
@@ -400,5 +401,38 @@ describe('tags', () => {
     const chips = [...(sheet() as HTMLDialogElement).querySelectorAll<HTMLButtonElement>('[role="group"] button')];
     expect(chips.map((b) => b.textContent)).toEqual(['Bad movie 1']);
     expect(chips[0]?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('filters by a tag pressed on a card, and goes back up to the filters', async () => {
+    await addShelf();
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    const host = await render();
+    const elf = cards(host).find((card) => card.textContent?.includes('Elf'));
+    const label = i18n.t('shows.tags.filterBy', { tag: 'Christmas' });
+    await act(async () => elf?.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)?.click());
+    expect(titles(host)).toEqual(['Elf', 'Santa Claus Conquers the Martians']);
+    // The Tags control names it (its screen-reader label; the cards' chips say only "Christmas").
+    expect(host.textContent).toContain(i18n.t('shows.tags.picked', { tags: 'Christmas' }));
+    expect(scrolled).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }));
+    // A tag already picked changes nothing.
+    await act(async () => elf?.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)?.click());
+    expect(titles(host)).toEqual(['Elf', 'Santa Claus Conquers the Martians']);
+  });
+
+  it('treats a card spelling a picked tag another way as already picked', async () => {
+    const base = { kind: 'movie', fetchedAt: '2026-10-04T08:00:00.000Z', status: 'to-watch' } as const;
+    await store.shows.create({ ...base, imdbId: 'tt4200000', title: 'Sharknado', tags: ['Bad movie'] });
+    await store.shows.create({ ...base, imdbId: 'tt4200001', title: 'Santa Claus Conquers the Martians', tags: ['bad movie'] });
+    const host = await render();
+    const press = async (title: string, tag: string): Promise<void> => {
+      const card = cards(host).find((c) => c.textContent?.includes(title));
+      await act(async () => card?.querySelector<HTMLButtonElement>(`button[aria-label="${i18n.t('shows.tags.filterBy', { tag })}"]`)?.click());
+    };
+    await press('Sharknado', 'Bad movie');
+    await press('Santa Claus', 'bad movie');
+    // One tag, not two: the control names it once, as the family spells it, and the saved view holds just the first.
+    expect(host.textContent).toContain(i18n.t('shows.tags.picked', { tags: 'Bad movie' }));
+    expect((readPreference('f-shows', 'showsView') as { tags: string[] }).tags).toEqual(['Bad movie']);
   });
 });

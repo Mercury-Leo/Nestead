@@ -1050,7 +1050,8 @@
       "label": "Tags",
       "picked": "Tags: {{tags}}",
       "filterHint": "Shows with every tag you pick.",
-      "none": "None of the shows listed has a tag."
+      "none": "None of the shows listed has a tag.",
+      "filterBy": "Show only shows tagged {{tag}}"
     },
     "card": {
       "onImdb": "on IMDb, opens in a new tab",

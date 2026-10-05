@@ -37,6 +37,9 @@
   --staple-tint: #ece5d9;
   --honey: #c08517;
   --star-empty: #d8cbb6;
+  /* The family's own tags on a show (Shows cards): ink 6.6:1 on the tint. */
+  --tag-tint: #ece2ee;
+  --tag-ink: #6a3d73;
   --warn-bg: #f7e4b8;
   --warn-ink: #5e3c00;
   --warn-line: #e2bf6e;
@@ -119,6 +122,8 @@
   --staple-tint: #262d35;
   --honey: #e6b04e;
   --star-empty: #3b4551;
+  --tag-tint: #443249;
+  --tag-ink: #e3c6ea;
   --warn-bg: #352c14;
   --warn-ink: #f0d08c;
   --warn-line: #7a6128;

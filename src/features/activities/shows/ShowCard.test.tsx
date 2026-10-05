@@ -6,9 +6,11 @@ import { createLocalStore } from '../../../data/local/localStore';
 import type { FetchedDetails } from '../../../domain/shows';
 import type { Member, Show } from '../../../domain/types';
 import { i18n, loadLocale, localeReady } from '../../../i18n';
-import { Facts, Genres, ShowCard, sameShow } from './ShowCard';
+import { Facts, Genres, ShowCard, Tags, sameShow } from './ShowCard';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const noop = (): void => undefined;
 
 let unmount: (() => void) | null = null;
 
@@ -77,6 +79,14 @@ describe('sameShow', () => {
     expect(sameShow(withGenres, { ...withGenres, genres: [] })).toBe(false);
     expect(sameShow({ ...show, genres: [] }, show)).toBe(false);
   });
+
+  it('compares tags item by item too', () => {
+    const tagged = { ...show, tags: ['Bad movie'] };
+    expect(sameShow(tagged, { ...tagged, tags: ['Bad movie'] })).toBe(true);
+    expect(sameShow(tagged, { ...tagged, tags: ['Bad movie', 'Christmas'] })).toBe(false);
+    expect(sameShow(tagged, { ...tagged, tags: [] })).toBe(false);
+    expect(sameShow({ ...show, tags: [] }, show)).toBe(false);
+  });
 });
 
 describe('Genres', () => {
@@ -117,6 +127,41 @@ describe('Genres', () => {
   });
 });
 
+describe('Tags', () => {
+  function tags(list: string[] | undefined, onTag: (tag: string) => void = noop): HTMLElement {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() => root.render(<Tags tags={list} onTag={onTag} />));
+    unmount = () => {
+      act(() => root.unmount());
+      host.remove();
+    };
+    return host;
+  }
+
+  it('draws a chip per tag, as typed, each named for what it does', () => {
+    const host = tags(['Bad movie', 'סרט רע']);
+    const chips = [...host.querySelectorAll('button')];
+    expect(chips.map((chip) => chip.textContent)).toEqual(['Bad movie', 'סרט רע']);
+    expect(chips[0]?.getAttribute('aria-label')).toBe('Show only shows tagged Bad movie');
+    expect(host.querySelector('[role="list"]')?.children).toHaveLength(2);
+  });
+
+  it('asks for the filter when pressed', () => {
+    const pressed: string[] = [];
+    const host = tags(['Bad movie', 'Christmas'], (tag) => pressed.push(tag));
+    act(() => [...host.querySelectorAll('button')][1]?.click());
+    expect(pressed).toEqual(['Christmas']);
+  });
+
+  it('draws nothing without tags', () => {
+    expect(tags(undefined).innerHTML).toBe('');
+    unmount?.();
+    expect(tags([]).innerHTML).toBe('');
+  });
+});
+
 describe('ShowCard', () => {
   it('follows a change of language, although it is memoised', async () => {
     const alex: Member = { id: 'm1', familyId: 'f', name: 'Alex', color: '#4f8ef7', createdAt: '', updatedAt: '' };
@@ -130,7 +175,7 @@ describe('ShowCard', () => {
     act(() =>
       root.render(
         <SessionContext.Provider value={{ store: createLocalStore('f'), me: alex, members: [alex], signOut: async () => {} }}>
-          <ShowCard show={show} />
+          <ShowCard show={show} onTag={noop} />
         </SessionContext.Provider>,
       ),
     );
@@ -166,7 +211,7 @@ describe('ShowCard', () => {
       act(() =>
         root.render(
           <SessionContext.Provider value={{ store, me: alex, members: [alex], signOut: async () => {} }}>
-            <ShowCard show={show} />
+            <ShowCard show={show} onTag={noop} />
           </SessionContext.Provider>,
         ),
       );

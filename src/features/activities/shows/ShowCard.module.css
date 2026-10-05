@@ -124,6 +124,53 @@
   white-space: nowrap;
 }
 
+/* The family's tags: chips under the genres, each a button that filters by it. */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * 28px tall: above the 24px minimum target (WCAG 2.5.8), without a 44px
+ * target's height on every tagged card.
+ */
+.tag {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--tag-tint);
+  color: var(--tag-ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tag > bdi {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag:hover {
+  box-shadow: inset 0 0 0 100px var(--hover-wash);
+}
+
+.tag:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ---------------------------------------------------------- controls -- */
 
 /*
