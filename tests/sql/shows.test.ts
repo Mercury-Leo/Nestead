@@ -68,9 +68,10 @@ describe('shows', () => {
   });
 
   it('starts at to-watch and refuses values the app never writes', async () => {
-    const [row] = await as<{ status: string; watched_at: string | null }>(USER_A, INSERT, [FAMILY_A, 'tt1375666']);
+    const [row] = await as<{ status: string; watched_at: string | null; favorite: boolean }>(USER_A, INSERT, [FAMILY_A, 'tt1375666']);
     expect(row?.status).toBe('to-watch');
     expect(row?.watched_at).toBeNull();
+    expect(row?.favorite).toBe(false);
 
     const bad = [
       `insert into shows (family_id, imdb_id, kind, title, fetched_at) values ($1, 'nm0000138', 'movie', 'X', now())`,
@@ -79,12 +80,17 @@ describe('shows', () => {
       `insert into shows (family_id, imdb_id, kind, title, fetched_at, poster_url) values ($1, 'tt0000003', 'movie', 'X', now(), 'http://example.com/p.jpg')`,
       `insert into shows (family_id, imdb_id, kind, title, fetched_at, imdb_rating) values ($1, 'tt0000004', 'movie', 'X', now(), 11)`,
       `insert into shows (family_id, imdb_id, kind, title) values ($1, 'tt0000005', 'movie', 'X')`,
+      `insert into shows (family_id, imdb_id, kind, title, fetched_at, favorite) values ($1, 'tt0000006', 'movie', 'X', now(), null)`,
     ];
     for (const sql of bad) await expect(as(USER_A, sql, [FAMILY_A]), sql).rejects.toThrow();
 
     // The four statuses the app writes.
     for (const status of ['watching', 'watched', 'dropped', 'to-watch']) {
       await expect(as(USER_A, `update shows set status = $1 where imdb_id = 'tt1375666' returning status`, [status])).resolves.toEqual([{ status }]);
+    }
+    // Starred and unstarred, which is the only way the app clears it.
+    for (const favorite of [true, false]) {
+      await expect(as(USER_A, `update shows set favorite = $1 where imdb_id = 'tt1375666' returning favorite`, [favorite])).resolves.toEqual([{ favorite }]);
     }
   });
 

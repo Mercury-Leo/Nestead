@@ -198,7 +198,7 @@ export function runDataStoreContract(
       expect((await store.pantry.list()).map((row) => row.kind)).toEqual(['staple']);
     });
 
-    it('shows round-trip dates, timestamps and numbers, and clear watchedAt', async () => {
+    it('shows round-trip dates, timestamps and numbers, clear watchedAt, and keep a star', async () => {
       const fetchedAt = '2026-10-04T09:30:00.000Z';
       const show = await store.shows.create({
         imdbId: 'tt0903747',
@@ -230,6 +230,13 @@ export function runDataStoreContract(
       // Dropped as well: the fourth status (a backend with a check on status must allow it).
       const again = await store.shows.update(show.id, { status: 'dropped', watchedAt: undefined });
       expect(again.watchedAt).toBeUndefined();
+      expect((await store.shows.list())[0]?.status).toBe('dropped');
+
+      // The favourite star: unstarred until set (absent or false), and unstarred again by writing false.
+      expect(show.favorite ?? false).toBe(false);
+      expect((await store.shows.update(show.id, { favorite: true })).favorite).toBe(true);
+      expect((await store.shows.list())[0]?.favorite).toBe(true);
+      expect((await store.shows.update(show.id, { favorite: false })).favorite).toBe(false);
       expect((await store.shows.list())[0]?.status).toBe('dropped');
     });
 

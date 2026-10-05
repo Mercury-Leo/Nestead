@@ -1021,12 +1021,14 @@
     "sortBy": "מיון לפי",
     "sort": {
       "added": "נוספו לאחרונה",
+      "favorites": "מועדפים קודם",
       "title": "שם",
       "released": "תאריך יציאה",
       "rating": "דירוג IMDb"
     },
     "sortShort": {
       "added": "חדשים",
+      "favorites": "מועדפים",
       "title": "שם",
       "released": "יציאה",
       "rating": "דירוג"
@@ -1044,6 +1046,8 @@
       "seasons_other": "{{count, number}} עונות",
       "rating": "דירוג IMDb {{value}} מתוך 10",
       "changeStatus": "{{status}}. הבא: {{next}}",
+      "favorite": "מועדף: {{title}}",
+      "favoriteHint": "מועדף: נשמח לצפות בו שוב",
       "noPlot": "אין תקציר לכותר הזה.",
       "fetched": "הפרטים נכונים ל-{{date}}",
       "refresh": "רענון הפרטים",

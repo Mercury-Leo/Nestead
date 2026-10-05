@@ -106,4 +106,41 @@ describe('ShowCard', () => {
       });
     }
   });
+
+  it('stars a show from the star on its poster, and unstars it', async () => {
+    localStorage.clear();
+    const alex: Member = { id: 'm1', familyId: 'f', name: 'Alex', color: '#4f8ef7', createdAt: '', updatedAt: '' };
+    const store = createLocalStore('f-star');
+    const created = await store.shows.create({ imdbId: 'tt0072901', kind: 'movie', title: 'Dolemite', fetchedAt: '2026-10-04T08:00:00.000Z', status: 'to-watch' });
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    const render = (show: Show): void =>
+      act(() =>
+        root.render(
+          <SessionContext.Provider value={{ store, me: alex, members: [alex], signOut: async () => {} }}>
+            <ShowCard show={show} />
+          </SessionContext.Provider>,
+        ),
+      );
+    unmount = () => {
+      act(() => root.unmount());
+      host.remove();
+    };
+    const star = (): HTMLButtonElement | null => host.querySelector<HTMLButtonElement>('button[aria-pressed]');
+    const press = async (): Promise<Show> => {
+      await act(async () => star()?.click());
+      const [stored] = await store.shows.list();
+      render(stored as Show);
+      return stored as Show;
+    };
+
+    render(created);
+    expect(star()?.getAttribute('aria-label')).toBe('Favourite: Dolemite');
+    expect(star()?.getAttribute('aria-pressed')).toBe('false');
+    expect((await press()).favorite).toBe(true);
+    expect(star()?.getAttribute('aria-pressed')).toBe('true');
+    expect((await press()).favorite).toBe(false);
+    expect(star()?.getAttribute('aria-pressed')).toBe('false');
+  });
 });

@@ -14,9 +14,9 @@ const CYCLE: readonly ShowStatus[] = ['to-watch', 'watching', 'watched'];
 
 export type StatusFilter = 'all' | ShowStatus;
 export type KindFilter = 'all' | ShowKind;
-export type ShowSort = 'added' | 'title' | 'released' | 'rating';
+export type ShowSort = 'added' | 'favorites' | 'title' | 'released' | 'rating';
 
-export const SHOW_SORTS: readonly ShowSort[] = ['added', 'title', 'released', 'rating'];
+export const SHOW_SORTS: readonly ShowSort[] = ['added', 'favorites', 'title', 'released', 'rating'];
 
 /** The filter and sort a device remembers. The name search is not kept. */
 export interface ShowView {
@@ -68,9 +68,10 @@ function descending(a: number | string | undefined, b: number | string | undefin
 }
 
 /**
- * `added`: newest first. `title`: A to Z. `released`: newest release first, by
- * date or else year. `rating`: highest IMDb rating first. Shows without the
- * value sorted on go last.
+ * `added`: newest first. `favorites`: starred shows first, each group newest
+ * added first. `title`: A to Z. `released`: newest release first, by date or
+ * else year. `rating`: highest IMDb rating first. Shows without the value
+ * sorted on go last.
  */
 export function sortShows(shows: readonly Show[], sort: ShowSort, compareText: (a: string, b: string) => number = (a, b) => a.localeCompare(b)): Show[] {
   const tie = byTitle(compareText);
@@ -78,6 +79,8 @@ export function sortShows(shows: readonly Show[], sort: ShowSort, compareText: (
   switch (sort) {
     case 'added':
       return sorted.sort((a, b) => descending(a.createdAt, b.createdAt) || tie(a, b));
+    case 'favorites':
+      return sorted.sort((a, b) => Number(b.favorite === true) - Number(a.favorite === true) || descending(a.createdAt, b.createdAt) || tie(a, b));
     case 'title':
       return sorted.sort(tie);
     case 'released':
@@ -132,8 +135,8 @@ export type RefreshPatch = Pick<NewRow<Show>, (typeof REFRESHED_FIELDS)[number]>
 
 /**
  * The patch a refresh writes. Every fetched field is in it, so one the service
- * no longer has is cleared rather than left stale. `status`,
- * `watchedAt`, `createdBy`, `imdbId` and `kind` are never in it.
+ * no longer has is cleared rather than left stale. `status`, `watchedAt`,
+ * `favorite`, `createdBy`, `imdbId` and `kind` are never in it.
  */
 export function refreshPatch(details: FetchedDetails, fetchedAt: string): RefreshPatch {
   return {

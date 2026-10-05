@@ -827,6 +827,8 @@ create table shows (
                             check (status in ('to-watch', 'watching', 'watched', 'dropped')),
   -- Set when the status becomes watched, cleared when it leaves it.
   watched_at    timestamptz,
+  -- A family favourite, one they would watch again. Independent of status.
+  favorite      boolean     not null default false,
   created_by    uuid        references members (id) on delete set null,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
