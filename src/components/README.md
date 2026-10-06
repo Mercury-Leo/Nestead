@@ -15,7 +15,7 @@ App-wide UI: the generic kit in `ui/`, the light and dark theme in `theme/`, and
 | `ui/controls.tsx` (+ `controls.module.css`) | `Segmented`, `Switch`, `Checkbox`, `RadioList`, `TextField`, `Stepper` over native inputs. |
 | `ui/EmptyState.tsx` (+ `EmptyState.module.css`) | Icon, title, body and actions for an empty screen. |
 | `ui/SelectButton.tsx` (+ `SelectButton.module.css`) | A native `<select>` dressed as a button. |
-| `ui/Sheet.tsx` (+ `Sheet.module.css`) | Modal on `<dialog>`: a bottom sheet on phones, a dialog on desktop. On phones the page behind it stays still while it is open. |
+| `ui/Sheet.tsx` (+ `Sheet.module.css`, `Sheet.test.tsx`) | Modal on `<dialog>`: a bottom sheet on phones, a dialog on desktop. On phones the page behind it stays still while it is open. Closing gives focus back to what opened it (`giveFocusBack()`). |
 | `ui/icons.tsx` | `BackArrow`, `ForwardArrow`, `ForwardChevron`, `SignOutIcon`, mirrored in RTL. |
 | `ui/cx.ts` | Joins truthy class names. |
 
@@ -35,7 +35,8 @@ App-wide UI: the generic kit in `ui/`, the light and dark theme in `theme/`, and
 - Real `<button>`, `<a>` and `<input>` throughout, with touch targets of at least 44px (`ui/index.ts`).
 - Colours differ between themes only through tokens; components never branch on the theme (`../styles/tokens.css` header).
 - A `.visually-hidden` label is absolutely positioned: put it inside something positioned (`position: relative`), above all in a horizontally scrolling row. Otherwise it escapes the row's clipping and widens the page, and on a phone the browser then lays out fixed elements, the tab bar and every open sheet, against the wider page, partly off screen (`../features/activities/shows/ChipFilter.module.css`). `SelectButton` is already positioned.
+- A sheet gives focus back to the element that had it as the sheet opened, both when `open` turns false and when the page stops rendering it while open (Add show, the Tags sheet): removing an open `<dialog>` without `close()` would drop focus to the page, so `Sheet` closes it in a layout-effect cleanup, while it is still in the page. It moves focus only when focus is still inside the sheet or on the page itself, so a screen that focuses something else as the sheet closes (a card brought into view) keeps that, and it moves none when nothing had focus at the start (a tap on a phone) (`ui/Sheet.tsx`).
 - Files inside `ui/` import each other by file (`./cx`), never through the barrel `./`: the cycle makes `vite build` warn that the export "will end up in different chunks" once per lazy screen (`ui/SelectButton.tsx`).
 
 ## Tests
-`theme/theme.test.ts`: follows the system until a choice, keeps an explicit choice, ignores unknown stored values, uses the key `index.html` reads.
+`theme/theme.test.ts`: follows the system until a choice, keeps an explicit choice, ignores unknown stored values, uses the key `index.html` reads. `ui/Sheet.test.tsx`: focus goes back to the opener when a sheet leaves the page and when it closes and stays, not when something outside has taken focus, and not when nothing had it.

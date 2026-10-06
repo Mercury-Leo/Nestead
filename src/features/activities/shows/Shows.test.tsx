@@ -51,8 +51,9 @@ async function render(): Promise<HTMLElement> {
 }
 
 const cards = (host: HTMLElement): HTMLElement[] => [...host.querySelectorAll<HTMLElement>('main article, article')];
+/** A button by the start of its text, or by its whole name when it shows only an icon. */
 const button = (host: HTMLElement, text: string): HTMLButtonElement | undefined =>
-  [...host.querySelectorAll('button')].find((b) => b.textContent?.startsWith(text));
+  [...host.querySelectorAll('button')].find((b) => b.textContent?.startsWith(text) || (b.textContent === '' && b.getAttribute('aria-label') === text));
 const titles = (host: HTMLElement): string[] => cards(host).map((card) => card.querySelector('h3 a')?.firstChild?.textContent ?? '');
 const sheet = (): HTMLDialogElement | null => document.querySelector('dialog[open]');
 const chip = (root: ParentNode, text: string): HTMLButtonElement | undefined =>
@@ -547,5 +548,22 @@ describe('tags', () => {
     expect(host.textContent).not.toContain(i18n.t('shows.tags.picked', { tags: 'Christmas' }));
     expect((readPreference('f-shows', 'showsView') as { tags: string[] }).tags).toEqual([]);
     expect(titles(host)).toEqual(['Elf', 'Inception', 'Santa Claus Conquers the Martians', 'Sharknado']);
+  });
+});
+
+describe('the add sheet', () => {
+  it('gives focus back to Add show when it closes', async () => {
+    await addShows(2);
+    const host = await render();
+    const addShow = host.querySelector<HTMLButtonElement>(`button[aria-label="${i18n.t('shows.add')}"]`) as HTMLButtonElement;
+    // jsdom's click() does not move focus; a keyboard press leaves it on the button.
+    addShow.focus();
+    await act(async () => addShow.click());
+    const close = sheet()?.querySelector<HTMLButtonElement>(`button[aria-label="${i18n.t('common.close')}"]`) as HTMLButtonElement;
+    // A browser puts focus in the open sheet; the page then stops rendering it.
+    close.focus();
+    await act(async () => close.click());
+    expect(sheet()).toBeNull();
+    expect(document.activeElement).toBe(addShow);
   });
 });
