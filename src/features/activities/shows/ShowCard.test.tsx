@@ -27,8 +27,15 @@ function facts(show: FetchedDetails): string[] {
   return [...(host.querySelector('p')?.children ?? [])].map((item) => (item.textContent ?? '').trim());
 }
 
+/** jsdom has no matchMedia; the card asks whether it is on a desktop-wide screen (`useIsDesktop()`). */
+function screenWidth(desktop: boolean): void {
+  window.matchMedia = (query: string) =>
+    ({ matches: desktop && query.includes('min-width: 1024px'), media: query, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList;
+}
+
 beforeAll(async () => {
   await localeReady;
+  screenWidth(false);
 });
 
 afterEach(() => {
@@ -260,14 +267,54 @@ describe('ShowCard', () => {
     render(show);
     act(() => host.querySelector<HTMLButtonElement>('button[aria-expanded]')?.click());
     const actions = (): HTMLButtonElement[] => [...host.querySelectorAll<HTMLButtonElement>('[id] button')];
-    const names = [i18n.t('shows.tags.edit'), i18n.t('shows.card.refresh'), i18n.t('shows.card.drop'), i18n.t('shows.card.delete')];
+    const names = [i18n.t('shows.tags.edit'), i18n.t('shows.card.refresh'), i18n.t('shows.share.label'), i18n.t('shows.card.drop'), i18n.t('shows.card.delete')];
     expect(actions().map((b) => b.getAttribute('aria-label'))).toEqual(names);
     expect(actions().map((b) => b.title)).toEqual(names);
     // Icons only: no words on the buttons themselves.
-    expect(actions().map((b) => b.textContent)).toEqual(['', '', '', '']);
+    expect(actions().map((b) => b.textContent)).toEqual(['', '', '', '', '']);
 
     // A dropped show offers Restore in Drop it's place.
     render({ ...show, status: 'dropped' });
-    expect(actions()[2]?.getAttribute('aria-label')).toBe(i18n.t('shows.card.restore'));
+    expect(actions()[3]?.getAttribute('aria-label')).toBe(i18n.t('shows.card.restore'));
+  });
+
+  it('copies the name, year and IMDb link on desktop, and says so', async () => {
+    const alex: Member = { id: 'm1', familyId: 'f', name: 'Alex', color: '#4f8ef7', createdAt: '', updatedAt: '' };
+    const show: Show = {
+      id: 's1', familyId: 'f', createdAt: '2026-10-04T08:00:00.000Z', updatedAt: '2026-10-04T08:00:00.000Z',
+      imdbId: 'tt0386676', kind: 'series', title: 'The Office', year: 2005, fetchedAt: '2026-10-04T08:00:00.000Z', status: 'to-watch',
+    };
+    const copied: string[] = [];
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (text: string) => void copied.push(text) }, configurable: true });
+    // A desktop browser may offer a share sheet too; desktop copies regardless.
+    let sheets = 0;
+    Object.defineProperty(navigator, 'share', { value: async () => void (sheets += 1), configurable: true });
+    screenWidth(true);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <SessionContext.Provider value={{ store: createLocalStore('f'), me: alex, members: [alex], signOut: async () => {} }}>
+          <ShowCard show={show} onTag={noop} onEditTags={noop} />
+        </SessionContext.Provider>,
+      ),
+    );
+    unmount = () => {
+      act(() => root.unmount());
+      host.remove();
+      screenWidth(false);
+      Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+      Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
+    };
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-expanded]')?.click());
+    const share = host.querySelector<HTMLButtonElement>(`button[aria-label="${i18n.t('shows.share.label')}"]`) as HTMLButtonElement;
+    await act(async () => share.click());
+
+    expect(copied).toEqual(['The Office (2005)\nhttps://www.imdb.com/title/tt0386676/']);
+    expect(sheets).toBe(0);
+    // The button and a polite status line say it worked.
+    expect(share.getAttribute('aria-label')).toBe(i18n.t('shows.share.copied'));
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(i18n.t('shows.share.copied'));
   });
 });

@@ -1062,6 +1062,12 @@
       "full": "A show can have up to {{max, number}} tags.",
       "done": "Done"
     },
+    "share": {
+      "label": "Share",
+      "text": "{{title}} ({{year}})",
+      "copied": "Link copied",
+      "failed": "Couldn’t copy the link."
+    },
     "card": {
       "onImdb": "on IMDb, opens in a new tab",
       "more": "More about {{title}}",

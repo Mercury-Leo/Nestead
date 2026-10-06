@@ -1,16 +1,18 @@
 import { memo, useEffect, useId, useRef, useState } from 'react';
-import { Ban, Bookmark, BookmarkPlus, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Tag as TagIcon, Trash2 } from 'lucide-react';
+import { Ban, Bookmark, BookmarkPlus, Check, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Share2, Star, Tag as TagIcon, Trash2 } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
 import { Button, IconButton, cx } from '../../../components/ui';
 import { nextStatus } from '../../../domain/shows';
 import type { FetchedDetails } from '../../../domain/shows';
 import type { Show, ShowStatus } from '../../../domain/types';
+import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { formatDate, formatNumber } from '../../../i18n';
 import { cycleStatus, dropShow, refreshShow, removeShow, restoreShow, toggleFavorite } from './actions';
 import { STATUS_KEY, genreLabel, imdbUrl, kindLabel, statusLabel } from './labels';
 import type { ShowsFailure } from './client';
 import { Poster } from './Poster';
+import { shareOrCopy } from './share';
 import s from './ShowCard.module.css';
 
 /*
@@ -146,6 +148,22 @@ function Details({ show, onEditTags }: { show: Show; onEditTags: () => void }): 
   const [failure, setFailure] = useState<ShowsFailure | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const desktop = useIsDesktop();
+  const [shared, setShared] = useState<'copied' | 'failed' | null>(null);
+
+  // "Link copied" shows for a moment, then the button is Share again.
+  useEffect(() => {
+    if (shared !== 'copied') return undefined;
+    const timer = setTimeout(() => setShared(null), 2000);
+    return () => clearTimeout(timer);
+  }, [shared]);
+
+  /** The share sheet on a phone (WhatsApp and the rest); the clipboard on desktop. Either way, the title, year and IMDb page. */
+  const share = async (): Promise<void> => {
+    const text = show.year === undefined ? show.title : t('shows.share.text', { title: show.title, year: show.year });
+    const outcome = await shareOrCopy({ title: show.title, text, url: imdbUrl(show.imdbId) }, desktop);
+    setShared(outcome === 'copied' || outcome === 'failed' ? outcome : null);
+  };
 
   const refresh = async (): Promise<void> => {
     setRefreshing(true);
@@ -200,6 +218,11 @@ function Details({ show, onEditTags }: { show: Show; onEditTags: () => void }): 
             className={cx(refreshing && s.turning)}
             onClick={() => void refresh()}
           />
+          <IconButton
+            label={shared === 'copied' ? t('shows.share.copied') : t('shows.share.label')}
+            icon={shared === 'copied' ? Check : Share2}
+            onClick={() => void share()}
+          />
           {/* Drop it, or for a dropped show its way back (its badge also brings it back). */}
           {show.status === 'dropped' ? (
             <IconButton label={t('shows.card.restore')} icon={BookmarkPlus} onClick={() => void restoreShow(store, show).catch(() => undefined)} />
@@ -210,7 +233,9 @@ function Details({ show, onEditTags }: { show: Show; onEditTags: () => void }): 
         </div>
       )}
       <p className={s.quiet} role="status">
-        {failure !== null && `${t(`shows.failure.${failureKey(failure)}`)} ${t('shows.card.unchanged')}`}
+        {failure !== null
+          ? `${t(`shows.failure.${failureKey(failure)}`)} ${t('shows.card.unchanged')}`
+          : shared !== null && t(shared === 'copied' ? 'shows.share.copied' : 'shows.share.failed')}
       </p>
     </>
   );
