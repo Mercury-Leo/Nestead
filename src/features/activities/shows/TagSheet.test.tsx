@@ -102,7 +102,7 @@ describe('TagSheet', () => {
     const elf = await add('Elf', ['Christmas']);
     const sheet = await open(elf);
     await type(sheet, '  Cult   classic ');
-    expect(names(sheet)[0]).toBe(i18n.t('shows.tags.add', { tag: 'Cult classic' }));
+    expect(names(sheet)[0]).toBe('Add “Cult classic”');
     await enter(sheet);
     expect(await saved(elf.id)).toEqual(['Christmas', 'Cult classic']);
     expect(field(sheet).value).toBe('');
@@ -129,7 +129,25 @@ describe('TagSheet', () => {
     const elf = await add('Elf', ['Christmas']);
     const sheet = await open(elf);
     await type(sheet, 'mov');
-    expect(names(sheet)).toEqual([i18n.t('shows.tags.add', { tag: 'mov' }), 'Bad movie', 'Movie night']);
+    expect(names(sheet)).toEqual(['Add “mov”', 'Bad movie', 'Movie night']);
+  });
+
+  it('keeps the typed tag in its own <bdi> inside the Add chip', async () => {
+    const elf = await add('Elf', ['Christmas']);
+    const sheet = await open(elf);
+    await type(sheet, 'Cult classic');
+    expect(chips(sheet)[0]?.querySelector('bdi')?.textContent).toBe('Cult classic');
+  });
+
+  it('puts focus back in the field after the Add chip, so the next tag can be typed', async () => {
+    const elf = await add('Elf', ['Christmas']);
+    const sheet = await open(elf);
+    await type(sheet, 'Feel good');
+    // jsdom's click() does not move focus, as a tap would have moved it to the chip.
+    chips(sheet)[0]?.focus();
+    await act(async () => chips(sheet)[0]?.click());
+    expect(await saved(elf.id)).toEqual(['Christmas', 'Feel good']);
+    expect(document.activeElement).toBe(field(sheet));
   });
 
   it('keeps a tag taken off its last show until the sheet closes', async () => {
@@ -159,7 +177,34 @@ describe('TagSheet', () => {
     const full = await add('Full', Array.from({ length: 20 }, (_, i) => `T${String(i).padStart(2, '0')}`));
     const sheet = await open(full);
     expect(field(sheet).disabled).toBe(true);
-    expect(sheet.textContent).toContain(i18n.t('shows.tags.full', { max: 20 }));
+    expect(sheet.querySelector('[role="status"]')?.textContent).toBe(i18n.t('shows.tags.full', { max: 20 }));
+  });
+
+  it('keeps the 20-tag message in a live region that is there, empty, before the twentieth tag fills the show', async () => {
+    await add('Other', ['Other']);
+    const nearly = await add('Nearly', Array.from({ length: 19 }, (_, i) => `T${String(i).padStart(2, '0')}`));
+    const sheet = await open(nearly);
+    const status = sheet.querySelector('[role="status"]') as HTMLElement;
+    expect(status.textContent).toBe('');
+    await act(async () => chips(sheet).find((b) => b.textContent === 'Other')?.click());
+    expect(field(sheet).disabled).toBe(true);
+    // The same element, now holding the text.
+    expect(sheet.querySelector('[role="status"]')).toBe(status);
+    expect(status.textContent).toBe(i18n.t('shows.tags.full', { max: 20 }));
+  });
+
+  it('lists every tag once the show is full, whatever is left in the field', async () => {
+    await add('Other', ['Other']);
+    const nearly = await add('Nearly', Array.from({ length: 19 }, (_, i) => `T${String(i).padStart(2, '0')}`));
+    const sheet = await open(nearly);
+    await type(sheet, 'Oth');
+    expect(names(sheet)).toEqual(['Add “Oth”', 'Other']);
+    await act(async () => chips(sheet).find((b) => b.textContent === 'Other')?.click());
+    // Full: the field is off and 'Oth' stays in it, but the list is not narrowed by it (nor does it offer Add).
+    expect(field(sheet).disabled).toBe(true);
+    expect(field(sheet).value).toBe('Oth');
+    expect(names(sheet)).toHaveLength(20);
+    expect(pressed(sheet)).toHaveLength(20);
   });
 
   it('invites a first tag when the family has none', async () => {

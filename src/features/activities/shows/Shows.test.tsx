@@ -58,8 +58,8 @@ const sheet = (): HTMLDialogElement | null => document.querySelector('dialog[ope
 const chip = (root: ParentNode, text: string): HTMLButtonElement | undefined =>
   [...root.querySelectorAll<HTMLButtonElement>('button[aria-pressed]')].find((b) => b.textContent === text);
 
-async function type(host: HTMLElement, text: string): Promise<void> {
-  const field = host.querySelector<HTMLInputElement>('input[type="search"]') as HTMLInputElement;
+/** Types into the page's search field, or into `field` (the add sheet's, which comes after it in the page). */
+async function type(host: HTMLElement, text: string, field = host.querySelector<HTMLInputElement>('input[type="search"]') as HTMLInputElement): Promise<void> {
   await act(async () => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, text);
     field.dispatchEvent(new Event('input', { bubbles: true }));
@@ -448,5 +448,104 @@ describe('tags', () => {
     expect(inception().querySelector(`button[aria-label="${i18n.t('shows.tags.filterBy', { tag: 'Bad movie' })}"]`)).not.toBeNull();
     await act(async () => button(editor, i18n.t('shows.tags.done'))?.click());
     expect(sheet()).toBeNull();
+  });
+
+  /** Opens a card's details and its Tags sheet from the Tags button, focused as a press would have left it. */
+  async function openTags(host: HTMLElement, title: string): Promise<{ tagsButton: HTMLButtonElement; editor: HTMLDialogElement }> {
+    const card = (): HTMLElement => cards(host).find((c) => c.textContent?.includes(title)) as HTMLElement;
+    await act(async () => card().querySelector<HTMLButtonElement>('button[aria-expanded]')?.click());
+    const tagsButton = button(card(), i18n.t('shows.tags.edit')) as HTMLButtonElement;
+    // jsdom's click() does not move focus.
+    tagsButton.focus();
+    await act(async () => tagsButton.click());
+    return { tagsButton, editor: sheet() as HTMLDialogElement };
+  }
+
+  it("returns focus to the Tags button when the sheet closes, however it closes", async () => {
+    await addShelf();
+    const host = await render();
+    const { tagsButton, editor } = await openTags(host, 'Elf');
+    expect(editor).not.toBeNull();
+
+    // A browser focuses the sheet's first control as it opens, and removing the open dialog drops focus to the page.
+    const focusIn = (dialog: HTMLElement, label: string): HTMLButtonElement => {
+      const target = button(dialog, label) ?? (dialog.querySelector(`button[aria-label="${label}"]`) as HTMLButtonElement);
+      target.focus();
+      return target;
+    };
+    await act(async () => focusIn(editor, i18n.t('shows.tags.done')).click());
+    expect(sheet()).toBeNull();
+    expect(document.activeElement).toBe(tagsButton);
+
+    // The Close button and a click on the backdrop close it the same way.
+    await act(async () => tagsButton.click());
+    await act(async () => focusIn(sheet() as HTMLDialogElement, i18n.t('common.close')).click());
+    expect(sheet()).toBeNull();
+    expect(document.activeElement).toBe(tagsButton);
+
+    await act(async () => tagsButton.click());
+    (sheet()?.querySelector('input') as HTMLInputElement).focus();
+    await act(async () => (sheet() as HTMLDialogElement).click());
+    expect(sheet()).toBeNull();
+    expect(document.activeElement).toBe(tagsButton);
+  });
+
+  it('puts focus in the search field when the Tags button is gone, as the card no longer matches the filter', async () => {
+    await addShelf();
+    const host = await render();
+    await act(async () => button(host, i18n.t('shows.tags.label'))?.click());
+    await act(async () => chip(sheet() as HTMLDialogElement, 'Christmas 2')?.click());
+    await act(async () => button(sheet() as HTMLDialogElement, i18n.t('shows.filter.done', { count: 2 }))?.click());
+    expect(titles(host)).toEqual(['Elf', 'Santa Claus Conquers the Martians']);
+
+    const { tagsButton, editor } = await openTags(host, 'Elf');
+    // Taking Christmas off Elf, its only tag, drops it from the filtered list, and its Tags button with it.
+    await act(async () => chip(editor, 'Christmas')?.click());
+    expect(tagsButton.isConnected).toBe(false);
+    const done = button(editor, i18n.t('shows.tags.done')) as HTMLButtonElement;
+    done.focus();
+    await act(async () => done.click());
+    expect(sheet()).toBeNull();
+    expect(document.activeElement).toBe(host.querySelector('input[type="search"]'));
+  });
+
+  it('clears the tag filter and shows the card when Add show opens a show the filter hides', async () => {
+    await addShelf();
+    // The add sheet searches /api/shows; its one result is a show already on the list.
+    const asked: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        asked.push(url);
+        return new Response(JSON.stringify({ results: [{ imdbId: 'tt4000000', kind: 'movie', title: 'Sharknado', year: '2013' }] }));
+      }),
+    );
+    const host = await render();
+    await act(async () => button(host, i18n.t('shows.tags.label'))?.click());
+    await act(async () => chip(sheet() as HTMLDialogElement, 'Christmas 2')?.click());
+    await act(async () => button(sheet() as HTMLDialogElement, i18n.t('shows.filter.done', { count: 2 }))?.click());
+    expect(titles(host)).toEqual(['Elf', 'Santa Claus Conquers the Martians']);
+    expect(host.textContent).toContain(i18n.t('shows.tags.picked', { tags: 'Christmas' }));
+
+    // On a phone the page's Add show is an icon button, labelled; on desktop it has text.
+    const addShow = host.querySelector<HTMLButtonElement>(`button[aria-label="${i18n.t('shows.add')}"]`) ?? button(host, i18n.t('shows.add'));
+    await act(async () => addShow?.click());
+    const adder = sheet() as HTMLDialogElement;
+    await type(host, 'sharknado', adder.querySelector<HTMLInputElement>('input[type="search"]') as HTMLInputElement);
+    await act(async () => button(adder, i18n.t('shows.addSheet.search'))?.click());
+    for (let i = 0; i < 50 && adder.querySelector('ul[aria-label] button') === null; i += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+    // Already on the list, so it says so, and choosing it asks nothing more of the service.
+    expect(adder.querySelector('ul[aria-label]')?.textContent).toContain(i18n.t('shows.addSheet.inList'));
+    await act(async () => adder.querySelector<HTMLButtonElement>('ul[aria-label] button')?.click());
+
+    expect(asked).toHaveLength(1);
+    expect(sheet()).toBeNull();
+    expect(host.textContent).not.toContain(i18n.t('shows.tags.picked', { tags: 'Christmas' }));
+    expect((readPreference('f-shows', 'showsView') as { tags: string[] }).tags).toEqual([]);
+    expect(titles(host)).toEqual(['Elf', 'Inception', 'Santa Claus Conquers the Martians', 'Sharknado']);
   });
 });

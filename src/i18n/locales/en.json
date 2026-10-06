@@ -956,7 +956,7 @@
       "body": "Add the movies and series you want to watch. The whole family sees the list."
     },
     "searchLabel": "Search your shows",
-    "searchPlaceholder": "Title or genre…",
+    "searchPlaceholder": "Title, genre or tag…",
     "statusLabel": "Status",
     "kindLabel": "Movies or series",
     "all": "All {{count, number}}",
@@ -1001,7 +1001,7 @@
     "showing": "Showing {{shown, number}} of {{total, number}}",
     "showMore": "Show {{count, number}} more",
     "filter": {
-      "option": "{{name}} {{count, number}}",
+      "option": "<name/> {{count, number}}",
       "clear": "Clear",
       "done_one": "Show {{count, number}} show",
       "done_other": "Show {{count, number}} shows"
@@ -1058,7 +1058,7 @@
       "firstHint": "Group shows your own way, like Bad movie or Christmas. Tags are shared with your family.",
       "field": "Add a tag",
       "placeholder": "Add a tag",
-      "add": "Add “{{tag}}”",
+      "add": "Add “<item/>”",
       "full": "A show can have up to {{max, number}} tags.",
       "done": "Done"
     },

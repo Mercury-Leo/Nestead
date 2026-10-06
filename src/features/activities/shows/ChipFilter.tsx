@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Button, Chip, Sheet, cx } from '../../../components/ui';
 import { formatList } from '../../../i18n';
 import s from './ChipFilter.module.css';
@@ -51,7 +51,7 @@ export function ChipFilter({
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
 
-  const collator = useMemo(() => new Intl.Collator(i18n.language, { sensitivity: 'base' }), [i18n.language]);
+  const collator = useMemo(() => new Intl.Collator(i18n.language, { sensitivity: 'base', numeric: true }), [i18n.language]);
   const options = useMemo(
     () =>
       [...new Set([...picked, ...counts.keys()])]
@@ -110,7 +110,9 @@ export function ChipFilter({
           <div className={s.options} role="group" aria-label={label}>
             {options.map(({ option, label: optionName }) => (
               <Chip key={option} selected={picked.includes(option)} onClick={() => toggle(option)}>
-                <span>{t('shows.filter.option', { name: optionName, count: counts.get(option) ?? 0 })}</span>
+                <span>
+                  <Trans i18nKey="shows.filter.option" values={{ count: counts.get(option) ?? 0 }} components={{ name: <bdi className={s.name}>{optionName}</bdi> }} />
+                </span>
               </Chip>
             ))}
           </div>

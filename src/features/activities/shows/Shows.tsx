@@ -73,7 +73,23 @@ export function Shows(): JSX.Element {
   }, []);
   // The Tags sheet is the page's, not the card's: the grid keeps one card per child (Show more's focus).
   const [tagging, setTagging] = useState<string | null>(null);
-  const editTags = useCallback((show: Show): void => setTagging(show.id), []);
+  // The sheet is mounted only while a show is being tagged, so closing it removes an open <dialog>
+  // without close(), and focus would fall to the page. It goes back to the Tags button that opened
+  // it, or to the search field when that button is gone (the show no longer matches the filters).
+  // Where no button had focus (Safari does not focus a button on a click or a tap) it stays put,
+  // rather than raising a phone's keyboard in the search field.
+  const taggedFrom = useRef<HTMLElement | null>(null);
+  const editTags = useCallback((show: Show): void => {
+    const active = document.activeElement;
+    taggedFrom.current = active instanceof HTMLElement && active !== document.body ? active : null;
+    setTagging(show.id);
+  }, []);
+  useEffect(() => {
+    if (tagging !== null || taggedFrom.current === null) return;
+    const from = taggedFrom.current;
+    taggedFrom.current = null;
+    (from.isConnected ? from : toolbar.current?.querySelector<HTMLElement>('input[type="search"]'))?.focus();
+  }, [tagging]);
   const taggingShow = tagging === null ? undefined : rows.find((row) => row.id === tagging);
 
   const collator = useMemo(() => new Intl.Collator(i18n.language, { sensitivity: 'base', numeric: true }), [i18n.language]);

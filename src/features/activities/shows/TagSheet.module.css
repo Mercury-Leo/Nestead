@@ -8,6 +8,17 @@
   margin: 0 0 16px;
 }
 
+/* The 20-tag message: always in the page (a live region), so empty it takes no space. */
+.status {
+  margin: 0 0 16px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.status:empty {
+  margin: 0;
+}
+
 .options {
   display: flex;
   flex-wrap: wrap;

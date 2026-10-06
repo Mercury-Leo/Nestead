@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Check, Plus, Tag as TagIcon } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
@@ -20,6 +20,7 @@ export function TagSheet({ show, shows, onClose }: { show: Show; shows: readonly
   const { store } = useSession();
   const [typed, setTyped] = useState('');
   const [offered, setOffered] = useState<string[]>(() => familyTags(shows));
+  const field = useRef<HTMLInputElement>(null);
 
   const tags = show.tags ?? [];
   // The family's spelling is the one offered, so a show holding another ("bad movie" for "Bad movie") has the tag too.
@@ -28,7 +29,9 @@ export function TagSheet({ show, shows, onClose }: { show: Show; shows: readonly
   const tidy = tidyTag(typed);
   const known = offered.some((tag) => sameTag(tag, tidy));
   const collator = useMemo(() => new Intl.Collator(i18n.language, { sensitivity: 'base', numeric: true }), [i18n.language]);
-  const listed = offered.filter((tag) => tag.toLocaleLowerCase().includes(tidy.toLocaleLowerCase())).sort(collator.compare);
+  // A full show cannot take the typed text (the field is off), so it must not narrow the list either: text left in a disabled field would trap it.
+  const needle = full ? '' : tidy.toLocaleLowerCase();
+  const listed = offered.filter((tag) => tag.toLocaleLowerCase().includes(needle)).sort(collator.compare);
 
   const save = (next: readonly string[]): void => {
     if (next !== tags) void setTags(store, show, next).catch(() => undefined);
@@ -63,6 +66,7 @@ export function TagSheet({ show, shows, onClose }: { show: Show; shows: readonly
         }}
       >
         <TextField
+          ref={field}
           label={t('shows.tags.field')}
           icon={TagIcon}
           dir="auto"
@@ -74,12 +78,25 @@ export function TagSheet({ show, shows, onClose }: { show: Show; shows: readonly
           onChange={(event) => setTyped(event.target.value)}
         />
       </form>
-      {full && <p className={s.hint}>{t('shows.tags.full', { max: MAX_TAGS })}</p>}
+      {/* Always here, so a screen reader announces the text when the show fills up. */}
+      <p className={s.status} role="status">
+        {full ? t('shows.tags.full', { max: MAX_TAGS }) : null}
+      </p>
       {(listed.length > 0 || (tidy !== '' && !known)) && (
         <div className={s.options} role="group" aria-label={t('shows.tags.label')}>
           {tidy !== '' && !known && !full && (
-            <Chip icon={Plus} onClick={add} className={s.new}>
-              <span>{t('shows.tags.add', { tag: tidy })}</span>
+            <Chip
+              icon={Plus}
+              onClick={() => {
+                add();
+                // The press leaves focus on a chip that goes away, so the next tag can be typed at once.
+                field.current?.focus();
+              }}
+              className={s.new}
+            >
+              <span>
+                <Trans i18nKey="shows.tags.add" components={{ item: <bdi>{tidy}</bdi> }} />
+              </span>
             </Chip>
           )}
           {listed.map((tag) => {

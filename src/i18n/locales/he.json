@@ -993,7 +993,7 @@
       "body": "הוסיפו סרטים וסדרות שתרצו לראות. כל המשפחה רואה את הרשימה."
     },
     "searchLabel": "חיפוש ברשימה",
-    "searchPlaceholder": "שם או ז׳אנר…",
+    "searchPlaceholder": "שם, ז׳אנר או תגית…",
     "statusLabel": "סטטוס",
     "kindLabel": "סרטים או סדרות",
     "all": "הכול {{count, number}}",
@@ -1038,7 +1038,7 @@
     "showing": "מוצגים {{shown, number}} מתוך {{total, number}}",
     "showMore": "להציג עוד {{count, number}}",
     "filter": {
-      "option": "{{name}} {{count, number}}",
+      "option": "<name/> {{count, number}}",
       "clear": "ניקוי",
       "done_one": "להציג כותר אחד",
       "done_two": "להציג שני כותרים",
@@ -1097,7 +1097,7 @@
       "firstHint": "אפשר לקבץ כותרים בדרך שלכם, כמו סרט רע או ערב סרט. התגיות משותפות לכל המשפחה.",
       "field": "הוספת תגית",
       "placeholder": "הוספת תגית",
-      "add": "להוסיף את „{{tag}}”",
+      "add": "להוסיף את „<item/>”",
       "full": "אפשר עד {{max, number}} תגיות לכותר.",
       "done": "סיום"
     },

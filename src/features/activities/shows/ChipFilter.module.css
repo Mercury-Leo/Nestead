@@ -78,12 +78,22 @@
   gap: 8px;
 }
 
-/* A long tag ends in an ellipsis rather than making the sheet scroll sideways on a phone. */
+/*
+ * A long tag ends in an ellipsis rather than making the sheet scroll sideways
+ * on a phone, and its count stays visible: the span lays the name (a <bdi>) and
+ * the count side by side, and only the name gives way.
+ */
 .options > button {
   max-width: 100%;
 }
 
 .options > button > :last-child {
+  display: inline-flex;
+  gap: 0.3em;
+  min-width: 0;
+}
+
+.name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
