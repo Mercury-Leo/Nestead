@@ -2,7 +2,7 @@ import { memo, useEffect, useId, useRef, useState } from 'react';
 import { Ban, Bookmark, BookmarkPlus, ChevronDown, CircleCheck, CirclePlay, RefreshCw, Star, Tag as TagIcon, Trash2 } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
-import { Button, cx } from '../../../components/ui';
+import { Button, IconButton, cx } from '../../../components/ui';
 import { nextStatus } from '../../../domain/shows';
 import type { FetchedDetails } from '../../../domain/shows';
 import type { Show, ShowStatus } from '../../../domain/types';
@@ -190,26 +190,23 @@ function Details({ show, onEditTags }: { show: Show; onEditTags: () => void }): 
           </span>
         </div>
       ) : (
+        // Icons only, each named for screen readers and with its name as a tooltip on desktop (IconButton).
         <div className={s.detailActions}>
-          <Button variant="ghost" icon={TagIcon} onClick={onEditTags}>
-            {t('shows.tags.edit')}
-          </Button>
-          <Button variant="ghost" icon={RefreshCw} disabled={refreshing} onClick={() => void refresh()}>
-            {refreshing ? t('shows.card.refreshing') : t('shows.card.refresh')}
-          </Button>
+          <IconButton label={t('shows.tags.edit')} icon={TagIcon} onClick={onEditTags} />
+          <IconButton
+            label={refreshing ? t('shows.card.refreshing') : t('shows.card.refresh')}
+            icon={RefreshCw}
+            disabled={refreshing}
+            className={cx(refreshing && s.turning)}
+            onClick={() => void refresh()}
+          />
           {/* Drop it, or for a dropped show its way back (its badge also brings it back). */}
           {show.status === 'dropped' ? (
-            <Button variant="ghost" icon={BookmarkPlus} onClick={() => void restoreShow(store, show).catch(() => undefined)}>
-              {t('shows.card.restore')}
-            </Button>
+            <IconButton label={t('shows.card.restore')} icon={BookmarkPlus} onClick={() => void restoreShow(store, show).catch(() => undefined)} />
           ) : (
-            <Button variant="ghost" icon={Ban} onClick={() => void dropShow(store, show).catch(() => undefined)}>
-              {t('shows.card.drop')}
-            </Button>
+            <IconButton label={t('shows.card.drop')} icon={Ban} onClick={() => void dropShow(store, show).catch(() => undefined)} />
           )}
-          <Button variant="ghost" icon={Trash2} onClick={() => setConfirmDelete(true)}>
-            {t('shows.card.delete')}
-          </Button>
+          <IconButton label={t('shows.card.delete')} icon={Trash2} onClick={() => setConfirmDelete(true)} />
         </div>
       )}
       <p className={s.quiet} role="status">

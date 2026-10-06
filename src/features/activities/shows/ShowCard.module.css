@@ -372,11 +372,23 @@
 }
 
 /* Ghost buttons line up with the text above them. */
+/* A row of 44px icon buttons; the first icon lines up with the text above it. */
 .detailActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 4px;
-  margin-inline-start: -12px;
+  gap: 4px;
+  margin-inline-start: -13px;
+}
+
+/* Refresh's icon turns while a refresh is under way (still for reduced motion, ../../../styles/tokens.css). */
+.turning svg {
+  animation: turn 0.9s linear infinite;
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .confirm {

@@ -235,4 +235,39 @@ describe('ShowCard', () => {
     expect((await press()).favorite).toBe(false);
     expect(star()?.getAttribute('aria-pressed')).toBe('false');
   });
+
+  it("shows the details' actions as icons, each named and with its name as a tooltip", () => {
+    const alex: Member = { id: 'm1', familyId: 'f', name: 'Alex', color: '#4f8ef7', createdAt: '', updatedAt: '' };
+    const show: Show = {
+      id: 's1', familyId: 'f', createdAt: '2026-10-04T08:00:00.000Z', updatedAt: '2026-10-04T08:00:00.000Z',
+      imdbId: 'tt0386676', kind: 'series', title: 'The Office', fetchedAt: '2026-10-04T08:00:00.000Z', status: 'to-watch',
+    };
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    const render = (row: Show): void =>
+      act(() =>
+        root.render(
+          <SessionContext.Provider value={{ store: createLocalStore('f'), me: alex, members: [alex], signOut: async () => {} }}>
+            <ShowCard show={row} onTag={noop} onEditTags={noop} />
+          </SessionContext.Provider>,
+        ),
+      );
+    unmount = () => {
+      act(() => root.unmount());
+      host.remove();
+    };
+    render(show);
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-expanded]')?.click());
+    const actions = (): HTMLButtonElement[] => [...host.querySelectorAll<HTMLButtonElement>('[id] button')];
+    const names = [i18n.t('shows.tags.edit'), i18n.t('shows.card.refresh'), i18n.t('shows.card.drop'), i18n.t('shows.card.delete')];
+    expect(actions().map((b) => b.getAttribute('aria-label'))).toEqual(names);
+    expect(actions().map((b) => b.title)).toEqual(names);
+    // Icons only: no words on the buttons themselves.
+    expect(actions().map((b) => b.textContent)).toEqual(['', '', '', '']);
+
+    // A dropped show offers Restore in Drop it's place.
+    render({ ...show, status: 'dropped' });
+    expect(actions()[2]?.getAttribute('aria-label')).toBe(i18n.t('shows.card.restore'));
+  });
 });
