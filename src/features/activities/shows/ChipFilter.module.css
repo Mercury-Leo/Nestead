@@ -78,6 +78,17 @@
   gap: 8px;
 }
 
+/* A long tag ends in an ellipsis rather than making the sheet scroll sideways on a phone. */
+.options > button {
+  max-width: 100%;
+}
+
+.options > button > :last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .footer {
   display: flex;
   flex-wrap: wrap;

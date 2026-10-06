@@ -110,7 +110,7 @@ export function ChipFilter({
           <div className={s.options} role="group" aria-label={label}>
             {options.map(({ option, label: optionName }) => (
               <Chip key={option} selected={picked.includes(option)} onClick={() => toggle(option)}>
-                {t('shows.filter.option', { name: optionName, count: counts.get(option) ?? 0 })}
+                <span>{t('shows.filter.option', { name: optionName, count: counts.get(option) ?? 0 })}</span>
               </Chip>
             ))}
           </div>
