@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { Users } from 'lucide-react';
 import { useSession } from '../../auth/session';
+import { LoadFailed } from '../../components/LoadFailed';
 import { PageHeader } from '../../components/PageHeader';
 import { Button, ButtonLink, SignOutIcon } from '../../components/ui';
+import { retryCollections, useCollectionState } from '../../data/useCollection';
 import { Board } from './Board';
 
 /**
@@ -13,7 +15,11 @@ import { Board } from './Board';
  */
 export function BoardPage(): JSX.Element {
   const { t } = useTranslation();
-  const { me, members, setMe, signOut, family } = useSession();
+  const { store, me, members, setMe, signOut, family } = useSession();
+  // The board paints before its rows arrive, but not in place of rows that failed to.
+  const columns = useCollectionState(store.columns);
+  const tasks = useCollectionState(store.tasks);
+  const failed = [columns, tasks].some((rows) => rows.failed && !rows.loaded);
 
   // Nobody to share with yet, so the code is worth putting in front of you.
   const inviteCode = family !== undefined && members.length < 2 ? family.joinCode : null;
@@ -61,7 +67,7 @@ export function BoardPage(): JSX.Element {
         </p>
       )}
 
-      <Board />
+      {failed ? <LoadFailed onRetry={() => retryCollections(store.columns, store.tasks)} /> : <Board />}
     </div>
   );
 }

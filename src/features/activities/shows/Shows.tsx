@@ -2,10 +2,11 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { ArrowUpDown, Clapperboard, Drama, Plus, Search as SearchIcon, SlidersHorizontal, Tag as TagIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
+import { LoadFailed } from '../../../components/LoadFailed';
 import { PageHeader } from '../../../components/PageHeader';
 import { Button, Chip, EmptyState, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
 import { readPreference, writePreference } from '../../../data/local/localStore';
-import { useCollectionState } from '../../../data/useCollection';
+import { retryCollections, useCollectionState } from '../../../data/useCollection';
 import { SHOWS_PAGE, SHOW_SORTS, SHOW_STATUSES, filterShows, familyTags, genreCounts, hasTags, lacksGenres, parseShowView, sameTag, shownCount, sortShows, spelledAs, tagCounts } from '../../../domain/shows';
 import type { KindFilter, ShowView, StatusFilter } from '../../../domain/shows';
 import type { Show } from '../../../domain/types';
@@ -46,7 +47,7 @@ const asTyped = (tag: string): string => tag;
 export function Shows(): JSX.Element {
   const { t, i18n } = useTranslation();
   const { store } = useSession();
-  const { rows, loaded } = useCollectionState(store.shows);
+  const { rows, loaded, failed } = useCollectionState(store.shows);
   const desktop = useIsDesktop();
   const [view, setView] = useState<ShowView>(() => parseShowView(readPreference(store.familyId, VIEW_PREFERENCE)));
   useEffect(() => {
@@ -192,7 +193,9 @@ export function Shows(): JSX.Element {
   );
   const sheet = adding && <AddShow shows={rows} onClose={() => setAdding(false)} onShow={reveal} />;
 
-  if (!loaded) return <p className="centred">{t('common.loading')}</p>;
+  if (!loaded) {
+    return failed ? <LoadFailed onRetry={() => retryCollections(store.shows)} /> : <p className="centred">{t('common.loading')}</p>;
+  }
 
   if (rows.length === 0) {
     return (

@@ -17,7 +17,7 @@ Things the family does together outside the kitchen. One page so far: Shows (`/s
 | `shows/share.ts` (+ `share.test.ts`) | `shareOrCopy()`: the device's share sheet, or the clipboard, for a show's line and IMDb link. |
 
 ## How it works
-- A show's details are saved as a row when it is added; the page reads rows through `useCollectionState(store.shows)`. Filters, sort and the name search run on those rows (`../../domain/shows.ts`), so opening the page or a card never calls `/api/shows`.
+- A show's details are saved as a row when it is added; the page reads rows through `useCollectionState(store.shows)`, with Loading until the first read lands, or `LoadFailed` and Try again while reads fail. Filters, sort and the name search run on those rows (`../../domain/shows.ts`), so opening the page or a card never calls `/api/shows`.
 - `/api/shows` is called in four places only: Search in the add sheet (when the form is sent, never per keystroke), choosing a result (its details, short plot), Refresh details on one card, and Get their genres (`AddShow.tsx`, `actions.ts`). There is no refresh of the whole list, and nothing in the background.
 - A result already on the list is marked "In your list"; choosing it, or saving one another device added a moment ago, opens the existing card instead of adding a second (`addShow()`; Supabase's unique constraint turns the second insert away). Opening a card clears filters that hide it, scrolls it into view, opens it, focuses its title and flashes it once (`reveal()` in `Shows.tsx`, `revealed` in `ShowCard.tsx`).
 - Length is `runtimeMin`: a movie's running time, or one episode's for a series, shown beside its seasons (`Facts` in `ShowCard.tsx`).

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Trans } from 'react-i18next';
 import type { Account, DataStore, Family } from '../data/types';
-import { useCollection } from '../data/useCollection';
+import { LoadFailed } from '../components/LoadFailed';
+import { retryCollections, useCollectionState } from '../data/useCollection';
 import { clearInvite, pendingInvite } from './invite';
 import { lastFamilyOf, openFamily, rememberFamily } from './openFamily';
 import { JoinOrCreate } from './screens/JoinOrCreate';
@@ -150,7 +151,7 @@ function Ready({
   signOut: () => Promise<void>;
   children: ReactNode;
 }): JSX.Element | null {
-  const members = useCollection(store.members);
+  const { rows: members, loaded, failed } = useCollectionState(store.members);
   const me = members.find((member) => member.id === userId) ?? null;
   const [family, setFamily] = useState(initialFamily);
 
@@ -174,6 +175,7 @@ function Ready({
   );
 
   if (me === null) {
+    if (failed && !loaded) return <LoadFailed onRetry={() => retryCollections(store.members)} />;
     return (
       <p className="centred">
         <Trans i18nKey="common.loading" />

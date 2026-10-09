@@ -13,7 +13,7 @@ The signed-in app's frame: the shell around every screen, the sidebar and tab ba
 
 ## How it works
 - `main.tsx` renders `LocaleProvider` → `ThemeProvider` → `BrowserRouter` → `SessionProvider` → `App`, so nothing here renders before a session exists.
-- `AppRoutes.tsx` wraps kitchen routes in `page()`, which shows Loading until `useKitchen().loaded`; `/` (the board), `/shows`, `/family` and `/addresses` do not wait (Shows and Addresses wait for their own collections instead). Unknown paths redirect to `/`.
+- `AppRoutes.tsx` wraps kitchen routes in `page()`, which shows Loading until `useKitchen().loaded`, or `LoadFailed` with Try again while a first read has failed (`useKitchen().failed`); `/` (the board), `/shows`, `/family` and `/addresses` do not wait (Shows and Addresses wait for their own collections instead). Unknown paths redirect to `/`.
 - `Shell.tsx` drops the sidebar in cook mode (`/^\/recipe\/[^/]+\/cook/`) and the tab bar on every `/recipe/` path; `ErrorBoundary` resets when `pathname` changes.
 - Sections (`sections.ts`): Board, Lists, Larder (Library, Search, Pantry, Diet), Activities (Shows, `../features/activities/`) and Family (Settings, Addresses). The four pinnable ones are the default bar. `locate()` lights a page by its path or an `also` prefix (`/recipe`, `/add` and `/import` are Library); URLs don't name sections.
 - Phone: the bar shows the pinned sections in list order, then More. More opens a `Sheet` of every section; Edit bar pins and unpins, at most `MAX_PINS` (4) and at least one, refused rather than swapped. Pins are a per-family device preference, `navPins`. More is lit in a section that isn't pinned.
@@ -34,7 +34,7 @@ The signed-in app's frame: the shell around every screen, the sidebar and tab ba
 5. Update the default-pins test in `sections.test.ts` if the first four changed, and the tab-bar tests in `Nav.test.tsx`, which count the default tabs and unpin them one by one.
 
 ## Rules & gotchas
-- A new kitchen route must go through `page()`, or it renders before the first read and flashes an empty state (`AppRoutes.tsx`).
+- A new kitchen route must go through `page()`, or it renders before the first read and flashes an empty state, or shows one in place of rows that failed to load (`AppRoutes.tsx`).
 - The bar holds `MAX_PINS` (4), and Activities made the pinnable sections four, so a new pinnable section starts under More until someone pins it. Devices that already stored `navPins` keep their own choice: Activities reaches their bar only when pinned (`resolvePins()`).
 - `lazy()` needs a default export: named exports are wrapped with `.then((m) => ({ default: m.X }))`; `CookMode`, `AddRecipe` and `ImportRecipe` are default exports (`AppRoutes.tsx`).
 - Nav links are `<Link>` with `aria-current` set by hand: `NavLink` would also mark a section header as the current page. Pages get `"page"`; a phone tab or More gets `"true"`.

@@ -13,7 +13,7 @@ The family kitchen: state and writes shared by the kitchen screens, one folder p
 Screens with their own README: [add/](add/README.md), [cook/](cook/README.md), [import/](import/README.md), [pantry/](pantry/README.md), [search/](search/README.md). Shared: [recipe/](recipe/README.md), [seed/](seed/README.md), [timers/](timers/README.md). One-file screens are below.
 
 ## How it works
-- `../../app/App.tsx` mounts `KitchenProvider` once; `loaded` is true only when all five collections have been read (`KitchenContext.tsx`).
+- `../../app/App.tsx` mounts `KitchenProvider` once; `loaded` is true only when all five collections have been read; `failed` while any of them has failed its first read, and `retry()` reads those again (`KitchenContext.tsx`).
 - `profile` is the oldest diet-profile row, in case two devices raced to create one (`KitchenContext.tsx`).
 - `findRecipe()` finds library rows (marked `inLibrary`) and offline web recipes from `seed/webIndex.ts` (`KitchenContext.tsx`).
 - Screens decide what to do; `actions.ts` writes it, applying the plans from `../../domain/kitchen/list.ts`. A plan's removes and updates go out together; its creates go one at a time. `moveToPantry()` makes its pantry rows one at a time and sends each list item's remove while the next row is being made.

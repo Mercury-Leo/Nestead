@@ -18,6 +18,10 @@ import type { ChangeListener, Collection, DataStore, Unsubscribe } from './types
  *     it, without waiting for the re-read.
  *   * Rows outlive the screen. Coming back to one shows what it had while a
  *     fresh read runs, instead of an empty page.
+ *   * A read that fails is tried again until one lands: after a growing wait,
+ *     at once when the browser comes back online or the tab is shown again,
+ *     and when a screen's Try again calls retry(). It never counts as loaded,
+ *     so a screen cannot mistake rows it never got for an empty table.
  *
  * It wraps any backend and passes the same contract, so screens and backends
  * stay unaware of it. list() always reads the backend.
@@ -27,6 +31,11 @@ export interface Rows<T> {
   rows: T[];
   /** False until the first read lands, so "no rows" and "not read yet" differ. */
   loaded: boolean;
+  /**
+   * The latest read failed and none has landed since. Another is on its way;
+   * before the first lands, a screen shows this instead of Loading.
+   */
+  failed: boolean;
 }
 
 /**
@@ -36,6 +45,29 @@ export interface Rows<T> {
  * until the screen that wants it mounts.
  */
 const LINGER_MS = 30_000;
+
+/** The waits before re-reading after each failure in a row; the last repeats. */
+const RETRY_MS = [1_000, 2_000, 5_000, 10_000, 30_000];
+
+/**
+ * Open collections whose latest read failed. A phone that wakes, or a laptop
+ * back on the network, usually fails its first reads, so these try again as
+ * soon as the connection or the tab comes back rather than at their next turn.
+ */
+const failing = new Set<{ retry: () => void }>();
+let watchingConnection = false;
+
+function watchConnection(): void {
+  if (watchingConnection || typeof window === 'undefined') return;
+  watchingConnection = true;
+  const retryAll = (): void => {
+    for (const cache of [...failing]) cache.retry();
+  };
+  window.addEventListener('online', retryAll);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') retryAll();
+  });
+}
 
 type Edit<T> = (rows: T[]) => T[];
 
@@ -72,9 +104,13 @@ export class CachedCollection<T extends Base> implements Collection<T> {
   /** The rows as the backend last reported them, plus confirmed writes. */
   private base: T[] = [];
   private loaded = false;
+  private failed = false;
+  /** Failed reads in a row, which set the wait before the next. */
+  private failures = 0;
+  private retrying: ReturnType<typeof setTimeout> | null = null;
   /** Writes still in flight, applied over base in the order they were made. */
   private readonly edits = new Set<Edit<T>>();
-  private snapshot: Rows<T> = { rows: [], loaded: false };
+  private snapshot: Rows<T> = { rows: [], loaded: false, failed: false };
 
   private readonly listeners = new Set<ChangeListener>();
   private stopSource: Unsubscribe | null = null;
@@ -100,6 +136,20 @@ export class CachedCollection<T extends Base> implements Collection<T> {
     this.open();
     this.closeSoon();
   }
+
+  /**
+   * Reads again now and starts the waits over. A screen's Try again shows
+   * Loading until this read lands or fails in its turn.
+   */
+  readonly retry = (): void => {
+    this.failures = 0;
+    if (this.failed) {
+      this.failed = false;
+      this.emit();
+    }
+    if (this.stopSource === null) this.preload();
+    else this.read();
+  };
 
   readonly subscribe = (onChange: ChangeListener): Unsubscribe => {
     this.listeners.add(onChange);
@@ -170,11 +220,15 @@ export class CachedCollection<T extends Base> implements Collection<T> {
       if (this.listeners.size === 0 && this.stopSource !== null) {
         this.stopSource();
         this.stopSource = null;
+        // Closed, so nothing retries: the next open reads anyway.
+        this.cancelRetry();
+        failing.delete(this);
       }
     }, LINGER_MS);
   }
 
   private read(): void {
+    this.cancelRetry();
     if (this.reading) {
       this.readAgain = true;
       return;
@@ -189,19 +243,24 @@ export class CachedCollection<T extends Base> implements Collection<T> {
           let rows = read;
           for (const landed of this.landedDuringRead) rows = landed(rows);
           const changed = !this.loaded || !sameRows(this.base, rows);
+          const recovered = this.failed;
           this.loaded = true;
-          if (changed) {
-            this.base = rows;
-            this.emit();
-          }
+          this.failed = false;
+          this.failures = 0;
+          failing.delete(this);
+          if (changed) this.base = rows;
+          if (changed || recovered) this.emit();
         },
         (error: unknown) => {
-          // A failed read leaves what we had; the next change retries.
+          // A failed read leaves what we had, and is not loaded: an empty
+          // list here would look like the family's rows had gone.
           console.warn('Could not read rows:', error);
-          if (!this.loaded) {
-            this.loaded = true;
+          this.failures += 1;
+          if (!this.failed) {
+            this.failed = true;
             this.emit();
           }
+          this.retryLater();
         },
       )
       .finally(() => {
@@ -213,10 +272,28 @@ export class CachedCollection<T extends Base> implements Collection<T> {
       });
   }
 
+  /** Schedules the next read after a failure, while the collection is open. */
+  private retryLater(): void {
+    if (this.stopSource === null) return;
+    failing.add(this);
+    watchConnection();
+    const wait = RETRY_MS[Math.min(this.failures, RETRY_MS.length) - 1] as number;
+    this.retrying = setTimeout(() => {
+      this.retrying = null;
+      this.read();
+    }, wait);
+  }
+
+  private cancelRetry(): void {
+    if (this.retrying === null) return;
+    clearTimeout(this.retrying);
+    this.retrying = null;
+  }
+
   private emit(): void {
     let rows = this.base;
     for (const edit of this.edits) rows = edit(rows);
-    this.snapshot = { rows, loaded: this.loaded };
+    this.snapshot = { rows, loaded: this.loaded, failed: this.failed };
     for (const listener of [...this.listeners]) listener();
   }
 }

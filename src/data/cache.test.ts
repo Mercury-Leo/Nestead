@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Task } from '../domain/types';
 import { CachedCollection, withCache } from './cache';
 import { runDataStoreContract } from './collection.contract';
@@ -29,7 +29,7 @@ function task(id: string, title: string, updatedAt = '2026-09-27T10:00:00.000Z')
  */
 function controlledSource(initial: Task[]) {
   let rows = initial;
-  const reads: Array<(rows: Task[]) => void> = [];
+  const reads: Array<{ resolve: (rows: Task[]) => void; reject: (error: Error) => void }> = [];
   const writes: Array<{ succeed: () => void; fail: () => void }> = [];
   const listeners = new Set<ChangeListener>();
 
@@ -39,7 +39,7 @@ function controlledSource(initial: Task[]) {
     });
 
   const source: Collection<Task> = {
-    list: vi.fn(() => new Promise<Task[]>((resolve) => reads.push(resolve))),
+    list: vi.fn(() => new Promise<Task[]>((resolve, reject) => reads.push({ resolve, reject }))),
     create: vi.fn(),
     update: vi.fn((id: string, patch) =>
       later(() => {
@@ -62,7 +62,12 @@ function controlledSource(initial: Task[]) {
     source,
     /** Finishes the oldest outstanding read with the backend's rows as they are now. */
     finishRead: async (snapshot: Task[] = rows) => {
-      reads.shift()?.(snapshot);
+      reads.shift()?.resolve(snapshot);
+      await flush();
+    },
+    /** Fails the oldest outstanding read, as a dropped connection would. */
+    failRead: async () => {
+      reads.shift()?.reject(new Error('Failed to fetch'));
       await flush();
     },
     pendingReads: () => reads.length,
@@ -95,7 +100,7 @@ describe('CachedCollection', () => {
     await backend.finishRead();
 
     expect(backend.source.list).toHaveBeenCalledTimes(1);
-    expect(cache.getSnapshot()).toEqual({ rows: [task('1', 'Bins')], loaded: true });
+    expect(cache.getSnapshot()).toEqual({ rows: [task('1', 'Bins')], loaded: true, failed: false });
   });
 
   it('queues one more read for changes during a read, however many arrive', async () => {
@@ -230,10 +235,112 @@ describe('CachedCollection', () => {
       expect(backend.source.subscribe).toHaveBeenCalledTimes(1);
 
       cache.subscribe(() => undefined);
-      expect(cache.getSnapshot()).toEqual({ rows: [task('1', 'Bins')], loaded: true });
+      expect(cache.getSnapshot()).toEqual({ rows: [task('1', 'Bins')], loaded: true, failed: false });
       expect(backend.source.list).toHaveBeenCalledTimes(2);
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe('when a read fails', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    it('is not loaded, says so, and reads again until one lands', async () => {
+      const backend = controlledSource([task('1', 'Bins')]);
+      const cache = new CachedCollection(backend.source);
+      cache.subscribe(() => undefined);
+
+      await backend.failRead();
+      // Not an empty table: the screen must not show its empty state.
+      expect(cache.getSnapshot()).toEqual({ rows: [], loaded: false, failed: true });
+
+      vi.advanceTimersByTime(1_000);
+      expect(backend.source.list).toHaveBeenCalledTimes(2);
+      await backend.finishRead();
+      expect(cache.getSnapshot()).toEqual({ rows: [task('1', 'Bins')], loaded: true, failed: false });
+    });
+
+    it('waits longer after each failure in a row', async () => {
+      const backend = controlledSource([]);
+      const cache = new CachedCollection(backend.source);
+      cache.subscribe(() => undefined);
+
+      await backend.failRead();
+      vi.advanceTimersByTime(999);
+      expect(backend.source.list).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(1);
+      expect(backend.source.list).toHaveBeenCalledTimes(2);
+
+      await backend.failRead();
+      vi.advanceTimersByTime(1_999);
+      expect(backend.source.list).toHaveBeenCalledTimes(2);
+      vi.advanceTimersByTime(1);
+      expect(backend.source.list).toHaveBeenCalledTimes(3);
+    });
+
+    it('reads at once on Try again, showing Loading until that read lands or fails', async () => {
+      const backend = controlledSource([task('1', 'Bins')]);
+      const cache = new CachedCollection(backend.source);
+      cache.subscribe(() => undefined);
+      await backend.failRead();
+
+      cache.retry();
+      expect(backend.source.list).toHaveBeenCalledTimes(2);
+      expect(cache.getSnapshot()).toEqual({ rows: [], loaded: false, failed: false });
+
+      await backend.failRead();
+      expect(cache.getSnapshot().failed).toBe(true);
+    });
+
+    it('keeps the rows it had when a later read fails', async () => {
+      const backend = controlledSource([task('1', 'Bins')]);
+      const cache = new CachedCollection(backend.source);
+      cache.subscribe(() => undefined);
+      await backend.finishRead();
+
+      backend.notify();
+      await backend.failRead();
+      expect(cache.getSnapshot()).toEqual({ rows: [task('1', 'Bins')], loaded: true, failed: true });
+
+      vi.advanceTimersByTime(1_000);
+      await backend.finishRead();
+      expect(cache.getSnapshot()).toEqual({ rows: [task('1', 'Bins')], loaded: true, failed: false });
+    });
+
+    it('reads again at once when the browser comes back online or the tab is shown', async () => {
+      const backend = controlledSource([]);
+      const cache = new CachedCollection(backend.source);
+      cache.subscribe(() => undefined);
+
+      await backend.failRead();
+      window.dispatchEvent(new Event('online'));
+      expect(backend.source.list).toHaveBeenCalledTimes(2);
+
+      await backend.failRead();
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(backend.source.list).toHaveBeenCalledTimes(3);
+    });
+
+    it('stops trying once nobody is watching', async () => {
+      const backend = controlledSource([]);
+      const cache = new CachedCollection(backend.source);
+      const stop = cache.subscribe(() => undefined);
+      await backend.failRead();
+      stop();
+
+      vi.advanceTimersByTime(60_000); // one retry, then long enough to close
+      expect(backend.source.list).toHaveBeenCalledTimes(2);
+      await backend.failRead();
+      vi.advanceTimersByTime(600_000);
+      window.dispatchEvent(new Event('online'));
+      expect(backend.source.list).toHaveBeenCalledTimes(2);
+    });
   });
 });

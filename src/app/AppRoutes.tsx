@@ -2,6 +2,7 @@ import { Suspense, lazy, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { LoadFailed } from '../components/LoadFailed';
 import { BoardPage } from '../features/board/BoardPage';
 import { useKitchen } from '../features/larder/KitchenContext';
 import { loadShows, loadedShows } from './warm';
@@ -39,10 +40,12 @@ function ShowsRoute(): JSX.Element {
 
 /** Every screen, by path. */
 export function AppRoutes(): JSX.Element {
-  const { loaded } = useKitchen();
+  const { loaded, failed, retry } = useKitchen();
   // Kitchen screens wait for their first read, so no empty state or "not
-  // found" flashes up before the rows arrive. The board does not wait.
-  const page = (node: ReactNode): ReactNode => (loaded ? <Suspense fallback={<Loading />}>{node}</Suspense> : <Loading />);
+  // found" flashes up before the rows arrive, and none stands in for rows
+  // that failed to arrive. The board does not wait.
+  const waiting = failed ? <LoadFailed onRetry={retry} /> : <Loading />;
+  const page = (node: ReactNode): ReactNode => (loaded ? <Suspense fallback={<Loading />}>{node}</Suspense> : waiting);
 
   return (
     <Routes>

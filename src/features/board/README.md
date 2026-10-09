@@ -4,7 +4,7 @@ The kanban board and home page: the family's columns and task cards, with drag a
 ## Files
 | File | Responsibility |
 | --- | --- |
-| `BoardPage.tsx` | The page: the family's name as subtitle, who you are ("I am" picker in demo mode), Family link, sign out, a one-line invite while alone. |
+| `BoardPage.tsx` | The page: the family's name as subtitle, who you are ("I am" picker in demo mode), Family link, sign out, a one-line invite while alone. The board paints before its rows arrive, but `LoadFailed` takes its place while the columns' or tasks' first read fails. |
 | `Board.tsx` | Filter bar, ordered columns, drop handling, reviving due repeats, the drag ghost portal. |
 | `Column.tsx` | Rename, move, delete (only when empty) and fold a column; its cards and composer. |
 | `TaskCard.tsx` | A card; expanded: description, due date, repeat, icon, assignee, delete. |

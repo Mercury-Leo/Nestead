@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react';
 import { MapPin, Pencil, Plus, Search as SearchIcon, Trash2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../../auth/session';
+import { LoadFailed } from '../../../components/LoadFailed';
 import { PageHeader } from '../../../components/PageHeader';
 import { Button, EmptyState, IconButton, Sheet, TextField } from '../../../components/ui';
-import { useCollectionState } from '../../../data/useCollection';
+import { retryCollections, useCollectionState } from '../../../data/useCollection';
 import { searchAddresses } from '../../../domain/addresses/search';
 import type { Address } from '../../../domain/types';
 import { useLocale } from '../../../i18n';
@@ -25,7 +26,7 @@ export function AddressesPage(): JSX.Element {
   const { t } = useTranslation();
   const { store } = useSession();
   const { info } = useLocale();
-  const { rows, loaded } = useCollectionState(store.addresses);
+  const { rows, loaded, failed } = useCollectionState(store.addresses);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Editing>(null);
   const [deleting, setDeleting] = useState<Address | null>(null);
@@ -54,7 +55,7 @@ export function AddressesPage(): JSX.Element {
 
   let body: JSX.Element;
   if (!loaded) {
-    body = <p className="centred">{t('common.loading')}</p>;
+    body = failed ? <LoadFailed onRetry={() => retryCollections(store.addresses)} /> : <p className="centred">{t('common.loading')}</p>;
   } else if (rows.length === 0) {
     body = (
       <EmptyState icon={MapPin} title={t('addresses.empty.title')} actions={addButton}>

@@ -10,7 +10,10 @@ import type { Collection } from './types';
  * cache.ts), which follows changes from anywhere, including another tab.
  *
  * `loaded` lets a screen tell "no rows" from "not read yet", so an empty state
- * or a "not found" never flashes up before the data arrives.
+ * or a "not found" never flashes up before the data arrives. `failed` before
+ * `loaded` means the read did not work: the screen shows `<LoadFailed>` in place
+ * of Loading, whose Try again calls retryCollections(). The cache keeps
+ * retrying meanwhile.
  */
 export function useCollectionState<T extends Base>(collection: Collection<T>): Rows<T> {
   const cache = cacheOf(collection);
@@ -29,4 +32,15 @@ export function useCollection<T extends Base>(collection: Collection<T>): T[] {
  */
 export function preloadCollection<T extends Base>(collection: Collection<T>): void {
   cacheOf(collection).preload();
+}
+
+/**
+ * Reads again now those of these collections whose read failed, for a
+ * screen's Try again (cache.ts retry()). The rest are left alone.
+ */
+export function retryCollections(...collections: Array<Collection<Base>>): void {
+  for (const collection of collections) {
+    const cache = cacheOf(collection);
+    if (cache.getSnapshot().failed) cache.retry();
+  }
 }

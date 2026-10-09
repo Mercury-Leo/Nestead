@@ -6,6 +6,7 @@ App-wide UI: the generic kit in `ui/`, the light and dark theme in `theme/`, and
 | --- | --- |
 | `Brand.tsx` | `BrandMark` jar SVG and the "Nestead" link home. |
 | `ErrorBoundary.tsx` | Catches a screen that failed to render and offers Reload; `resetKey` clears it. |
+| `LoadFailed.tsx` | In place of Loading when a screen's first read failed: says the family's data did not arrive, and Try again calls `onRetry`. |
 | `PageHeader.tsx` (+ `PageHeader.module.css`) | Serif page title, subtitle and actions. |
 | `theme/theme.tsx` (+ `theme.test.ts`) | `ThemeProvider`, `useTheme()`, `readThemeChoice()`, `resolveTheme()`. |
 | `theme/ThemeToggle.tsx` (+ `ThemeToggle.module.css`) | System, Light or Dark as a `Segmented`; `compact` shows icons only. |
@@ -25,6 +26,7 @@ App-wide UI: the generic kit in `ui/`, the light and dark theme in `theme/`, and
 - Mirrored icons carry `flipRtl`, which `../styles/global.css` flips under `[dir='rtl']` (`ui/icons.tsx`).
 - A sheet's `<dialog>` blocks clicks on the page behind it, not scrolling. Below 1024 px, `html:has(.sheet:modal)` hides the page's overflow while one is open, so a swipe on the backdrop or a short sheet leaves the page where it was, and closing it keeps the scroll position. Desktop is left alone: hiding a classic scrollbar there would shift the page sideways (`ui/Sheet.module.css`).
 - `../app/Shell.tsx` wraps the routes in `ErrorBoundary`; the usual failure is a lazy chunk gone after a deploy (`ErrorBoundary.tsx`).
+- `LoadFailed` is for rows that did not arrive, while the screen itself works: a dropped connection or a phone waking up. The cache is already retrying (`../data/cache.ts`), so Try again only hurries it; it never reloads the page (`LoadFailed.tsx`).
 
 ## Connections
 - `ui/` uses only React, lucide-react, react-router-dom (`ButtonLink`) and react-i18next (`Sheet`); `theme/` uses `../data/local/localStore.ts` and `../hooks/useMediaQuery.ts`.

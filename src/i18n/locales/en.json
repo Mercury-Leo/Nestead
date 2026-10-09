@@ -57,6 +57,11 @@
     "body": "This screen couldn’t load. Reloading usually fixes it; nothing you saved is lost.",
     "reload": "Reload"
   },
+  "loadFailed": {
+    "title": "Couldn’t load this",
+    "body": "Your family’s data didn’t arrive. Nestead keeps trying on its own, and nothing you saved is lost.",
+    "retry": "Try again"
+  },
   "auth": {
     "signIn": {
       "subtitle": {

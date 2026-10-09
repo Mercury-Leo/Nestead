@@ -14,7 +14,7 @@ The family's address book (`/addresses`), the Family section's second page: save
 | `AddressesPage.test.tsx` | The page in jsdom, with a local store. |
 
 ## How it works
-- Rows come from `useCollectionState(store.addresses)`. The page shows Loading until the first read, then the empty state, or the search bar and list. The route does not wait for the kitchen (`../../../app/AppRoutes.tsx`).
+- Rows come from `useCollectionState(store.addresses)`. The page shows Loading until the first read (`LoadFailed` with Try again while reads fail), then the empty state, or the search bar and list. The route does not wait for the kitchen (`../../../app/AppRoutes.tsx`).
 - Search runs on the device through `searchAddresses()` (`../../../domain/addresses/search.ts`), on every keystroke and with no debounce. It matches the name, street and city, forgives typos, partial words, accents and niqqud, and ranks better matches first. The query lives in state, not a preference, so every visit starts empty. Escape or the clear button empties it. The search bar is hidden while there are no addresses.
 - Navigate is one link, chosen by device (`navigationPlatform()`, `../../../domain/addresses/links.ts`):
   - On Android it is a `geo:` link, in the same tab, and the system asks which navigation app to use (Waze, Google Maps, …). If the person has set a default app, that app opens without asking.

@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useSession } from '../../auth/session';
-import { useCollectionState } from '../../data/useCollection';
+import { retryCollections, useCollectionState } from '../../data/useCollection';
 import type { AnyRecipe, DietProfile, ListGroup, ListItem, PantryItem, Recipe } from '../../domain/types';
 import { pantryIndex } from '../../domain/kitchen/fit';
 import type { PantryIndex } from '../../domain/kitchen/fit';
@@ -16,6 +16,10 @@ import type { RecipeSearchProvider } from './seed/webIndex';
 
 export interface Kitchen {
   loaded: boolean;
+  /** A first read failed: the kitchen screens show LoadFailed until it lands. */
+  failed: boolean;
+  /** Reads the kitchen's failed collections again now. */
+  retry: () => void;
   recipes: Recipe[];
   have: PantryItem[];
   staples: PantryItem[];
@@ -58,8 +62,11 @@ export function KitchenProvider({ children }: { children: ReactNode }): JSX.Elem
     for (const recipe of offlineProvider.all()) byId.set(recipe.id, recipe);
 
     const byAdded = (a: PantryItem, b: PantryItem): number => a.createdAt.localeCompare(b.createdAt);
+    const all = [recipes, pantryRows, profiles, list, groups];
     return {
-      loaded: recipes.loaded && pantryRows.loaded && profiles.loaded && list.loaded && groups.loaded,
+      loaded: all.every((rows) => rows.loaded),
+      failed: all.some((rows) => rows.failed && !rows.loaded),
+      retry: () => retryCollections(store.recipes, store.pantry, store.dietProfiles, store.listItems, store.listGroups),
       recipes: sorted,
       have: pantryRows.rows.filter((row) => row.kind === 'have').sort(byAdded),
       staples: pantryRows.rows.filter((row) => row.kind === 'staple').sort(byAdded),
@@ -72,7 +79,7 @@ export function KitchenProvider({ children }: { children: ReactNode }): JSX.Elem
       web: offlineProvider.all(),
       findRecipe: (id) => byId.get(id),
     };
-  }, [recipes, pantryRows, profiles, list, groups]);
+  }, [store, recipes, pantryRows, profiles, list, groups]);
 
   return <KitchenContext.Provider value={value}>{children}</KitchenContext.Provider>;
 }

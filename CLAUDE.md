@@ -11,7 +11,7 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 - Screens: rows only through `useSession()`, `useCollection()` and `useKitchen()`; from a backend module they import only the preference helpers.
 - Backend: `SessionProvider` (`src/auth/session.tsx`) picks demo or Supabase by `VITE_BACKEND`, the only place that names one; a backend is a `DataStore` that passes `runDataStoreContract()` unchanged plus an `Account` (`src/data/types.ts`). Porting steps: `docs/ARCHITECTURE.md#swapping-the-backend`.
 - Supabase: only `src/data/supabase/` imports `@supabase/supabase-js` or that folder, bar `session.tsx`; `src/data/boundary.test.ts` fails otherwise.
-- Cache: `withCache()` wraps every backend, so writes show before the backend confirms (`src/data/cache.ts`).
+- Cache: `withCache()` wraps every backend, so writes show before the backend confirms (`src/data/cache.ts`). A failed read is retried and never counts as `loaded`; screens show `LoadFailed` for `failed && !loaded`, never an empty state (`src/components/LoadFailed.tsx`).
 - Session: screens rely only on the `Session` type in `src/auth/session.tsx`, never on which session provides it.
 - Domain: `src/domain/` is pure and imports nothing outside itself; `types.ts` mirrors `supabase/schema.sql`.
 - Kitchen: screens read shared rows from `useKitchen()` and write through `src/features/larder/actions.ts`.
