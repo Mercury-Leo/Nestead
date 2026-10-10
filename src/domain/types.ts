@@ -28,11 +28,6 @@ export interface Member extends Base {
 /** A kanban column. Families can add, rename, reorder and delete these. */
 export interface BoardColumn extends Base, Positioned {
   name: string;
-  /**
-   * Tasks in this column count as complete. Kept in sync with Task.done by
-   * placeTask(), which is the only thing that writes either field on a move.
-   */
-  isDone: boolean;
 }
 
 export interface Task extends Base, Positioned {

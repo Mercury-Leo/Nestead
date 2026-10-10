@@ -8,7 +8,7 @@ import { readPreference, writePreference } from '../../data/local/localStore';
 import { useCollection } from '../../data/useCollection';
 import { comparePosition } from '../../domain/position';
 import type { Task } from '../../domain/types';
-import { endPosition, placeTask, reviveRecurring } from './actions';
+import { autoClear, endPosition, placeTask, reviveRecurring } from './actions';
 import { Column } from './Column';
 import { dropPosition, type DropTarget } from './dragDrop';
 import { TaskDragContext, useTaskDrag, type Box } from './useTaskDrag';
@@ -55,26 +55,18 @@ export function Board(): JSX.Element {
   const filtering = isFiltering(filter);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
 
-  // Done columns start folded: usually the longest and the least interesting.
-  // Runs once, when the columns first arrive.
-  const defaulted = useRef(false);
+  // Repeating tasks whose return date has come round are unticked, and done
+  // one-offs over a week old are cleared, when the app is opened: there is no
+  // server to do either while nobody is looking. The ref stops a second pass
+  // running while the first one's writes are still landing.
+  const tidying = useRef(false);
   useEffect(() => {
-    if (defaulted.current || columns.length === 0) return;
-    defaulted.current = true;
-    setCollapsed(new Set(columns.filter((column) => column.isDone).map((column) => column.id)));
-  }, [columns]);
-
-  // Repeating tasks whose date has come round are brought back when the app is
-  // opened, since there is no server to do it while nobody is looking. The ref
-  // stops a second pass running while the first one's writes are still landing.
-  const reviving = useRef(false);
-  useEffect(() => {
-    if (reviving.current || tasks.length === 0 || columns.length === 0) return;
-    reviving.current = true;
-    void reviveRecurring(store, tasks, [...columns].sort(comparePosition)).finally(() => {
-      reviving.current = false;
+    if (tidying.current || tasks.length === 0) return;
+    tidying.current = true;
+    void Promise.all([reviveRecurring(store, tasks), autoClear(store, tasks)]).finally(() => {
+      tidying.current = false;
     });
-  }, [store, tasks, columns]);
+  }, [store, tasks]);
 
   const ordered = [...columns].sort(comparePosition);
 
@@ -120,7 +112,6 @@ export function Board(): JSX.Element {
     await store.columns.create({
       name,
       position: endPosition(ordered),
-      isDone: false,
     });
   };
 

@@ -28,8 +28,8 @@ const reread = async (id: string): Promise<Task | undefined> => (await store.tas
 beforeEach(async () => {
   localStorage.clear();
   store = createLocalStore('f-test');
-  house = await store.columns.create({ name: 'House', position: 1000, isDone: false });
-  errands = await store.columns.create({ name: 'Errands', position: 2000, isDone: false });
+  house = await store.columns.create({ name: 'House', position: 1000 });
+  errands = await store.columns.create({ name: 'Errands', position: 2000 });
 });
 
 describe('completeTask', () => {

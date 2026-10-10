@@ -30,9 +30,9 @@ export const SIZES: Record<'typical' | 'heavy', Size> = {
 };
 
 export const COLUMNS: NewRow<BoardColumn>[] = [
-  { name: 'To do', position: 1000, isDone: false },
-  { name: 'Doing', position: 2000, isDone: false },
-  { name: 'Done', position: 3000, isDone: true },
+  { name: 'To do', position: 1000 },
+  { name: 'House', position: 2000 },
+  { name: 'Errands', position: 3000 },
 ];
 
 export const GROUPS: NewRow<ListGroup>[] = [
@@ -56,8 +56,10 @@ export function taskRows(from: number, to: number, columns: readonly BoardColumn
       title: `${CHORES[i % CHORES.length]} #${i + 1}`,
       columnId: column.id,
       position: (Math.floor(i / columns.length) + 1) * 1000,
-      done: column.isDone,
+      done: i % 3 === 2,
     };
+    // A third of the board is ticked, as a family's would be by the evening.
+    if (row.done) row.doneAt = `2026-10-${String((i % 7) + 1).padStart(2, '0')}T18:00:00.000Z`;
     if (i % 2 === 0) row.icon = ICONS[i % ICONS.length]!;
     if (i % 3 === 0) row.assigneeId = memberId;
     if (i % 4 === 0) row.description = 'Check the cupboard under the sink first; the spare bags are behind the bleach.';

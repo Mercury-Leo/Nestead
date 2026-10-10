@@ -65,7 +65,7 @@ export function runDataStoreContract(
     });
 
     const aColumn = async (from: DataStore = store): Promise<string> => {
-      const column = await from.columns.create({ name: 'To do', position: 1000, isDone: false });
+      const column = await from.columns.create({ name: 'To do', position: 1000 });
       return column.id;
     };
 

@@ -4,14 +4,11 @@ import { POSITION_STEP } from '../../domain/position';
 /**
  * A family starts with somewhere to put things. Seeded only when there are no
  * columns at all: matching on name would re-create a column somebody renamed,
- * and a family that deliberately deleted the lot can have them back.
+ * and a family that deliberately deleted the lot can have one back. Done is a
+ * tick on the card, not a column, so one column is enough to start.
  */
 
-const DEFAULT_COLUMNS: ReadonlyArray<{ name: string; isDone: boolean }> = [
-  { name: 'To do', isDone: false },
-  { name: 'Doing', isDone: false },
-  { name: 'Done', isDone: true },
-];
+const DEFAULT_COLUMNS: ReadonlyArray<{ name: string }> = [{ name: 'To do' }];
 
 export async function seedDefaultColumns(store: DataStore): Promise<void> {
   const columns = await store.columns.list();

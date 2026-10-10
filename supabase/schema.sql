@@ -90,8 +90,6 @@ create table board_columns (
   -- Sparse ordering: new rows take the midpoint between their neighbours, so
   -- moving one card rewrites one row. See src/domain/position.ts.
   position    double precision not null,
-  -- Tasks in this column count as complete; mirrored onto tasks.done.
-  is_done     boolean     not null default false,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );

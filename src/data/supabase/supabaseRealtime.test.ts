@@ -48,7 +48,6 @@ describe.skipIf(!configured)('supabase realtime', () => {
     const column = await writer.columns.create({
       name: 'Probe',
       position: 1000,
-      isDone: false,
     });
     const task = await writer.tasks.create({
       title: 'Written by the other client',

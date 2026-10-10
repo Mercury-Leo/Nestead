@@ -43,7 +43,7 @@ export function TaskComposer({ column, tasks }: TaskComposerProps): JSX.Element 
       assigneeId: assigneeId === '' ? undefined : assigneeId,
       dueDate,
       ...schedulePatch(repeat, dueDate),
-      done: column.isDone,
+      done: false,
       createdBy: me.id,
     };
     // Back to just the title, ready for the next one.
