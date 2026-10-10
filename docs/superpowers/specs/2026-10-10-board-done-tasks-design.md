@@ -43,8 +43,8 @@ completionId?: string;
 
 ```ts
 export interface TaskCompletion extends Base {
-  /** The task it was for; may no longer exist (cleared or deleted). */
-  taskId?: string;
+  /** The task it was for; it may no longer exist (cleared or deleted). */
+  taskId: string;
   /** Copies taken at the tick, so history reads right after a rename and a cleared task can be restored. */
   title: string;
   icon?: string;
@@ -62,8 +62,10 @@ When it was done is the entry's `createdAt`.
 create table task_completions (
   id          uuid primary key default gen_random_uuid(),
   family_id   uuid        not null references families (id) on delete cascade,
-  -- set null, not cascade: clearing a task must keep its history.
-  task_id     uuid        references tasks (id) on delete set null,
+  -- No foreign key: clearing a task must keep its history, and every entry of
+  -- one task must still share its id afterwards, so Restore can re-point them
+  -- all (on delete set null would blank them and let a second Restore duplicate it).
+  task_id     uuid        not null,
   title       text        not null,
   icon        text,
   description text,
@@ -107,7 +109,7 @@ Index on `family_id`, the `set_updated_at` trigger, RLS with the `family_id = cu
 
 - The head becomes: **tick button** (emoji with a corner tick), then the toggle (title, repeat and date badges; opens the card and starts drags), then the assignee circle.
 - The tick button is a `<button role="checkbox" aria-checked>` named "Done: ‹title›". Its hit area is at least 32px square. It does not start a drag.
-- The corner tick is an outlined circle; on hover it takes the success colour; ticked, it is filled with a check. Colours are new tokens in `tokens.css`, redefined for dark mode.
+- The corner tick is an outlined circle; on hover it takes the app's green (`--sage`); ticked, it is filled `--sage` with a check in `--card`. Both tokens already exist in light and dark.
 - A task with no emoji shows a plain round tick in the same slot.
 - Ticked: the title greys and is struck through (`.card-done`, as now). A repeat shows "Back on ‹date›" from `returnDate()`.
 
@@ -127,7 +129,7 @@ Index on `family_id`, the `set_updated_at` trigger, RLS with the `family_id = cu
 - Entries newest first, grouped by local day: "Today", "Yesterday", then `formatDate()` with weekday, day and month. `groupByDay(entries, now)` is pure.
 - A row: emoji, title (`dir="auto"`), who ticked it (name, or "Someone" when the member is gone), and **Restore** or "On the board".
 - "Done by" filter: Everyone or one member. Not remembered.
-- Restoring goes to the board with a `role="status"` line "‹title› is back in ‹column›" and the card outlined until the next action.
+- Restoring goes to the board with a `role="status"` line "‹title› is back in ‹column›" and the card outlined until the board is left. The note is read once, so a reload does not show it again.
 - Read-only otherwise: entries cannot be edited or deleted here.
 - `LoadFailed` for a failed first read; empty state "Nothing done yet. Ticked tasks show up here."
 - It lists the whole history. At about ten ticks a day that is a few thousand small rows a year; loading only recent entries is the follow-up if it drags.
@@ -138,7 +140,7 @@ Index on `family_id`, the `set_updated_at` trigger, RLS with the `family_id = cu
 - `actions.test.ts` (new): tick writes the snapshot and the task patch; untick clears the fields and removes that entry only; clear skips repeats; auto-clear at 7 days less a minute and plus a minute; revive in place with the next date; restore in each of its three cases, including the re-pointed entries and the first-column fallback.
 - `tests/sql/` on PGlite: migration 1 over a done one-off, a done weekly and monthly repeat and an open task: `done_at`, the backfilled entries and `completion_id`, the shifted due dates, open tasks untouched.
 - `history/groupByDay.test.ts`: local midnight on either side, Today, Yesterday, older; newest first.
-- `collection.contract.ts`: `taskCompletions` round-trips; deleting a task leaves its entries; removing a missing row does not throw; tasks round-trip `doneAt` and `completionId` and clear them with `undefined`; columns without `isDone`. Runs against Supabase too when `.env.test` is present.
+- `collection.contract.ts`: `taskCompletions` round-trips; deleting a task leaves its entries with their `taskId`; removing a missing row does not throw; tasks round-trip `doneAt` and `completionId` and clear them with `undefined`; columns without `isDone`. Runs against Supabase too when `.env.test` is present.
 - Screens: `TaskCard` tick (name, `aria-checked`, no drag); `Column` fold (hidden when empty, count, newest first, untick, Clear with confirm, filtered); `HistoryPage` (grouping, filter, Restore and "On the board", `LoadFailed`, empty); `Nav.test.tsx` and `sections.test.ts` for the new page.
 
 ## 9. Rollout
