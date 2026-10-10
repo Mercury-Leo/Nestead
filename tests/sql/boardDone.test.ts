@@ -5,14 +5,19 @@ import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 /*
- * task_completions and the 20261010120000 migration, on an in-process Postgres.
- * Never against the real project, whose .env.test users live in production.
+ * task_completions and the 20261010120000 and 20261010130000 migrations, on an
+ * in-process Postgres. Never against the real project, whose .env.test users
+ * live in production.
  */
 
 const shim = readFileSync(new URL('./supabaseShim.sql', import.meta.url), 'utf8');
 const schema = readFileSync(new URL('../../supabase/schema.sql', import.meta.url), 'utf8');
 const migration = readFileSync(
   new URL('../../supabase/migrations/20261010120000_board_done_tasks.sql', import.meta.url),
+  'utf8',
+);
+const dropIsDone = readFileSync(
+  new URL('../../supabase/migrations/20261010130000_drop_column_is_done.sql', import.meta.url),
   'utf8',
 );
 
@@ -117,8 +122,8 @@ describe('migration 20261010120000_board_done_tasks', () => {
       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13)`;
     // Open: untouched.
     await db.query(insert, [FAMILY_A, 'Open', columnId, 1000, false, null, null, null, null, null, null, '2026-10-20', '2026-10-01T08:00:00Z']);
-    // A done one-off.
-    await db.query(insert, [FAMILY_A, 'Parcel', columnId, 2000, true, '📦', 'Blue box', USER_A, null, null, null, null, '2026-10-02T09:00:00Z']);
+    // A done one-off with a deadline, which is not a schedule: it stays.
+    await db.query(insert, [FAMILY_A, 'Parcel', columnId, 2000, true, '📦', 'Blue box', USER_A, null, null, null, '2026-10-05', '2026-10-02T09:00:00Z']);
     // A done weekly chore: the old rule already moved its due date on to the 13th.
     await db.query(insert, [FAMILY_A, 'Bins', columnId, 3000, true, '🗑️', null, null, 7, null, '2026-09-01', '2026-10-13', '2026-10-06T18:00:00Z']);
     // A done monthly chore on the 31st, clamped to the 30th in November.
@@ -167,7 +172,132 @@ describe('migration 20261010120000_board_done_tasks', () => {
     const due = new Map((await tasks()).map((row) => [row.title, row.due]));
     expect(due.get('Bins')).toBe('2026-10-12');
     expect(due.get('Rent')).toBe('2026-11-29');
-    expect(due.get('Parcel')).toBeNull();
+    expect(due.get('Parcel')).toBe('2026-10-05');
     expect(due.get('Open')).toBe('2026-10-20');
+  });
+});
+
+describe('migration 20261010130000_drop_column_is_done', () => {
+  let db: PGlite;
+  let columnId: string;
+  const id: Record<string, string> = {};
+
+  interface Row {
+    title: string;
+    done_at: string | null;
+    completion_id: string | null;
+    due: string | null;
+  }
+  const task = async (title: string): Promise<Row> =>
+    one<Row>(
+      db,
+      `select title, to_char(done_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS') as done_at, completion_id,
+         to_char(due_date, 'YYYY-MM-DD') as due
+       from tasks where title = $1`,
+      [title],
+    );
+  interface Entry {
+    id: string;
+    title: string;
+    icon: string | null;
+    description: string | null;
+    column_id: string | null;
+    assignee_id: string | null;
+    member_id: string | null;
+    created: string;
+    updated: string;
+  }
+  const entriesOf = async (title: string): Promise<Entry[]> =>
+    (
+      await db.query<Entry>(
+        `select c.id, c.title, c.icon, c.description, c.column_id, c.assignee_id, c.member_id,
+           to_char(c.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS') as created,
+           to_char(c.updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS') as updated
+         from task_completions c join tasks t on t.id = c.task_id
+         where t.title = $1 order by c.created_at`,
+        [title],
+      )
+    ).rows;
+
+  beforeAll(async () => {
+    db = await PGlite.create({ extensions: { pgcrypto } });
+    await db.exec(shim);
+    await db.exec(schema);
+    // The schema between the two migrations: board_columns still has is_done.
+    await db.exec('alter table board_columns add column is_done boolean not null default false');
+    await seed(db);
+    columnId = (
+      await one<{ id: string }>(db, `insert into board_columns (family_id, name, position, is_done) values ($1, 'Done', 3000, true) returning id`, [FAMILY_A])
+    ).id;
+
+    const insert = `insert into tasks (family_id, title, column_id, position, done, icon, description, assignee_id,
+        recur_every_days, recur_from, due_date, done_at, completion_id, created_at, updated_at)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $14) returning id`;
+    const entry = `insert into task_completions (family_id, task_id, title, column_id, member_id, created_at, updated_at)
+      values ($1, $2, $3, $4, $5, $6, $6) returning id`;
+
+    // (a) A one-off the old app ticked by moving it to the done column: no done_at, no entry.
+    id.Parcel = (
+      await one<{ id: string }>(db, insert, [FAMILY_A, 'Parcel', columnId, 1000, true, '📦', 'Blue box', USER_A, null, null, '2026-10-05', null, null, '2026-10-11T09:00:00Z'])
+    ).id;
+    // (b) A weekly chore the old app ticked: its due date already moved on to the
+    // next round. It has an entry from an earlier round, ticked in the new app.
+    id.Bins = (
+      await one<{ id: string }>(db, insert, [FAMILY_A, 'Bins', columnId, 2000, true, '🗑️', null, null, 7, '2026-09-01', '2026-10-20', null, null, '2026-10-12T18:00:00Z'])
+    ).id;
+    await db.query(entry, [FAMILY_A, id.Bins, 'Bins', columnId, USER_A, '2026-10-05T18:00:00Z']);
+    // (c) A weekly chore ticked in the new app: done_at, its entry and the pointer to it.
+    id.Mop = (
+      await one<{ id: string }>(db, insert, [FAMILY_A, 'Mop', columnId, 3000, true, '🧽', null, null, 7, '2026-09-02', '2026-10-14', '2026-10-13T07:00:00Z', null, '2026-10-13T07:00:00Z'])
+    ).id;
+    const mopEntry = await one<{ id: string }>(db, entry, [FAMILY_A, id.Mop, 'Mop', columnId, USER_A, '2026-10-13T07:00:00Z']);
+    await db.query('update tasks set completion_id = $1 where id = $2', [mopEntry.id, id.Mop]);
+    id.MopEntry = mopEntry.id;
+    // (d) Open: untouched.
+    id.Open = (
+      await one<{ id: string }>(db, insert, [FAMILY_A, 'Open', columnId, 4000, false, null, null, null, null, null, '2026-10-20', null, null, '2026-10-01T08:00:00Z'])
+    ).id;
+
+    await db.exec(dropIsDone);
+  }, 60_000);
+
+  it('gives a one-off the old app ticked its entry, copied from it with no member, and points it there', async () => {
+    const [entry, ...more] = await entriesOf('Parcel');
+    expect(more).toEqual([]);
+    expect(entry).toMatchObject({
+      title: 'Parcel',
+      icon: '📦',
+      description: 'Blue box',
+      column_id: columnId,
+      assignee_id: USER_A,
+      member_id: null,
+      created: '2026-10-11T09:00:00',
+      updated: '2026-10-11T09:00:00',
+    });
+    expect(await task('Parcel')).toEqual({ title: 'Parcel', done_at: '2026-10-11T09:00:00', completion_id: entry?.id, due: '2026-10-05' });
+  });
+
+  it('points a repeat the old app ticked at the new entry, not an older one, and moves its due date back a day', async () => {
+    const entries = await entriesOf('Bins');
+    expect(entries.map((row) => [row.created, row.member_id])).toEqual([
+      ['2026-10-05T18:00:00', USER_A],
+      ['2026-10-12T18:00:00', null],
+    ]);
+    expect(await task('Bins')).toEqual({ title: 'Bins', done_at: '2026-10-12T18:00:00', completion_id: entries[1]?.id, due: '2026-10-19' });
+  });
+
+  it('leaves a task ticked in the new app alone, with its one entry', async () => {
+    expect((await entriesOf('Mop')).map((row) => row.id)).toEqual([id.MopEntry]);
+    expect(await task('Mop')).toEqual({ title: 'Mop', done_at: '2026-10-13T07:00:00', completion_id: id.MopEntry, due: '2026-10-14' });
+  });
+
+  it('leaves an open task alone', async () => {
+    expect(await entriesOf('Open')).toEqual([]);
+    expect(await task('Open')).toEqual({ title: 'Open', done_at: null, completion_id: null, due: '2026-10-20' });
+  });
+
+  it('drops board_columns.is_done', async () => {
+    const left = await db.query(`select 1 from information_schema.columns where table_name = 'board_columns' and column_name = 'is_done'`);
+    expect(left.rows).toEqual([]);
   });
 });
