@@ -466,10 +466,12 @@ button.danger:hover:not(:disabled) {
 
 /* -------------------------------------------------------- done fold ----- */
 
+/* min-height 0: a long list scrolls in the fold instead of squeezing the open cards. */
 .done-fold {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  min-height: 0;
 }
 
 .done-toggle {
