@@ -160,7 +160,8 @@
       "comesBack": "חוזרת ב-{{date}}",
       "icon": "סמל",
       "confirmDelete": "אישור מחיקה",
-      "deleteQuestion": "למחוק את המשימה?"
+      "deleteQuestion": "למחוק את המשימה?",
+      "done": "בוצע: {{title}}"
     },
     "repeat": {
       "never": "לא חוזרת",

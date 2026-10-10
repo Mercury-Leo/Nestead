@@ -159,7 +159,8 @@
       "comesBack": "Comes back {{date}}",
       "icon": "Icon",
       "confirmDelete": "Confirm delete",
-      "deleteQuestion": "Delete this task?"
+      "deleteQuestion": "Delete this task?",
+      "done": "Done: {{title}}"
     },
     "repeat": {
       "never": "Never",

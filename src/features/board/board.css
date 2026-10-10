@@ -156,6 +156,7 @@
   align-items: center;
   min-width: 0;
   padding: 0.5rem;
+  padding-inline-start: 0.3rem;
   border: 0;
   background: none;
   color: var(--text);
@@ -167,6 +168,71 @@
 .card-icon {
   flex: 0 0 auto;
   font-size: 1rem;
+}
+
+/* The tick: the card's emoji with a small circle in its corner, or a plain
+   circle for a task with no emoji. A 2rem target around a 1rem emoji. */
+.card-tick {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  margin-inline-start: 0.2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  background: none;
+  cursor: pointer;
+}
+
+.card-tick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.card-tick-badge,
+.card-tick-plain {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1.5px solid var(--muted);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--card);
+}
+
+.card-tick-badge {
+  position: absolute;
+  inset-block-end: 0.15rem;
+  inset-inline-end: 0.1rem;
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.card-tick-plain {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.card-tick:hover .card-tick-badge,
+.card-tick:hover .card-tick-plain {
+  border-color: var(--sage);
+}
+
+.card-tick-on .card-tick-badge,
+.card-tick-on .card-tick-plain {
+  border-color: var(--sage);
+  background: var(--sage);
+}
+
+/* A card History just restored, until the board is left. */
+.card-highlight {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .card-title {
@@ -448,6 +514,7 @@ button.danger:hover:not(:disabled) {
 
   .card-toggle {
     padding: 0.65rem 0.5rem;
+    padding-inline-start: 0.3rem;
   }
 
   /* A bigger invisible target for a finger than the circle itself. */

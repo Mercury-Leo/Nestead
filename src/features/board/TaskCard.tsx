@@ -1,23 +1,36 @@
 import { memo, useState } from 'react';
+import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
 import type { Task } from '../../domain/types';
 import { formatDate } from '../../i18n';
+import { completeTask, reopenTask } from './actions';
 import { TASK_ICONS } from './icons';
 import { DueDateInput } from './DueDateInput';
-import { REPEAT_OPTIONS, fromIsoDate, isOverdue, repeatOf, repeats, schedulePatch } from './recurrence';
+import { REPEAT_OPTIONS, fromIsoDate, isOverdue, repeatOf, repeats, returnDate, schedulePatch } from './recurrence';
 import { useTaskDragContext } from './useTaskDrag';
 
 /**
- * Moving a task, within its column or to another, is done by dragging it.
+ * Moving a task, within its column or to another, is done by dragging it;
+ * finishing it, by the tick on its emoji.
  *
  * Memoised: the board re-renders on every pointer move of a drag, and a card
  * only has to when its task, the day or whether it is the one being dragged
  * changes. Everything it shows comes from those props and its contexts.
  */
-export const TaskCard = memo(function TaskCard({ task, today, dragging }: { task: Task; today: string; dragging: boolean }): JSX.Element {
+export const TaskCard = memo(function TaskCard({
+  task,
+  today,
+  dragging,
+  highlight = false,
+}: {
+  task: Task;
+  today: string;
+  dragging: boolean;
+  highlight?: boolean;
+}): JSX.Element {
   const { t } = useTranslation();
-  const { store, members } = useSession();
+  const { store, members, me } = useSession();
   const { startDrag } = useTaskDragContext();
   const [open, setOpen] = useState(false);
   // Edited locally and saved on blur, so typing does not write every keystroke.
@@ -42,24 +55,45 @@ export const TaskCard = memo(function TaskCard({ task, today, dragging }: { task
 
   return (
     <li
-      className={`card ${task.done ? 'card-done' : ''} ${dragging ? 'card-dragging' : ''}`}
-      data-task-id={task.id}
+      className={`card ${task.done ? 'card-done' : ''} ${dragging ? 'card-dragging' : ''} ${highlight ? 'card-highlight' : ''}`}
+      // Only open cards are drop targets, so a drop never lands among the Done fold.
+      data-task-id={task.done ? undefined : task.id}
     >
       <div className="card-head">
+        {/* The tick: the emoji with a small circle in its corner. Outside the
+            toggle, since a control can't sit in a button, and it never starts
+            a drag. */}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={task.done}
+          aria-label={t('board.card.done', { title: task.title })}
+          className={`card-tick ${task.done ? 'card-tick-on' : ''}`}
+          onClick={() => void (task.done ? reopenTask(store, task) : completeTask(store, task, me.id))}
+        >
+          {task.icon !== undefined && (
+            <span className="card-icon" aria-hidden="true">
+              {task.icon}
+            </span>
+          )}
+          <span className={task.icon !== undefined ? 'card-tick-badge' : 'card-tick-plain'} aria-hidden="true">
+            {task.done && <Check size={10} strokeWidth={3.5} />}
+          </span>
+        </button>
+
         <button
           type="button"
           className="card-toggle"
           aria-expanded={open}
-          onPointerDown={(event) => startDrag(event, task)}
+          onPointerDown={(event) => {
+            if (!task.done) startDrag(event, task);
+          }}
           onClick={() => {
             if (!open) setDescription(task.description ?? '');
             setConfirmingDelete(false);
             setOpen(!open);
           }}
         >
-          <span className="card-icon" aria-hidden="true">
-            {task.icon ?? '•'}
-          </span>
           <span className="card-title" dir="auto">
             {task.title}
             {repeating && (
@@ -70,6 +104,11 @@ export const TaskCard = memo(function TaskCard({ task, today, dragging }: { task
             {overdue && <span className="card-overdue">{t('board.card.overdue')}</span>}
             {!overdue && !task.done && task.dueDate !== undefined && (
               <span className="card-date">{formatDate(task.dueDate, { day: 'numeric', month: 'short' })}</span>
+            )}
+            {task.done && returnDate(task) !== undefined && (
+              <span className="card-date">
+                {t('board.card.comesBack', { date: formatDate(returnDate(task) as string, { weekday: 'short', day: 'numeric', month: 'short' }) })}
+              </span>
             )}
           </span>
         </button>
@@ -139,8 +178,8 @@ export const TaskCard = memo(function TaskCard({ task, today, dragging }: { task
           </label>
           {repeating && task.dueDate === undefined && <p className="card-hint">{t('board.card.repeatNoDate')}</p>}
 
-          {task.done && repeating && task.dueDate !== undefined && (
-            <p className="card-due">{t('board.card.comesBack', { date: formatDate(task.dueDate) })}</p>
+          {task.done && returnDate(task) !== undefined && (
+            <p className="card-due">{t('board.card.comesBack', { date: formatDate(returnDate(task) as string) })}</p>
           )}
 
           <div className="icon-picker" role="group" aria-label={t('board.card.icon')}>
