@@ -65,10 +65,34 @@ export interface Task extends Base, Positioned {
    * from dueDate so a chore on the 31st returns to the 31st after February.
    */
   recurFrom?: string;
-  /** Mirrors the column's isDone. Never written on its own. */
+  /**
+   * Ticked. Written by the tick, an untick, a repeat coming back and a restore
+   * (src/features/board/actions.ts); never copied from the column.
+   */
   done: boolean;
+  /** When it was ticked; absent while open. Orders the Done fold and drives auto-clear. */
+  doneAt?: string;
+  /** The TaskCompletion this tick created, so an untick removes exactly that one. */
+  completionId?: string;
   /** Member id. Cleared when that member is deleted. */
   createdBy?: string;
+}
+
+/**
+ * One tick of a task, kept after the task is cleared from the board. Listed by
+ * the History page (src/features/board/history/), never by the board.
+ */
+export interface TaskCompletion extends Base {
+  /** The task it was for. It may since have been cleared or deleted. */
+  taskId: string;
+  /** Copies taken at the tick, so a cleared task can be restored from them. */
+  title: string;
+  icon?: string;
+  description?: string;
+  columnId?: string;
+  assigneeId?: string;
+  /** Who ticked it. Absent for entries the migration backfilled, or once that member is deleted. */
+  memberId?: string;
 }
 
 /* -------------------------------------------------------------- kitchen -- */

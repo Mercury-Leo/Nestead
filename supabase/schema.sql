@@ -121,6 +121,12 @@ create table tasks (
   -- every month. Apart from due_date so the 31st survives February.
   recur_from  date,
   done        boolean     not null default false,
+  -- When it was ticked; null while open. Orders the Done fold, drives
+  -- auto-clear and a repeat's return date (src/features/board/recurrence.ts).
+  done_at       timestamptz,
+  -- The task_completions row the tick made, so an untick removes that one. No
+  -- foreign key: a pointer for undo, cleared by the untick that uses it.
+  completion_id uuid,
   -- Attribution is nullable on purpose: it must not block deleting a member.
   -- NOT NULL plus ON DELETE SET NULL contradict, and the delete fails.
   created_by  uuid        references members (id) on delete set null,
@@ -364,6 +370,44 @@ grant execute on function invite_family_name(text)  to anon, authenticated;
 
 alter publication supabase_realtime add table
   members, board_columns, tasks;
+
+-- ---------------------------------------------------------------------------
+-- Task history: one row per tick, kept after the task is cleared from the
+-- board, listed by the History page (src/features/board/history/).
+-- ---------------------------------------------------------------------------
+
+create table task_completions (
+  id          uuid primary key default gen_random_uuid(),
+  family_id   uuid        not null references families (id) on delete cascade,
+  -- No foreign key: clearing a task must keep its history, and every entry of
+  -- one task must still share its id afterwards, so Restore can re-point them
+  -- all (on delete set null would blank them and let a second Restore duplicate it).
+  task_id     uuid        not null,
+  -- Copies taken at the tick, so history reads right after a rename and a
+  -- cleared task can be restored.
+  title       text        not null,
+  icon        text,
+  description text,
+  column_id   uuid        references board_columns (id) on delete set null,
+  assignee_id uuid        references members (id) on delete set null,
+  -- Who ticked it. Null for entries the 20261010120000 migration backfilled.
+  member_id   uuid        references members (id) on delete set null,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create index task_completions_family_id_idx on task_completions (family_id);
+
+create trigger task_completions_set_updated_at before update on task_completions
+  for each row execute function set_updated_at();
+
+alter table task_completions enable row level security;
+
+create policy task_completions_all on task_completions
+  for all to authenticated using (family_id = current_family_id())
+  with check (family_id = current_family_id());
+
+alter publication supabase_realtime add table task_completions;
 
 -- ---------------------------------------------------------------------------
 -- Kitchen (Larder): recipes, pantry, diet profile, shopping list, photos
