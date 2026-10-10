@@ -464,6 +464,44 @@ button.danger:hover:not(:disabled) {
   scroll-snap-align: none;
 }
 
+/* -------------------------------------------------------- done fold ----- */
+
+.done-fold {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.done-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0.25rem 0.3rem;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.done-toggle:hover {
+  color: var(--text);
+}
+
+.done-toggle svg {
+  transition: transform 0.15s;
+}
+
+.done-toggle svg.is-open {
+  transform: rotate(90deg);
+}
+
+[dir='rtl'] .done-toggle svg:not(.is-open) {
+  transform: scaleX(-1);
+}
+
 /* ------------------------------------------------- phone: stacked -------- */
 
 /*

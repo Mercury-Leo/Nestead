@@ -137,7 +137,7 @@
       "moveLeft": "הזזת {{name}} שמאלה",
       "moveRight": "הזזת {{name}} ימינה",
       "delete": "מחיקת {{name}}",
-      "emptyFirst": "קודם צריך לרוקן את העמודה",
+      "emptyFirst": "קודם צריך להעביר או לנקות את המשימות שבה",
       "deleteTitle": "מחיקת העמודה",
       "filteredCount": "{{visible, number}}/{{total, number}}",
       "addTask": "הוספת משימה",
@@ -147,6 +147,14 @@
       "more": "אפשרויות נוספות",
       "fewer": "פחות אפשרויות",
       "add": "הוספת משימה"
+    },
+    "done": {
+      "toggle": "בוצעו ({{count, number}})",
+      "clear": "ניקוי",
+      "confirmClear": "אישור ניקוי",
+      "clearQuestion_one": "לנקות משימה אחת שבוצעה? היא תישאר בהיסטוריה.",
+      "clearQuestion_two": "לנקות {{count, number}} משימות שבוצעו? הן יישארו בהיסטוריה.",
+      "clearQuestion_other": "לנקות {{count, number}} משימות שבוצעו? הן יישארו בהיסטוריה."
     },
     "card": {
       "repeats": "חוזרת",

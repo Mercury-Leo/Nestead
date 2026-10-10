@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SessionContext } from '../../auth/session';
 import type { Session } from '../../auth/session';
-import { createLocalStore } from '../../data/local/localStore';
+import { createLocalStore, writePreference } from '../../data/local/localStore';
 import type { DataStore } from '../../data/types';
 import type { BoardColumn, Member, NewRow, Task } from '../../domain/types';
 import { LocaleProvider, i18n } from '../../i18n';
@@ -94,6 +94,9 @@ describe('the tick', () => {
     expect(task?.doneAt).toBeDefined();
     const [entry] = await store.taskCompletions.list();
     expect(entry).toMatchObject({ taskId: task?.id, title: 'Bins', memberId: 'm-dana' });
+    // The ticked card moves into the column's Done fold, which starts closed.
+    expect(tick(host, 'Bins')).toBeNull();
+    await click(toggle(host));
     expect(tick(host, 'Bins')?.getAttribute('aria-checked')).toBe('true');
   });
 
@@ -101,6 +104,7 @@ describe('the tick', () => {
     await addTask();
     const host = await render();
     await click(tick(host, 'Bins'));
+    await click(toggle(host));
 
     await click(tick(host, 'Bins'));
 
@@ -122,5 +126,68 @@ describe('the tick', () => {
     const host = await render();
 
     expect([...host.querySelectorAll('[data-task-id]')].map((node) => node.textContent)).toEqual([expect.stringContaining('Open')]);
+  });
+});
+
+/** Minutes ago, as an ISO timestamp: recent enough that the board's auto-clear leaves it alone. */
+const ago = (minutes: number): string => new Date(Date.now() - minutes * 60_000).toISOString();
+const toggle = (host: ParentNode): HTMLButtonElement | undefined =>
+  [...host.querySelectorAll<HTMLButtonElement>('button.done-toggle')][0];
+const titles = (host: ParentNode, selector: string): string[] =>
+  [...host.querySelectorAll(`${selector} .card-title`)].map((node) => node.textContent ?? '');
+const buttonNamed = (host: ParentNode, name: string): HTMLButtonElement | undefined =>
+  [...host.querySelectorAll('button')].find((node) => node.textContent === name);
+
+describe('the Done fold', () => {
+  it('is absent while nothing in the column is done', async () => {
+    await addTask();
+    const host = await render();
+
+    expect(toggle(host)).toBeUndefined();
+  });
+
+  it('holds done cards, closed, counts them, and the header counts open cards only', async () => {
+    await addTask({ title: 'Mop' });
+    await addTask({ title: 'Parcel', done: true, doneAt: ago(90) });
+    await addTask({ title: 'Bins', done: true, doneAt: ago(5) });
+    const host = await render();
+
+    expect(toggle(host)?.textContent).toBe(i18n.t('board.done.toggle', { count: 2 }));
+    expect(toggle(host)?.getAttribute('aria-expanded')).toBe('false');
+    expect(host.querySelector('.column-count')?.textContent).toBe('1');
+    expect(titles(host, '.done-fold')).toEqual([]);
+
+    await click(toggle(host));
+
+    expect(titles(host, '.done-fold')).toEqual(['Bins', 'Parcel']);
+  });
+
+  it('Clear asks first, then deletes the done one-offs and keeps the repeats and the history', async () => {
+    const parcel = await addTask({ title: 'Parcel' });
+    await addTask({ title: 'Bins', recurEveryDays: 7, dueDate: '2026-10-10' });
+    const host = await render();
+    await click(tick(host, 'Parcel'));
+    await click(tick(host, 'Bins'));
+    await click(toggle(host));
+
+    await click(buttonNamed(host, i18n.t('board.done.clear')));
+    expect(host.textContent).toContain(i18n.t('board.done.clearQuestion', { count: 1 }));
+    expect(await store.tasks.list()).toHaveLength(2);
+
+    await click(host.querySelector('.done-fold .danger-solid'));
+
+    expect((await store.tasks.list()).map((row) => row.title)).toEqual(['Bins']);
+    expect((await store.taskCompletions.list()).map((row) => row.taskId)).toContain(parcel.id);
+  });
+
+  it('applies the search to the fold too', async () => {
+    await addTask({ title: 'Parcel', done: true, doneAt: ago(90) });
+    await addTask({ title: 'Bins', done: true, doneAt: ago(5) });
+    writePreference('f-test', 'boardFilter', { query: 'parc', assignee: '' });
+    const host = await render();
+    await click(toggle(host));
+
+    expect(toggle(host)?.textContent).toBe(i18n.t('board.done.toggle', { count: 1 }));
+    expect(titles(host, '.done-fold')).toEqual(['Parcel']);
   });
 });

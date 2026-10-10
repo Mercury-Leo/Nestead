@@ -136,7 +136,7 @@
       "moveLeft": "Move {{name}} left",
       "moveRight": "Move {{name}} right",
       "delete": "Delete {{name}}",
-      "emptyFirst": "Empty this column first",
+      "emptyFirst": "Move or clear its tasks first",
       "deleteTitle": "Delete this column",
       "filteredCount": "{{visible, number}}/{{total, number}}",
       "addTask": "Add a task",
@@ -146,6 +146,13 @@
       "more": "More options",
       "fewer": "Fewer options",
       "add": "Add task"
+    },
+    "done": {
+      "toggle": "Done ({{count, number}})",
+      "clear": "Clear",
+      "confirmClear": "Confirm clear",
+      "clearQuestion_one": "Clear {{count, number}} done task? It stays in History.",
+      "clearQuestion_other": "Clear {{count, number}} done tasks? They stay in History."
     },
     "card": {
       "repeats": "Repeats",

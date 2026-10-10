@@ -1,10 +1,12 @@
+import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
 import { useDirection } from '../../hooks/useDirection';
 import { formatNumber } from '../../i18n';
 import type { BoardColumn, Task } from '../../domain/types';
-import { moveColumn } from './actions';
+import { clearDone, moveColumn } from './actions';
+import { doneAtOf, repeats } from './recurrence';
 import { TaskCard } from './TaskCard';
 import { TaskComposer } from './TaskComposer';
 
@@ -20,6 +22,8 @@ interface ColumnProps {
   today: string;
   /** The task being dragged, if any. */
   draggingId: string | undefined;
+  /** A card to outline: the one History just restored. */
+  highlightId?: string;
   filtering: boolean;
   /** Narrow screens stack columns and let them fold away. */
   collapsible: boolean;
@@ -34,6 +38,7 @@ export function Column({
   visibleTasks,
   today,
   draggingId,
+  highlightId,
   filtering,
   collapsible,
   collapsed,
@@ -43,6 +48,17 @@ export function Column({
   const { store } = useSession();
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(column.name);
+  const [showDone, setShowDone] = useState(false);
+  const [confirmingClear, setConfirmingClear] = useState(false);
+
+  // Open cards in board order; done ones in their fold, most recently ticked first.
+  const open = visibleTasks.filter((task) => !task.done);
+  const done = visibleTasks
+    .filter((task) => task.done)
+    .sort((a, b) => doneAtOf(b).getTime() - doneAtOf(a).getTime());
+  const openTotal = tasks.filter((task) => !task.done).length;
+  // Clear takes what the fold shows: done one-offs. Repeats come back on their own.
+  const clearable = done.filter((task) => !repeats(task));
 
   const index = columns.findIndex((row) => row.id === column.id);
   const folded = collapsible && collapsed;
@@ -94,8 +110,8 @@ export function Column({
             <bdi>{column.name}</bdi>
             <span className="column-count">
               {filtering
-                ? t('board.column.filteredCount', { visible: visibleTasks.length, total: tasks.length })
-                : formatNumber(tasks.length)}
+                ? t('board.column.filteredCount', { visible: open.length, total: openTotal })
+                : formatNumber(openTotal)}
             </span>
           </button>
         )}
@@ -142,12 +158,65 @@ export function Column({
       {!folded && (
         <>
           <ul className="cards">
-            {visibleTasks.map((task) => (
-              <TaskCard key={task.id} task={task} today={today} dragging={task.id === draggingId} />
+            {open.map((task) => (
+              <TaskCard key={task.id} task={task} today={today} dragging={task.id === draggingId} highlight={task.id === highlightId} />
             ))}
           </ul>
 
           <TaskComposer column={column} tasks={tasks} />
+
+          {done.length > 0 && (
+            <div className="done-fold">
+              <button
+                type="button"
+                className="done-toggle"
+                aria-expanded={showDone}
+                onClick={() => {
+                  setShowDone(!showDone);
+                  setConfirmingClear(false);
+                }}
+              >
+                <ChevronRight size={14} strokeWidth={2.2} aria-hidden className={showDone ? 'is-open' : ''} />
+                {t('board.done.toggle', { count: done.length })}
+              </button>
+
+              {showDone && (
+                <>
+                  <ul className="cards">
+                    {done.map((task) => (
+                      <TaskCard key={task.id} task={task} today={today} dragging={false} highlight={task.id === highlightId} />
+                    ))}
+                  </ul>
+
+                  {clearable.length > 0 &&
+                    (confirmingClear ? (
+                      <div className="card-actions card-confirm" role="group" aria-label={t('board.done.confirmClear')}>
+                        <span>{t('board.done.clearQuestion', { count: clearable.length })}</span>
+                        <button type="button" autoFocus onClick={() => setConfirmingClear(false)}>
+                          {t('common.cancel')}
+                        </button>
+                        <button
+                          type="button"
+                          className="danger danger-solid"
+                          onClick={() => {
+                            setConfirmingClear(false);
+                            void clearDone(store, clearable);
+                          }}
+                        >
+                          {t('board.done.clear')}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="card-actions">
+                        <button type="button" onClick={() => setConfirmingClear(true)}>
+                          {t('board.done.clear')}
+                        </button>
+                      </div>
+                    ))}
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
     </section>
