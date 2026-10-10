@@ -601,6 +601,16 @@ button.danger:hover:not(:disabled) {
   letter-spacing: 0.12em;
 }
 
+/* "Parcel is back in Errands", after History's Restore. */
+.board-note {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.6rem;
+  background: var(--sage-tint);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
 /* ------------------------------------------------------- recurrence ----- */
 
 .card-repeat {

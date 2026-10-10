@@ -20,6 +20,7 @@ Translation and locale: the i18next instance, the provider that owns language an
 - In right-to-left locales `formatList()` and `isolateNumber()` add Unicode isolates, so English names and "1½" keep their order (`format.ts`).
 - Each `Intl` formatter is built once per kind, locale and options and then reused; date formatters are also keyed by the UTC offset, so a device that changes time zone gets a fresh one (`format.ts`).
 - The language picker is on the Family page (`../features/family/FamilyPage.tsx`).
+- The board's strings sit in `board.*`: `board.done` (the Done fold, Clear and its confirm; `clearQuestion` has the plural forms, Hebrew's with `_two`), `board.history` (the History page: title, filter, today and yesterday, Restore, the empty state), `board.restored` (the note after a restore, with `{{title}}` and `{{column}}`) and the `nav.history` page label.
 
 ## Connections
 - Uses: `../data/local/localStore.ts` (device preferences).

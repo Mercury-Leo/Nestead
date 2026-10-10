@@ -32,7 +32,7 @@ import {
  * at a time and gives you no idea what the others hold, whereas stacked headers
  * always show every column and its count.
  */
-export function Board(): JSX.Element {
+export function Board({ highlightId }: { highlightId?: string } = {}): JSX.Element {
   const { t } = useTranslation();
   const { store, members, me } = useSession();
   const columns = useCollection(store.columns);
@@ -175,6 +175,7 @@ export function Board(): JSX.Element {
               // A search should show its hits, so folded columns open while filtering.
               collapsed={!filtering && collapsed.has(column.id)}
               onToggleCollapsed={() => toggle(column.id)}
+              highlightId={highlightId}
             />
           </div>
         ))}

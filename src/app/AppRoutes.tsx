@@ -20,6 +20,7 @@ const ImportRecipe = lazy(() => import('../features/larder/import/ImportRecipe')
 const FamilyPage = lazy(() => import('../features/family/FamilyPage').then((m) => ({ default: m.FamilyPage })));
 // Shows also starts loading as someone heads for its link (warm.ts).
 const LazyShows = lazy(() => loadShows().then((m) => ({ default: m.Shows })));
+const HistoryPage = lazy(() => import('../features/board/history/HistoryPage').then((m) => ({ default: m.HistoryPage })));
 const AddressesPage = lazy(() => import('../features/family/addresses/AddressesPage').then((m) => ({ default: m.AddressesPage })));
 
 function Loading(): JSX.Element {
@@ -50,6 +51,8 @@ export function AppRoutes(): JSX.Element {
   return (
     <Routes>
       <Route path="/" element={<BoardPage />} />
+      {/* Not a kitchen screen: it waits for its own first read. */}
+      <Route path="/history" element={<Suspense fallback={<Loading />}><HistoryPage /></Suspense>} />
       <Route path="/library" element={page(<Library />)} />
       <Route path="/search" element={page(<Search />)} />
       <Route path="/recipe/:id" element={page(<RecipeDetail />)} />

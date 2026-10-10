@@ -14,6 +14,7 @@ function where(pathname: string): string | undefined {
 describe('locate', () => {
   it('lights the board on / only', () => {
     expect(where('/')).toBe('board/');
+    expect(where('/history')).toBe('board/history');
     expect(where('/board-thing')).toBeUndefined();
   });
 

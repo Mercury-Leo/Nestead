@@ -1,4 +1,4 @@
-import { BookOpen, Clapperboard, CookingPot, LayoutGrid, Leaf, ListChecks, MapPin, Milk, Search, Settings, Ticket, Users } from 'lucide-react';
+import { BookOpen, Clapperboard, CookingPot, History, LayoutGrid, Leaf, ListChecks, MapPin, Milk, Search, Settings, Ticket, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type en from '../i18n/locales/en.json';
 
@@ -34,7 +34,15 @@ export interface Section {
 }
 
 export const SECTIONS: readonly Section[] = [
-  { id: 'board', labelKey: 'nav.board', icon: LayoutGrid, pages: [{ path: '/', labelKey: 'nav.board', icon: LayoutGrid, end: true }] },
+  {
+    id: 'board',
+    labelKey: 'nav.board',
+    icon: LayoutGrid,
+    pages: [
+      { path: '/', labelKey: 'nav.board', icon: LayoutGrid, end: true },
+      { path: '/history', labelKey: 'nav.history', icon: History },
+    ],
+  },
   // The shopping list is for everything, not only food, so it is not part of the Larder.
   { id: 'lists', labelKey: 'nav.lists', icon: ListChecks, pages: [{ path: '/lists', labelKey: 'nav.lists', icon: ListChecks }] },
   {

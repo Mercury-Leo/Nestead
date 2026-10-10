@@ -191,7 +191,7 @@ one file.
 ## The board
 
 Columns are rows in `board_columns`, so a family adds, renames, reorders and
-deletes its own. Three are seeded (To do / Doing / Done) and only when a family
+deletes its own. One is seeded (To do) and only when a family
 has none at all — matching on name would re-create a column somebody renamed.
 
 Ordering uses sparse positions: a row moved between two neighbours takes their
@@ -199,12 +199,34 @@ midpoint, so one move rewrites one row rather than renumbering a column. Ties,
 which two clients can produce under last-write-wins, break on `createdAt` then
 `id` so every device shows the same order. See `src/domain/position.ts`.
 
-`BoardColumn.isDone` and `Task.done` are deliberately redundant, and the column
-is the source of truth. `placeTask()` in `features/board/actions.ts` sets `done`
-from the destination column on every move, a new task takes its column's
-`isDone` (`TaskComposer.tsx`), and `reviveRecurring()` only moves tasks into a
-column that is not done, so the two cannot drift. Worth revisiting if `done`
-never earns its keep independently.
+Done is a tick on the card, not a column. `BoardColumn` is a name and a
+position, so a family can rename, add and delete columns and still finish tasks,
+and `Task.done` is written only by the tick, an untick, a repeat coming back and
+a restore (`features/board/actions.ts`); a move (`placeTask()`) never touches it.
+The tick is a badge on the card's emoji. It writes two rows with no
+transaction: a history entry (a copy of the task, and who ticked it), then
+`done`, `doneAt` and `completionId` on the task, so an untick can remove exactly
+that entry. If the second write fails, History has a tick the board does not.
+
+Done cards fold under their own column as "Done (n)", closed whenever the board
+loads, newest first, and cannot be dragged (untick first). Clear in the fold
+deletes its done one-offs, and `autoClear()` does the same on load for those
+ticked more than a week ago. A repeating chore is never cleared, since it comes
+back on its own. Clearing deletes the task, never its history.
+
+History is its own page in the Board section (`features/board/history/`). Every
+tick is a `TaskCompletion` row, so a repeating chore shows every round, and the
+page lists them by day with who did them. Restore means "do it again": it
+unticks a task still on the board, or creates a cleared one again from the
+entry's copies and points every entry of the old task at the new one, and the
+entry stays. The board never reads this collection (D8 in [the
+design](superpowers/specs/2026-10-10-board-done-tasks-design.md)): ticking
+creates an entry and unticking removes one by id, and only the History page
+lists them, so the board does not slow down as history grows. An
+entry keeps a plain `taskId`, with no foreign key, because clearing a task must
+not blank its history. The page does read every entry; at about ten ticks a day
+that is a few thousand small rows a year, and loading only recent ones is the
+follow-up if it drags.
 
 Deleting a column with tasks in it is blocked rather than cascading. The target
 schema agrees: `tasks.column_id` is `on delete restrict`.
@@ -217,13 +239,15 @@ phones: a mouse lifts a card once it moves 5px, a finger after resting on it for
 where it was writes nothing. Cards have no keyboard way to move at present;
 columns still move with their arrow buttons (`Column.tsx`).
 
-A repeating chore is one row that comes back round (`recurrence.ts`): completing
-it moves `dueDate` to the next date on its schedule, counted from `recurFrom` so
-a chore on the 31st returns to the 31st, and `reviveRecurring()` brings it back
-out of the done column when the board next opens. There is no server job.
+A repeating chore is one row that comes back round (`recurrence.ts`): ticking it
+leaves `dueDate` on the round it covered, `returnDate()` works out the next date
+on its schedule after that round and the day it was done, counted from
+`recurFrom` so a chore on the 31st returns to the 31st, and `reviveRecurring()`
+unticks it in place, in its own column, when the board next opens on or after
+that date. There is no server job.
 
 Below 768px the columns stop sitting side by side and stack into collapsible
-sections, with Done folded by default. A horizontally scrolling board on a phone
+sections, all open to start with. A horizontally scrolling board on a phone
 shows one column at a time and tells you nothing about the others, whereas
 stacked headers keep every column and its count on screen. `useIsNarrow()` is a
 hook rather than pure CSS because the change is behavioural, not cosmetic: the
@@ -337,6 +361,8 @@ Guarantees every backend owes:
   backend has to detect that and throw rather than pass it off as a success.
 - A patch value of `undefined` clears that field; a key left out of the patch
   is left alone.
+- `remove` of a row that is already gone resolves rather than throwing: two
+  devices clearing the same old tasks both delete them.
 - `subscribe` fires after any change to that collection **including changes
   made by another tab or another client**, and stops firing after its
   unsubscribe is called. The local backend gets this from the window `storage`
@@ -351,7 +377,7 @@ signs in as a user who belongs to that family, and `make` may be async for it.
 
 `runDataStoreContract(name, make, reset?)` in
 [collection.contract.ts](../src/data/collection.contract.ts) is the executable
-form of that list: nine Vitest cases, run against the local backend by
+form of that list: sixteen Vitest cases, run against the local backend by
 [localStore.test.ts](../src/data/local/localStore.test.ts), against the same
 backend through the cache by [cache.test.ts](../src/data/cache.test.ts), and
 against a live project by

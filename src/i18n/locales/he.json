@@ -20,6 +20,7 @@
     "home": "Nestead – דף הבית",
     "main": "ניווט ראשי",
     "board": "לוח",
+    "history": "היסטוריה",
     "lists": "קניות",
     "library": "ספרייה",
     "search": "חיפוש",
@@ -117,6 +118,7 @@
     "iAm": "אני",
     "family": "משפחה",
     "invite": "בינתיים רק אתם כאן. שתפו את הקוד <code>{{code}}</code> או <a>קישור הזמנה</a>.",
+    "restored": "{{title}} חזרה לעמודה {{column}}.",
     "filter": {
       "search": "חיפוש משימות",
       "mine": "שלי",
@@ -155,6 +157,19 @@
       "clearQuestion_one": "לנקות משימה אחת שבוצעה? היא תישאר בהיסטוריה.",
       "clearQuestion_two": "לנקות {{count, number}} משימות שבוצעו? הן יישארו בהיסטוריה.",
       "clearQuestion_other": "לנקות {{count, number}} משימות שבוצעו? הן יישארו בהיסטוריה."
+    },
+    "history": {
+      "title": "היסטוריה",
+      "doneBy": "בוצע על ידי",
+      "everyone": "כולם",
+      "someone": "מישהו",
+      "today": "היום",
+      "yesterday": "אתמול",
+      "restore": "שחזור",
+      "restoreTitle": "שחזור {{title}}",
+      "onBoard": "על הלוח",
+      "emptyTitle": "עוד לא בוצע כלום",
+      "emptyBody": "משימות שסומנו יופיעו כאן."
     },
     "card": {
       "repeats": "חוזרת",

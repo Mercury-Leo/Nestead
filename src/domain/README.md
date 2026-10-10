@@ -4,7 +4,7 @@ Pure TypeScript shared by every layer: the entity types, board ordering, the kit
 ## Files
 | File | Responsibility |
 | --- | --- |
-| `types.ts` | `Base`, `NewRow`, `Member`, `BoardColumn`, `Task`, the recipe, pantry, diet and list types, `Show`, `Address`, and `AiStatus`. |
+| `types.ts` | `Base`, `NewRow`, `Member`, `BoardColumn`, `Task`, `TaskCompletion`, the recipe, pantry, diet and list types, `Show`, `Address`, and `AiStatus`. |
 | `position.ts` (+ `position.test.ts`) | `positionBetween()`, `comparePosition()`, `POSITION_STEP` (1000). |
 | `shows.ts` (+ `shows.test.ts`) | `SHOW_STATUSES` (to watch, watching, watched, dropped), `filterShows()` (All leaves dropped shows out; every genre and tag picked; search words in the title, the genres or the tags), `genreCounts()`, the tag rules (`MAX_TAGS` 20, `MAX_TAG_LENGTH` 30, `sameTag()`, `tidyTag()`, `withTag()`, `hasTags()`, `tagCounts()`, `spelledAs()`, `familyTags()`), `lacksGenres()` (added before genres), `sortShows()` (favourites first is one of its sorts), `parseShowView()` (the stored filters, genres and tags included, and sort), `nextStatus()` (cycles the first three; dropped comes back as to watch), `statusPatch()`, `refreshPatch()` with `REFRESHED_FIELDS`, `newShow()`, and paging: `SHOWS_PAGE` (60) and `shownCount()`. |
 | `kitchen/catalog.ts` | `CATALOG`: each ingredient's section, diet flags, calories, carbs and unit weights, the water dry grains take up, which lines are cooking water; `catalogItem()`. |
@@ -28,6 +28,7 @@ Pure TypeScript shared by every layer: the entity types, board ordering, the kit
 
 ## How it works
 - `NewRow<T>` omits `Base`; the store fills `id`, `familyId`, `createdAt` and `updatedAt` (`types.ts`).
+- Done is a tick on the card: `Task.done`, with `doneAt` (when) and `completionId` (the history entry that tick made, so an untick removes exactly that one). `BoardColumn` has only a name and a position, no `isDone`. Each tick is also a `TaskCompletion`: a copy of the task's title, icon, description, column and assignee plus `memberId`, who ticked it, kept after the task is cleared; when it was done is its `createdAt` (`types.ts`).
 - A moved row takes the midpoint of its neighbours, so one move writes one row; ties sort by `createdAt`, then `id` (`position.ts`).
 - Free text reaches the catalog through one normaliser, `canonicalId()` (`kitchen/normalize.ts`), used by the parser, pantry fit, diet checks and search.
 - Hebrew text matches through `HEBREW_NAMES` (`kitchen/hebrewNames.ts`), indexed after the English names and aliases. `canonicalId()` reads a Hebrew phrase from its first word and English from its last, since Hebrew puts the noun first: "ציר עוף" and "chicken stock" are both stock.
@@ -47,6 +48,7 @@ Imports nothing outside `domain/`. Used by `../data/`, `../auth/`, `../features/
 
 ## Rules & gotchas
 - `types.ts` mirrors `../../supabase/schema.sql`: change both (`types.ts` header).
+- `TaskCompletion.taskId` is a plain id, not a link: the task may have been cleared or deleted, so never expect to find it. `memberId` is absent for entries the migration backfilled and once that member is deleted; History shows "Someone" (`types.ts`, `../features/board/history/HistoryPage.tsx`).
 - `AiStatus` is what `family_ai_status()` returns to any member: the key's last four characters, its model and who added it, and the member's free reads. It never carries the key or its ciphertext. `family_ai_settings` and `ai_usage` have no row type on purpose: no client can read those tables, so no screen should ever hold one of their rows (`types.ts`, `../../supabase/schema.sql`).
 - Stored names stay English (sections, catalog names, preset labels); screens translate them by id in `../features/larder/labels.ts` (`kitchen/sections.ts`, `kitchen/diet.ts`).
 - A navigation link carries `destination()`, the street and city, and nothing else: an apartment confuses geocoding, and the door code must never leave the app (`addresses/links.ts`).

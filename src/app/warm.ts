@@ -23,6 +23,9 @@ export function loadedShows(): ShowsModule | undefined {
  * the board, need nothing here.
  */
 const WARMERS: Readonly<Record<string, (store: DataStore) => void>> = {
+  '/history': (store) => {
+    preloadCollection(store.taskCompletions);
+  },
   '/shows': (store) => {
     // If the download fails, the route tries again when it renders and shows the error there.
     loadShows().catch(() => undefined);

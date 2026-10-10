@@ -25,6 +25,13 @@ describe('warmPage', () => {
     expect(list).toHaveBeenCalledTimes(1);
   });
 
+  it("starts History's first read, which the board never makes", () => {
+    const store = createLocalStore('f-warm-history');
+    const list = vi.spyOn(store.taskCompletions, 'list');
+    warmPage('/history', store);
+    expect(list).toHaveBeenCalledTimes(1);
+  });
+
   it('leaves pages alone that sign-in already reads, or that have nothing to warm', () => {
     const store = createLocalStore('f-warm-other');
     const reads = [vi.spyOn(store.tasks, 'list'), vi.spyOn(store.recipes, 'list'), vi.spyOn(store.members, 'list')];

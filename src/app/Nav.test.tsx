@@ -117,7 +117,11 @@ describe('the sidebar', () => {
 
   it("folds sections you're not in", async () => {
     const host = await render(<Sidebar />, '/');
-    expect(link(host, i18n.t('nav.board'))?.getAttribute('aria-current')).toBe('page');
+    // The board has two pages, so it opens like the Larder: its header (not the page), then Board and History.
+    const board = [...host.querySelectorAll('a')].filter((a) => a.textContent?.trim().startsWith(i18n.t('nav.board')));
+    expect(board.map((a) => a.getAttribute('aria-current'))).toEqual([null, 'page']);
+    expect(link(host, i18n.t('nav.history'))?.getAttribute('href')).toBe('/history');
+    expect(link(host, i18n.t('nav.history'))?.getAttribute('aria-current')).toBeNull();
     expect(link(host, i18n.t('nav.larder'))?.getAttribute('href')).toBe('/library');
     expect(link(host, i18n.t('nav.pantry'))).toBeUndefined();
   });
@@ -231,13 +235,16 @@ describe('the page pills', () => {
     expect(link(pills as HTMLElement, i18n.t('nav.addresses'))?.getAttribute('aria-current')).toBe('page');
   });
 
+  it("lists the board's pages, with History lit on /history", async () => {
+    const host = await render(<PagePills />, '/history');
+    const pills = host.querySelector(`nav[aria-label="${i18n.t('nav.sectionPages', { section: i18n.t('nav.board') })}"]`);
+    expect([...(pills?.querySelectorAll('a') ?? [])].map((a) => a.textContent)).toEqual([i18n.t('nav.board'), i18n.t('nav.history')]);
+    expect(link(pills as HTMLElement, i18n.t('nav.history'))?.getAttribute('aria-current')).toBe('page');
+  });
+
   it('stay away from sections with one page', async () => {
-    for (const path of ['/', '/lists']) {
-      const host = await render(<PagePills />, path);
-      expect(host.querySelector('nav'), path).toBeNull();
-      unmount?.();
-      unmount = null;
-    }
+    const host = await render(<PagePills />, '/lists');
+    expect(host.querySelector('nav')).toBeNull();
   });
 });
 

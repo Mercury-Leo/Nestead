@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { Users } from 'lucide-react';
 import { useSession } from '../../auth/session';
@@ -23,6 +24,17 @@ export function BoardPage(): JSX.Element {
 
   // Nobody to share with yet, so the code is worth putting in front of you.
   const inviteCode = family !== undefined && members.length < 2 ? family.joinCode : null;
+
+  // History's Restore lands here with what it put back. Read once, then
+  // dropped from the history entry, so a reload does not show it again.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [restored] = useState(
+    () => (location.state as { restored?: { taskId: string; title: string; column: string } } | null)?.restored,
+  );
+  useEffect(() => {
+    if (restored !== undefined) navigate(location.pathname, { replace: true, state: null });
+  }, [restored, navigate, location.pathname]);
 
   return (
     <div className="app">
@@ -67,7 +79,13 @@ export function BoardPage(): JSX.Element {
         </p>
       )}
 
-      {failed ? <LoadFailed onRetry={() => retryCollections(store.columns, store.tasks)} /> : <Board />}
+      {restored !== undefined && (
+        <p className="board-note" role="status">
+          {t('board.restored', { title: restored.title, column: restored.column })}
+        </p>
+      )}
+
+      {failed ? <LoadFailed onRetry={() => retryCollections(store.columns, store.tasks)} /> : <Board highlightId={restored?.taskId} />}
     </div>
   );
 }

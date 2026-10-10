@@ -17,8 +17,8 @@ npm install
 npm run dev
 ```
 
-With the default local backend you get a board with three seeded columns
-(To do / Doing / Done), two seeded members, and an "I am" switcher so two tabs
+With the default local backend you get a board with a seeded To do column,
+two seeded members, and an "I am" switcher so two tabs
 can be two people.
 
 Tasks have a title, an emoji icon and an assignee, and optionally a
@@ -27,11 +27,16 @@ to move it within its column or to another; tap it to edit the rest or delete
 it. A search box and an assignee filter narrow the board. Column headers rename
 in place and can be reordered or removed once empty.
 
+Tick a task on its emoji to mark it done. Done tasks fold under their column
+as "Done (n)", are cleared a week later or with Clear, and stay in History
+(`/history`, beside the Board in the same section): every tick by day, who did
+it, and Restore to put a cleared task back on the board.
+
 Dragging uses pointer events, so it works with a finger as well as a mouse: a
 finger rests on a card for a moment to lift it. A repeating chore is one card
 that comes back round: done, it returns on its next date.
 
-On a phone the columns stack into collapsible sections, Done folded by default,
+On a phone the columns stack into collapsible sections,
 so every column and its count stays on screen instead of hiding behind a
 horizontal swipe. Desktop keeps the side-by-side board.
 
@@ -133,7 +138,7 @@ src/
   components/theme/          Light/dark theme provider and toggle.
   hooks/                     useMediaQuery, useIsNarrow, useDirection, useWakeLock, pointerDrag.
   i18n/                      i18next, the locale provider (lang and dir), formatting; locales/.
-  features/board/            The kanban board: drag and drop, filter, repeating chores.
+  features/board/            The kanban board: drag and drop, filter, the tick, repeating chores, History.
   features/family/           The Family page: invite link, join code, members, theme, language.
   features/lists/            The shopping list: Supermarket, General, your own sections.
   features/larder/           The kitchen: a folder per screen, recipe/ for what
