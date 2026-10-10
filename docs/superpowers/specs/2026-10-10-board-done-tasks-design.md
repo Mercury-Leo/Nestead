@@ -152,7 +152,8 @@ One Supabase project serves production and the live suites, and a push to main d
 3. Run the live Supabase suites.
 4. Update the READMEs on the branch: `src/features/board/` (the Task.done rule and the history folder), `src/domain/`, `src/data/`, `supabase/`, `src/app/`, `src/i18n/` for the new keys (English and Hebrew), and the board section of `docs/ARCHITECTURE.md`.
 5. Fast-forward into main and push; check the deploy.
-6. The user applies migration 2. Before step 5 it would break the live app's "New column".
+6. Every family device reloads or closes the app: an open tab keeps running the old bundle, which still ticks by moving cards into the done column and unticks repeats ticked in the new app.
+7. The user applies migration 2, which first catches up tasks the old app ticked since migration 1. In a tab still on the old bundle it breaks Add task, moving cards between columns and "New column".
 
 ## 10. Not in this version
 
