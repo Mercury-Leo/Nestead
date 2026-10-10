@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionContext } from '../../auth/session';
 import type { Session } from '../../auth/session';
 import { createLocalStore, writePreference } from '../../data/local/localStore';
@@ -78,6 +78,7 @@ beforeEach(async () => {
 afterEach(() => {
   unmount?.();
   unmount = null;
+  vi.restoreAllMocks();
 });
 
 describe('the tick', () => {
@@ -110,6 +111,55 @@ describe('the tick', () => {
 
     expect((await store.tasks.list())[0]?.done).toBe(false);
     expect(await store.taskCompletions.list()).toEqual([]);
+  });
+
+  it('ignores a second press while a tick is on its way, so a double tap makes one entry', async () => {
+    await addTask();
+    // The history write waits until the test lets it through, like a slow backend.
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const create = store.taskCompletions.create.bind(store.taskCompletions);
+    vi.spyOn(store.taskCompletions, 'create').mockImplementation(async (row) => {
+      await gate;
+      return create(row);
+    });
+    const update = vi.spyOn(store.tasks, 'update');
+    const host = await render();
+    const box = tick(host, 'Bins')!;
+
+    // Both presses land before the first tick has written anything.
+    await act(async () => {
+      box.click();
+      box.click();
+    });
+    expect(box.getAttribute('aria-busy')).toBe('true');
+
+    await act(async () => {
+      release();
+      await vi.waitFor(async () => expect((await store.tasks.list())[0]?.done).toBe(true));
+    });
+    await flush();
+
+    const entries = await store.taskCompletions.list();
+    expect(entries).toHaveLength(1);
+    expect(update.mock.calls.filter(([, patch]) => patch.done === true)).toHaveLength(1);
+    expect((await store.tasks.list())[0]?.completionId).toBe(entries[0]?.id);
+  });
+
+  it('comes back, with no unhandled rejection, when a tick fails', async () => {
+    await addTask();
+    vi.spyOn(store.taskCompletions, 'create').mockRejectedValueOnce(new Error('offline'));
+    const host = await render();
+
+    await click(tick(host, 'Bins'));
+
+    expect(tick(host, 'Bins')?.getAttribute('aria-busy')).toBeNull();
+    expect((await store.tasks.list())[0]?.done).toBe(false);
+    // And the next press works.
+    await click(tick(host, 'Bins'));
+    expect((await store.tasks.list())[0]?.done).toBe(true);
   });
 
   it('shows a plain tick for a task with no emoji', async () => {

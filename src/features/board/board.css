@@ -193,6 +193,12 @@
   outline-offset: 1px;
 }
 
+/* A tick or untick on its way: further presses are ignored until it lands. */
+.card-tick[aria-busy='true'] {
+  cursor: progress;
+  opacity: 0.55;
+}
+
 .card-tick-badge,
 .card-tick-plain {
   display: inline-flex;

@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../auth/session';
@@ -36,6 +36,26 @@ export const TaskCard = memo(function TaskCard({
   // Edited locally and saved on blur, so typing does not write every keystroke.
   const [description, setDescription] = useState(task.description ?? '');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // A tick or untick on its way. The tick writes the history entry first and
+  // the card changes only once it lands, so on a slow backend a second press
+  // would tick again and leave an entry nothing points at. The ref is the
+  // guard, since two presses can land before a render; the state shows it.
+  const ticking = useRef(false);
+  const [busy, setBusy] = useState(false);
+
+  const toggleDone = async (): Promise<void> => {
+    if (ticking.current) return;
+    ticking.current = true;
+    setBusy(true);
+    try {
+      await (task.done ? reopenTask(store, task) : completeTask(store, task, me.id));
+    } catch {
+      // A failed write is undone by the cache, as everywhere else; the tick comes back to try again.
+    } finally {
+      ticking.current = false;
+      setBusy(false);
+    }
+  };
 
   const saveDescription = (): void => {
     const next = description.trim() === '' ? undefined : description;
@@ -67,9 +87,10 @@ export const TaskCard = memo(function TaskCard({
           type="button"
           role="checkbox"
           aria-checked={task.done}
+          aria-busy={busy ? true : undefined}
           aria-label={t('board.card.done', { title: task.title })}
           className={`card-tick ${task.done ? 'card-tick-on' : ''}`}
-          onClick={() => void (task.done ? reopenTask(store, task) : completeTask(store, task, me.id))}
+          onClick={() => void toggleDone()}
         >
           {task.icon !== undefined && (
             <span className="card-icon" aria-hidden="true">
