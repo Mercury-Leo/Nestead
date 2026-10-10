@@ -1,7 +1,7 @@
 # Board: done tasks and history: design
 
 - **Date:** 2026-10-10
-- **Status:** Approved in chat, awaiting review of this written spec. Nothing here is implemented yet.
+- **Status:** Implemented on branch board/done-tasks; not yet rolled out.
 - **Scope:** Mark a task done with one tap instead of a Done column, fold finished tasks under their own column, clear them by hand or after a week, and keep a History page of who did what, from which a task can be restored. Branch `board/done-tasks`.
 
 ## 1. Problem
@@ -103,7 +103,7 @@ Index on `family_id`, the `set_updated_at` trigger, RLS with the `family_id = cu
   - It is gone: create it from the snapshot as an open one-off at the end of `columnId`, or of the first column if that is gone, then point every entry with the old `taskId` at the new task, so the row now reads "On the board" and a second press cannot duplicate it.
 - **Moving** (`placeTask()`): position and column only; it no longer writes `done` or schedules a repeat.
 - **New tasks** (`TaskComposer`): always `done: false`.
-- Two writes per tick or untick, no transaction. If the entry write fails the tick still holds and history misses one row; accepted for a family board.
+- Two writes per tick or untick, no transaction. The entry is written first; if the task update then fails, the entry stays without a task pointing at it. Accepted for a family board.
 
 ## 5. The card (`TaskCard.tsx`)
 

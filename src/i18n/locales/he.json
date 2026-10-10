@@ -118,7 +118,7 @@
     "iAm": "אני",
     "family": "משפחה",
     "invite": "בינתיים רק אתם כאן. שתפו את הקוד <code>{{code}}</code> או <a>קישור הזמנה</a>.",
-    "restored": "{{title}} חזרה לעמודה {{column}}.",
+    "restored": "{{title}} – בחזרה בעמודה {{column}}.",
     "filter": {
       "search": "חיפוש משימות",
       "mine": "שלי",

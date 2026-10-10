@@ -97,13 +97,14 @@ export function addMonths(date: Date, months: number): Date {
 }
 
 /**
- * The due date a task should carry once it has just been completed, and the
- * date its schedule counts from.
+ * The first date on a repeating task's schedule after both its due date and
+ * `now`, and the date its schedule counts from. Undefined for a one-off.
  *
- * It is the first date on the schedule after both the current due date and
- * today. Done early, the chore skips only the occurrence it was due for; done
- * late, missed occurrences are skipped too, so it does not come straight back
- * overdue. A repeating task with no due date counts from the day it is done.
+ * With `now` as the day the task was done, it is when a done repeat comes back
+ * (returnDate(), reviveRecurring()). Done early, the chore skips only the
+ * occurrence it was due for; done late, missed occurrences are skipped too, so
+ * it does not come straight back overdue. A repeating task with no due date
+ * counts from `now`.
  */
 export function nextOccurrence(
   task: Schedule & Pick<Task, 'dueDate' | 'recurFrom'>,
