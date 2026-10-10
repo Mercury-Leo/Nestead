@@ -18,7 +18,7 @@ The kanban board and home page: the family's columns and task cards, with drag a
 | `recurrence.ts` (+ `recurrence.test.ts`) | `REPEAT_OPTIONS`, `nextOccurrence()`, `doneAtOf()`, `returnDate()`, `isDueAgain()`, `isOverdue()`, local-date helpers. |
 | `actions.ts` (+ `actions.test.ts`) | Store writes: `completeTask()`, `reopenTask()`, `clearDone()`, `autoClear()`, `reviveRecurring()`, `restoreTask()`, `placeTask()`, `moveColumn()`, `endPosition()`. |
 | `defaultColumns.ts` | `seedDefaultColumns()`: one "To do" column for a family with none. |
-| `history/HistoryPage.tsx` (+ `HistoryPage.module.css`, `HistoryPage.test.tsx`) | The History page at `/history`: every tick by day with who did it, a "Done by" filter, and Restore. |
+| `history/HistoryPage.tsx` (+ `HistoryPage.module.css`, `HistoryPage.test.tsx`) | The History page at `/history`: every tick by day with who did it, a "Done by" filter (the kit's `SelectButton`), and Restore. |
 | `history/groupByDay.ts` (+ `groupByDay.test.ts`) | `groupByDay()`: entries newest first in runs of one local day, today and yesterday named. |
 | `icons.ts` | `TASK_ICONS` (emoji) and `DEFAULT_TASK_ICON`. |
 | `board.css` | Global class names for the whole board, imported in `../../main.tsx`. |

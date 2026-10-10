@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { History as HistoryIcon, RotateCcw } from 'lucide-react';
+import { History as HistoryIcon, RotateCcw, Users } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { LoadFailed } from '../../../components/LoadFailed';
 import { PageHeader } from '../../../components/PageHeader';
-import { Button, EmptyState } from '../../../components/ui';
+import { Button, EmptyState, SelectButton } from '../../../components/ui';
 import { retryCollections, useCollectionState } from '../../../data/useCollection';
 import { comparePosition } from '../../../domain/position';
 import type { TaskCompletion } from '../../../domain/types';
@@ -76,14 +76,17 @@ export function HistoryPage(): JSX.Element {
       <PageHeader
         title={t('board.history.title')}
         actions={
-          <select className={s.who} value={who} aria-label={t('board.history.doneBy')} onChange={(event) => setWho(event.target.value)}>
-            <option value="">{t('board.history.everyone')}</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
+          <SelectButton
+            label={t('board.history.doneBy')}
+            icon={Users}
+            shape="chip"
+            value={who}
+            onChange={setWho}
+            options={[
+              { value: '', label: t('board.history.everyone') },
+              ...members.map((member) => ({ value: member.id, label: member.name })),
+            ]}
+          />
         }
       />
 
