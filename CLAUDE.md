@@ -4,7 +4,7 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 ## Commands
 - `npm run dev`: Vite, plus `/api/import`, `/api/search`, `/api/shows`, `/api/places` and `/api/ai` from `server/`; `vite preview` mounts them too (`vite.config.ts`). Search needs `TAVILY_API_KEY` in `.env.local`; Shows needs `OMDB_API_KEY`; AI needs `OPENROUTER_API_KEY`, `OPENROUTER_FREE_MODELS` and `AI_KEY_SECRET` there (`.env.example`). Places needs no key.
 - `npm run build`: `tsc --noEmit && vite build`. Refuses unless `VITE_BACKEND=supabase` and both `VITE_SUPABASE_*` are set (`vite.config.ts`); demo build: `npx vite build --mode demo`.
-- `npm test`: every suite. With `.env.test` present it also runs live Supabase suites that delete rows in both test families.
+- `npm test`: every suite. With `.env.test` present it also runs live Supabase suites that delete rows in both test families; `vitest.workspace.ts` runs those one file at a time (`--project live` for just them).
 - One file: `npx vitest run src/features/board/recurrence.test.ts`.
 
 ## Architecture
