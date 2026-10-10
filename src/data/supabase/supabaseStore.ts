@@ -110,6 +110,14 @@ function canonicalTime(value: unknown): string | null {
 /** Enough to cover the echoes still on their way; older entries are dropped first. */
 const WRITTEN_LIMIT = 200;
 
+/**
+ * Rows per request in list(). PostgREST answers at most the project's Max Rows
+ * (1000 by default) and drops the rest without an error, and some tables
+ * (task_completions) grow without bound, so list() reads page after page until
+ * one comes back short. Never above Max Rows: a full page would look short.
+ */
+const LIST_PAGE = 1000;
+
 function createCollection<T extends Base>(
   client: SupabaseClient,
   familyId: string,
@@ -150,12 +158,23 @@ function createCollection<T extends Base>(
   return {
     async list(): Promise<T[]> {
       await requireSession(client);
-      const { data, error } = await client.from(table).select('*').eq('family_id', familyId);
-      if (error !== null) {
-        refreshIfExpired(client, error.message);
-        fail(table, 'list', error.message);
+      const rows: T[] = [];
+      // A stable order, so each page follows on from the one before.
+      for (let from = 0; ; from += LIST_PAGE) {
+        const { data, error } = await client
+          .from(table)
+          .select('*')
+          .eq('family_id', familyId)
+          .order('id')
+          .range(from, from + LIST_PAGE - 1);
+        if (error !== null) {
+          refreshIfExpired(client, error.message);
+          fail(table, 'list', error.message);
+        }
+        const page = data ?? [];
+        for (const row of page) rows.push(fromRow<T>(row as Record<string, unknown>));
+        if (page.length < LIST_PAGE) return rows;
       }
-      return (data ?? []).map((row) => fromRow<T>(row as Record<string, unknown>));
     },
 
     async create(row: NewRow<T>): Promise<T> {

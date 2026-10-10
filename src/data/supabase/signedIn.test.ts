@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { createSupabaseAccount } from './supabaseAccount';
 import { createSupabaseStore } from './supabaseStore';
 
+/** PostgREST's Max Rows: no answer holds more, whatever was asked for. */
+const MAX_ROWS = 1000;
+
 /**
  * Without a session supabase-js sends the publishable key instead, and RLS
  * answers with no rows and no error. These run against a stand-in client, so
@@ -14,7 +17,15 @@ function fakeClient() {
     listError: null as { message: string } | null,
     requests: [] as string[],
     joined: null as ((status: string) => void) | null,
+    /** What every table holds, in id order. */
+    rows: [] as Array<Record<string, unknown>>,
+    /** The pages read asked for: order column and range. */
+    pages: [] as string[],
   };
+  const answer = (from: number, to: number) =>
+    state.listError === null
+      ? { data: state.rows.slice(from, Math.min(to + 1, from + MAX_ROWS)), error: null }
+      : { data: null, error: state.listError };
   const refreshSession = vi.fn(async () => ({ data: {}, error: null }));
   const channel = {
     on: () => channel,
@@ -29,9 +40,17 @@ function fakeClient() {
       select: () => ({
         eq: () => {
           state.requests.push(`read ${table}`);
-          const answer = state.listError === null ? { data: [], error: null } : { data: null, error: state.listError };
-          // The tables are awaited as they are; members is read with maybeSingle().
-          return Object.assign(Promise.resolve(answer), { maybeSingle: async () => ({ data: null, error: null }) });
+          // Awaited as it is, a read gets the first MAX_ROWS rows and no more;
+          // members is read with maybeSingle(), the tables a page at a time.
+          return Object.assign(Promise.resolve(answer(0, Infinity)), {
+            maybeSingle: async () => ({ data: null, error: null }),
+            order: (column: string) => ({
+              range: async (from: number, to: number) => {
+                state.pages.push(`${column} ${from}-${to}`);
+                return answer(from, to);
+              },
+            }),
+          });
         },
       }),
       delete: () => ({
@@ -92,6 +111,25 @@ describe('the Supabase adapter', () => {
     state.listError = { message: 'JWT expired' };
     await expect(store.listItems.list()).rejects.toThrow('JWT expired');
     expect(refreshSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads every row past the 1000 a request returns, a page at a time', async () => {
+    const { client, state } = fakeClient();
+    state.rows = Array.from({ length: 2500 }, (_, index) => ({ id: `e-${String(index).padStart(4, '0')}`, family_id: 'f', task_id: 't', title: 'Bins' }));
+
+    const rows = await createSupabaseStore('f', client).taskCompletions.list();
+
+    expect(rows).toHaveLength(2500);
+    expect(new Set(rows.map((row) => row.id)).size).toBe(2500);
+    expect(state.pages).toEqual(['id 0-999', 'id 1000-1999', 'id 2000-2999']);
+  });
+
+  it('stops after a short first page', async () => {
+    const { client, state } = fakeClient();
+    state.rows = [{ id: 'e-1', family_id: 'f', task_id: 't', title: 'Bins' }];
+
+    expect(await createSupabaseStore('f', client).taskCompletions.list()).toEqual([{ id: 'e-1', familyId: 'f', taskId: 't', title: 'Bins' }]);
+    expect(state.pages).toEqual(['id 0-999']);
   });
 
   it('reads again when its realtime channel joins again, not when it first joins', () => {

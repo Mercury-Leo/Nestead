@@ -412,9 +412,11 @@ project and no network.
    key that looks secret.
 3. **Backend.** `createSupabaseStore(familyId, client)` in
    `src/data/supabase/supabaseStore.ts` maps camelCase to snake_case at this
-   boundary and nowhere else, top-level keys only. `subscribe` is a realtime
-   channel filtered by `family_id`; photos go to the private `recipe-photos`
-   bucket.
+   boundary and nowhere else, top-level keys only. `list()` reads in pages of
+   1000 rows ordered by `id` until one comes back short, since PostgREST
+   silently answers no more than the project's Max Rows (1000 by default) and
+   `task_completions` grows without bound. `subscribe` is a realtime channel
+   filtered by `family_id`; photos go to the private `recipe-photos` bucket.
 4. **Contract.** `supabaseStore.test.ts` runs `runDataStoreContract()` against a
    test project as two users in two families, with credentials from the
    gitignored `.env.test` (see `.env.test.example`); without it the suite skips.
