@@ -5,7 +5,7 @@ import { useSession } from '../../auth/session';
 import type { Task } from '../../domain/types';
 import { formatDate } from '../../i18n';
 import { completeTask, reopenTask } from './actions';
-import { TASK_ICONS } from './icons';
+import { IconPicker } from './IconPicker';
 import { DueDateInput } from './DueDateInput';
 import { REPEAT_OPTIONS, fromIsoDate, isOverdue, repeatOf, repeats, returnDate, schedulePatch } from './recurrence';
 import { useTaskDragContext } from './useTaskDrag';
@@ -203,19 +203,7 @@ export const TaskCard = memo(function TaskCard({
             <p className="card-due">{t('board.card.comesBack', { date: formatDate(returnDate(task) as string) })}</p>
           )}
 
-          <div className="icon-picker" role="group" aria-label={t('board.card.icon')}>
-            {TASK_ICONS.map((icon) => (
-              <button
-                type="button"
-                key={icon}
-                className={icon === task.icon ? 'icon-on' : ''}
-                aria-pressed={icon === task.icon}
-                onClick={() => void store.tasks.update(task.id, { icon })}
-              >
-                {icon}
-              </button>
-            ))}
-          </div>
+          <IconPicker value={task.icon} onPick={(icon) => void store.tasks.update(task.id, { icon })} />
 
           {confirmingDelete ? (
             <div className="card-actions card-confirm" role="group" aria-label={t('board.card.confirmDelete')}>

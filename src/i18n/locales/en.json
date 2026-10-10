@@ -184,6 +184,25 @@
       "deleteQuestion": "Delete this task?",
       "done": "Done: {{title}}"
     },
+    "icons": {
+      "recent": "Recently used",
+      "more": "More icons",
+      "fewer": "Fewer icons",
+      "groups": {
+        "cleaning": "Cleaning",
+        "home": "Home & laundry",
+        "kitchen": "Kitchen & food",
+        "shopping": "Shopping & errands",
+        "money": "Money & paperwork",
+        "garden": "Garden & yard",
+        "pets": "Pets & animals",
+        "repairs": "Repairs & DIY",
+        "travel": "Car & travel",
+        "kids": "Kids & school",
+        "health": "Health & self-care",
+        "events": "Holidays & fun"
+      }
+    },
     "repeat": {
       "never": "Never",
       "day": "Every day",

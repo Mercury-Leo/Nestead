@@ -4,11 +4,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionContext } from '../../auth/session';
 import type { Session } from '../../auth/session';
-import { createLocalStore, writePreference } from '../../data/local/localStore';
+import { createLocalStore, readDevicePreference, writePreference } from '../../data/local/localStore';
 import type { DataStore } from '../../data/types';
 import type { BoardColumn, Member, NewRow, Task } from '../../domain/types';
 import { LocaleProvider, i18n } from '../../i18n';
 import { Board } from './Board';
+import { TASK_ICONS, TASK_ICON_GROUPS } from './icons';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -251,5 +252,67 @@ describe('the Done fold', () => {
 
     expect(toggle(host)?.textContent).toBe(i18n.t('board.done.toggle', { count: 1 }));
     expect(titles(host, '.done-fold')).toEqual(['Parcel']);
+  });
+});
+
+describe('the icon picker', () => {
+  const openCard = (host: ParentNode, title: string): Promise<void> =>
+    click([...host.querySelectorAll('button.card-toggle')].find((node) => node.textContent?.includes(title)));
+  const icons = (host: ParentNode, selector = '.icon-picker'): string[] =>
+    [...host.querySelectorAll(`${selector} .icon-grid button`)].map((node) => node.textContent ?? '');
+  const iconButton = (host: ParentNode, icon: string): HTMLButtonElement | undefined =>
+    [...host.querySelectorAll<HTMLButtonElement>('.icon-grid button')].find((node) => node.textContent === icon);
+  const moreToggle = (host: ParentNode): HTMLButtonElement | null => host.querySelector('button.icon-more-toggle');
+  const recentRow = (host: ParentNode): Element | null => host.querySelector('.icon-picker > .icon-section');
+
+  it('shows the everyday icons, and the rest by group behind More icons', async () => {
+    await addTask();
+    const host = await render();
+    await openCard(host, 'Bins');
+
+    expect(icons(host)).toEqual([...TASK_ICONS]);
+    expect(recentRow(host)).toBeNull();
+    expect(moreToggle(host)?.getAttribute('aria-expanded')).toBe('false');
+    expect(moreToggle(host)?.textContent).toBe(i18n.t('board.icons.more'));
+
+    await click(moreToggle(host));
+
+    expect(moreToggle(host)?.getAttribute('aria-expanded')).toBe('true');
+    expect(moreToggle(host)?.textContent).toBe(i18n.t('board.icons.fewer'));
+    const groups = [...host.querySelectorAll('.icon-more [role="group"]')];
+    // Each group is named by its visible heading.
+    expect(groups.map((group) => document.getElementById(group.getAttribute('aria-labelledby') ?? '')?.textContent)).toEqual(
+      TASK_ICON_GROUPS.map((group) => i18n.t(`board.icons.groups.${group.key}`)),
+    );
+    expect(icons(host, '.icon-more')).toEqual(TASK_ICON_GROUPS.flatMap((group) => group.icons));
+
+    await click(iconButton(host, '🧽'));
+
+    expect((await store.tasks.list())[0]?.icon).toBe('🧽');
+    expect(iconButton(host, '🧽')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('offers the icons last picked on this device first, read when the card opens', async () => {
+    await addTask();
+    await addTask({ title: 'Cat food', icon: '🐕', position: 2000 });
+    const host = await render();
+    await openCard(host, 'Bins');
+    await click(moreToggle(host));
+    await click(iconButton(host, '🧽'));
+    await click(iconButton(host, '🐈'));
+
+    // Not while this picker is open: the row would move under the finger.
+    expect(recentRow(host)).toBeNull();
+
+    await openCard(host, 'Cat food');
+    const row = recentRow(host);
+    expect(row?.textContent?.startsWith(i18n.t('board.icons.recent'))).toBe(true);
+    expect(icons(row as Element, '')).toEqual(['🐈', '🧽']);
+    // Bins is still open and keeps the picker it opened with.
+    expect(host.querySelectorAll('.icon-picker > .icon-section')).toHaveLength(1);
+
+    await click(iconButton(row as Element, '🧽'));
+    expect((await store.tasks.list()).find((task) => task.title === 'Cat food')?.icon).toBe('🧽');
+    expect(readDevicePreference('recentTaskIcons')).toEqual(['🧽', '🐈']);
   });
 });

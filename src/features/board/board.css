@@ -331,13 +331,38 @@
   font-size: 0.8rem;
 }
 
+/* The icon picker (IconPicker.tsx): this device's recent picks above a line,
+   the everyday sixteen, then "More icons" opens the groups in a box of their
+   own that scrolls, so an open card stays short. */
 .icon-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.icon-picker > .icon-section {
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.icon-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.icon-heading {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.icon-grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 0.15rem;
 }
 
-.icon-picker button {
+.icon-grid button {
   padding: 0.15rem;
   border: 1px solid transparent;
   border-radius: 0.3rem;
@@ -346,10 +371,45 @@
   cursor: pointer;
 }
 
-.icon-picker button:hover,
-.icon-picker .icon-on {
+.icon-grid button:hover,
+.icon-grid .icon-on {
   border-color: var(--accent);
   background: var(--surface);
+}
+
+.icon-more-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0.15rem 0.2rem;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.icon-more-toggle:hover {
+  color: var(--text);
+}
+
+.icon-more-toggle svg {
+  transition: transform 0.15s;
+}
+
+.icon-more-toggle svg.is-open {
+  transform: rotate(180deg);
+}
+
+.icon-more {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 14rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .card-actions {
