@@ -15,7 +15,7 @@ Measurements behind [docs/PERFORMANCE.md](../../docs/PERFORMANCE.md): bundle siz
 | `demodata.ts` | Writes the demo backend's localStorage for a typical and a heavy family (run with `npx vite-node`). |
 | `db.perf.ts` | Database timings against the live project as test user A, through the app's own store, cache, actions and startup steps. |
 | `showsread.ts` | Read only: the time of the Shows page's first read against the live project, as test user A, through the app's store (run with `npx vite-node`). |
-| `fixtures.ts` | The rows both the demo data and the database runs use; shows (`showRows()`) are in the demo data only. |
+| `fixtures.ts` | The rows both the demo data and the database runs use: three ordinary columns (To do, House, Errands) and tasks spread across them, a third of the one-offs ticked (all in Errands, since a task's column is its index mod 3) with `doneAt` one to three days before the fixture runs, and no repeat ticked. So neither auto-clear nor revive changes the board during a measured run. Shows (`showRows()`) are in the demo data only. |
 | `net.ts` | Counts and times every request the Supabase clients make, per client. |
 | `stats.ts` | Median and min–max of repeated runs. |
 | `vitest.config.ts` | Runs `*.perf.ts` in Node with `.env.test` loaded. |
@@ -48,6 +48,7 @@ PERF_OUT=<scratch>/db.json npx vitest run --config scripts/perf/vitest.config.ts
 - `.env.local` sets `VITE_BACKEND=supabase` and Vite loads it in every mode, so `vite build --mode demo` alone builds the Supabase app. Set `VITE_BACKEND=local` in the environment, which wins over `.env` files.
 - Another client's delete never reaches a store's cache over realtime (see PERFORMANCE.md), so `db.perf.ts` deletes through the app's own store wherever the cache must stay right.
 - Supabase's `channel()` returns an existing channel with the same topic, so each startup run gets a fresh client.
+- Ticked tasks' `doneAt` is set when `taskRows()` runs, so write `demodata.json` again if it is more than three days old: by then the oldest done one-offs near the board's week, and auto-clear deletes them on the first open, mid-measurement (`fixtures.ts`).
 - Browser numbers depend on the host CPU (the 4x slowdown is relative). Compare runs from the same machine, with nothing else busy.
 - The demo shows' posters are links in OMDb's current form on Amazon's own host (`https://m.media-amazon.com/images/M/perf-p<n>@._V1_QL75_UX380_CR0,0,380,562_.jpg`), so the app's resizing (`Poster.tsx`) applies as it does to real links. Each script passes the server's port to `launchChrome({ amazon: server.port })`, which points that host at the harness server (`--host-resolver-rules`; the certificate mismatch is ignored like the rest). The server answers the forms in `POSTER_FORMS` with one real poster, downloaded from Amazon the first time into the OS temp folder (`nestead-perf-posters`); offline, the cards show placeholders. A script that leaves out `amazon` sends those requests to the real Amazon, which knows no `perf-p` ids.
 - Poster responses carry `Timing-Allow-Origin: *`: posters come from another origin, and without it the page sees no transfer size and `pageload.mjs` counts 0 bytes for them.

@@ -48,7 +48,22 @@ const CHORES = [
 ];
 const ICONS = ['🗑️', '🧹', '🪴', '🐱', '🍽️', '🛁', '🛏️', '🌱', '💷', '🦷'];
 
-export function taskRows(from: number, to: number, columns: readonly BoardColumn[], memberId: string): NewRow<Task>[] {
+const MINUTE_MS = 60_000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
+
+/**
+ * Tasks across the columns. A third of the one-offs are ticked, one to three
+ * days before `now` (when the fixture runs), so the board's auto-clear (a week)
+ * leaves them alone; no repeat is ticked, so revive has nothing to bring back.
+ * Neither changes the board during a measured run.
+ */
+export function taskRows(
+  from: number,
+  to: number,
+  columns: readonly BoardColumn[],
+  memberId: string,
+  now: Date = new Date(),
+): NewRow<Task>[] {
   const rows: NewRow<Task>[] = [];
   for (let i = from; i < to; i += 1) {
     const column = columns[i % columns.length]!;
@@ -56,10 +71,11 @@ export function taskRows(from: number, to: number, columns: readonly BoardColumn
       title: `${CHORES[i % CHORES.length]} #${i + 1}`,
       columnId: column.id,
       position: (Math.floor(i / columns.length) + 1) * 1000,
-      done: i % 3 === 2,
+      // Repeats (every seventh) stay open.
+      done: i % 3 === 2 && i % 7 !== 0,
     };
-    // A third of the board is ticked, as a family's would be by the evening.
-    if (row.done) row.doneAt = `2026-10-${String((i % 7) + 1).padStart(2, '0')}T18:00:00.000Z`;
+    // As a family's board would be by the evening. A minute apart each, so the Done fold's order is fixed.
+    if (row.done) row.doneAt = new Date(now.getTime() - ((Math.floor(i / 3) % 3) + 1) * DAY_MS - i * MINUTE_MS).toISOString();
     if (i % 2 === 0) row.icon = ICONS[i % ICONS.length]!;
     if (i % 3 === 0) row.assigneeId = memberId;
     if (i % 4 === 0) row.description = 'Check the cupboard under the sink first; the spare bags are behind the bleach.';
