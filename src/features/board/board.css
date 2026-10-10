@@ -229,10 +229,11 @@
   background: var(--sage);
 }
 
-/* A card History just restored, until the board is left. */
+/* A card History just restored, until the board is left. The outline sits
+   inside the card: the column's scroll box would clip one drawn outside it. */
 .card-highlight {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: -2px;
 }
 
 .card-title {
