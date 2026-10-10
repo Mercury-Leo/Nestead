@@ -58,12 +58,16 @@ export function Board({ highlightId }: { highlightId?: string } = {}): JSX.Eleme
   // Repeating tasks whose return date has come round are unticked, and done
   // one-offs over a week old are cleared, when the app is opened: there is no
   // server to do either while nobody is looking. The ref stops a second pass
-  // running while the first one's writes are still landing.
+  // running while the first one's writes are still landing: both, even when
+  // one fails, and a failure is only reported, since the next open tries again.
   const tidying = useRef(false);
   useEffect(() => {
     if (tidying.current || tasks.length === 0) return;
     tidying.current = true;
-    void Promise.all([reviveRecurring(store, tasks), autoClear(store, tasks)]).finally(() => {
+    void Promise.allSettled([reviveRecurring(store, tasks), autoClear(store, tasks)]).then((results) => {
+      for (const result of results) {
+        if (result.status === 'rejected') console.warn('Could not tidy the board:', result.reason);
+      }
       tidying.current = false;
     });
   }, [store, tasks]);

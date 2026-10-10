@@ -480,6 +480,17 @@ button.danger:hover:not(:disabled) {
   min-height: 0;
 }
 
+/* Side by side, open cards come first: a long fold's list stops at 40vh and
+   scrolls (.cards already does), so it cannot take the column's height from
+   them. Stacked on a phone the page scrolls instead, so no cap there. */
+.done-fold .cards {
+  max-height: 40vh;
+}
+
+.board-stacked .done-fold .cards {
+  max-height: none;
+}
+
 .done-toggle {
   display: inline-flex;
   gap: 0.25rem;

@@ -230,6 +230,18 @@ describe('the Done fold', () => {
     expect((await store.taskCompletions.list()).map((row) => row.taskId)).toContain(parcel.id);
   });
 
+  it('reports a failed tidy on open with a warning, not an unhandled rejection', async () => {
+    await addTask({ title: 'Parcel', done: true, doneAt: ago(8 * 24 * 60) });
+    const offline = new Error('offline');
+    vi.spyOn(store.tasks, 'remove').mockRejectedValue(offline);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await render();
+
+    await vi.waitFor(() => expect(warn).toHaveBeenCalledWith(expect.any(String), offline));
+    expect(await store.tasks.list()).toHaveLength(1);
+  });
+
   it('applies the search to the fold too', async () => {
     await addTask({ title: 'Parcel', done: true, doneAt: ago(90) });
     await addTask({ title: 'Bins', done: true, doneAt: ago(5) });
