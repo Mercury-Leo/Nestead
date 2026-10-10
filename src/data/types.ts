@@ -12,6 +12,7 @@ import type {
   Recipe,
   Show,
   Task,
+  TaskCompletion,
 } from '../domain/types';
 
 /** Called whenever the collection's rows may have changed. */
@@ -54,6 +55,11 @@ export interface DataStore {
   members: Collection<Member>;
   columns: Collection<BoardColumn>;
   tasks: Collection<Task>;
+  /**
+   * One row per tick, kept after the task is cleared. Only the History page
+   * lists it; the board creates and removes rows by id.
+   */
+  taskCompletions: Collection<TaskCompletion>;
   recipes: Collection<Recipe>;
   pantry: Collection<PantryItem>;
   /** At most one row per family. */

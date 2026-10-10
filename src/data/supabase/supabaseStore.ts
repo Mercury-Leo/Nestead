@@ -12,6 +12,7 @@ import type {
   Recipe,
   Show,
   Task,
+  TaskCompletion,
 } from '../../domain/types';
 import { refreshIfExpired, requireSession } from './signedIn';
 import { getSupabaseClient } from './supabaseClient';
@@ -31,6 +32,7 @@ type TableName =
   | 'members'
   | 'board_columns'
   | 'tasks'
+  | 'task_completions'
   | 'recipes'
   | 'pantry_items'
   | 'diet_profiles'
@@ -40,7 +42,7 @@ type TableName =
   | 'addresses';
 
 /** Timestamps arrive from Postgres as e.g. 2026-09-22T10:00:00.123456+00:00. */
-const TIMESTAMP_KEYS = new Set(['createdAt', 'updatedAt', 'fetchedAt', 'watchedAt']);
+const TIMESTAMP_KEYS = new Set(['createdAt', 'updatedAt', 'fetchedAt', 'watchedAt', 'doneAt']);
 
 /** Base fields are owned by the store and can never be patched by a caller. */
 const READONLY_KEYS = new Set(['id', 'familyId', 'createdAt', 'updatedAt']);
@@ -263,6 +265,7 @@ export function createSupabaseStore(
     members: createCollection<Member>(client, familyId, 'members'),
     columns: createCollection<BoardColumn>(client, familyId, 'board_columns'),
     tasks: createCollection<Task>(client, familyId, 'tasks'),
+    taskCompletions: createCollection<TaskCompletion>(client, familyId, 'task_completions'),
     recipes: createCollection<Recipe>(client, familyId, 'recipes'),
     pantry: createCollection<PantryItem>(client, familyId, 'pantry_items'),
     dietProfiles: createCollection<DietProfile>(client, familyId, 'diet_profiles'),

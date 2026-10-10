@@ -135,6 +135,53 @@ export function runDataStoreContract(
       expect(rows.map((row) => row.id)).toEqual([keep.id]);
     });
 
+    it('remove of a row that is already gone does not throw', async () => {
+      // Two devices auto-clearing the same done task at once both remove it.
+      const task = await store.tasks.create(newTask('Twice'));
+      await store.tasks.remove(task.id);
+
+      await expect(store.tasks.remove(task.id)).resolves.toBeUndefined();
+    });
+
+    it('tasks keep when they were ticked and the entry that made, and clear both', async () => {
+      const task = await store.tasks.create(newTask('Mop'));
+      const entry = await store.taskCompletions.create({ taskId: task.id, title: 'Mop', columnId });
+      const doneAt = '2026-10-10T18:30:00.000Z';
+
+      const done = await store.tasks.update(task.id, { done: true, doneAt, completionId: entry.id });
+      expect(done.doneAt).toBe(doneAt);
+      expect(done.completionId).toBe(entry.id);
+      expect((await store.tasks.list())[0]).toEqual(done);
+
+      const open = await store.tasks.update(task.id, { done: false, doneAt: undefined, completionId: undefined });
+      expect(open.doneAt).toBeUndefined();
+      expect(open.completionId).toBeUndefined();
+      expect((await store.tasks.list())[0]?.doneAt).toBeUndefined();
+    });
+
+    it('task completions round-trip, Hebrew included, outlive their task and can be re-pointed', async () => {
+      const task = await store.tasks.create({ ...newTask('לקנות חלב'), icon: '🥛', description: 'Two litres' });
+      const entry = await store.taskCompletions.create({
+        taskId: task.id,
+        title: 'לקנות חלב',
+        icon: '🥛',
+        description: 'Two litres',
+        columnId,
+      });
+
+      const [stored] = await store.taskCompletions.list();
+      expect(stored).toEqual(entry);
+      expect(stored?.memberId).toBeUndefined();
+
+      await store.tasks.remove(task.id);
+      const [kept] = await store.taskCompletions.list();
+      expect(kept?.taskId).toBe(task.id);
+      expect(kept?.title).toBe('לקנות חלב');
+
+      const again = await store.tasks.create(newTask('לקנות חלב'));
+      expect((await store.taskCompletions.update(entry.id, { taskId: again.id })).taskId).toBe(again.id);
+    });
+
     it('subscribe fires on create, update and remove, and stops after unsubscribe', async () => {
       let changes = 0;
       const unsubscribe = store.tasks.subscribe(() => {

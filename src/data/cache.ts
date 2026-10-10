@@ -332,6 +332,7 @@ export function withCache(store: DataStore): DataStore {
     members: new CachedCollection(store.members),
     columns: new CachedCollection(store.columns),
     tasks: new CachedCollection(store.tasks),
+    taskCompletions: new CachedCollection(store.taskCompletions),
     recipes: new CachedCollection(store.recipes),
     pantry: new CachedCollection(store.pantry),
     dietProfiles: new CachedCollection(store.dietProfiles),
