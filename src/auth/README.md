@@ -6,8 +6,8 @@ Who is signed in and which family's `DataStore` they get: two interchangeable se
 | --- | --- |
 | `session.tsx` | `Session` type (with `ai`, and `Family` re-exported from `../data/types.ts`), `useSession()`, and `SessionProvider`: the swap point, which picks a session and backend by `VITE_BACKEND`. |
 | `demoSession.tsx` | Local backend: family `demo-family`, members Alex and Sam, "I am" per tab in sessionStorage; seeds columns and the demo kitchen. |
-| `accountSession.tsx` (+ `accountSession.test.tsx`) | `AccountSession`: real sign-in over any backend's `Account`. Phases: loading, signedOut, recovering, noFamily, ready. |
-| `openFamily.ts` | `openFamily()`: membership plus a cached, preloading store and the new-family setup; `lastFamilyOf()` and `rememberFamily()`, the device's guess. |
+| `accountSession.tsx` (+ `accountSession.test.tsx`) | `AccountSession`: real sign-in over any backend's `Account`. Phases: loading, signedOut, recovering, noFamily, failed, ready. |
+| `openFamily.ts` | `openFamily()`: membership plus a cached, preloading store and the new-family setup, reusing a store already `Started` for the family; `lastFamilyOf()` and `rememberFamily()`, the device's guess. |
 | `invite.ts` (+ `invite.test.ts`) | `/join/<code>` links: `captureInvite()`, `pendingInvite()`, `clearInvite()`, `inviteLink()`. |
 | `useInviteFamily.ts` | Names the family behind an invite code through `Account.inviteFamilyName()`. |
 | `auth.css` | Global `.gate` styles for the screens below, imported last in `main.tsx`. |
@@ -22,6 +22,8 @@ Who is signed in and which family's `DataStore` they get: two interchangeable se
 - On a device that has opened the app before, `openFamily()` starts the remembered family's store while membership is being read, which saves a round trip on launch. If membership names another family, that store is dropped and a new one starts. A user belongs to one family at most, so the backend shows a stale guess no rows and refuses its setup writes (`openFamily.ts`).
 - `Session.ai` is `Ready`'s view of the `Account`'s AI methods: `token()` is the access token for Nestead's own `/api/ai` routes, and `status()`, `clearKey()` and `setModel()` read and change the family's AI settings, never the key. It is memoised on the account and built before `Ready`'s `me === null` early return, since a hook cannot follow a conditional return (`accountSession.tsx`).
 - `Ready` shows Loading until the person's own member row arrives, or `LoadFailed` with Try again while the members read fails; before, a failed read left Loading up for good (`accountSession.tsx`).
+- Opening the family can fail: membership unread, or setup refused. Then the phase is `failed`, which shows `LoadFailed` and tries again after `retryDelay()` (1, 2, 5, 10, then every 30 s) and whenever `onComeBack()` fires (`../data/retry.ts`); Try again shows Loading and tries at once. Until 2026-10-10 a failure left Loading up until the next auth event (`accountSession.tsx`).
+- A try after a failure carries on with the store the first one started (the `Started` map, per user): a second store for the same family would ask realtime for channels the first still holds, and setup runs again only if it failed (`openFamily.ts`).
 - `resolvedFor` keeps the store across repeat auth events for the same user (startup, hourly refresh) instead of rebuilding it and its channels (`accountSession.tsx`).
 - A recovery link is read once, before `watchUser()` (`Account.takeRecoveryLink()`), and holds the phase on `SetNewPassword`; so does a change `watchUser()` flags as recovery (`accountSession.tsx`).
 - `main.tsx` calls `captureInvite()` before the router reads the address; the code waits in localStorage until the person is in a family (`invite.ts`).
@@ -38,4 +40,4 @@ Who is signed in and which family's `DataStore` they get: two interchangeable se
 - `supabaseAccount()` throws without `VITE_SUPABASE_*`, so it is called only in the `supabase` branch of `SessionProvider`.
 
 ## Tests
-`invite.test.ts` (jsdom): link format, capture, keeping query and hash, clearing. `accountSession.test.tsx` (jsdom): `AccountSession` over an in-memory `Account` and the local store: sign-in screen, creating a family through to the app, a rotated code, the AI calls reaching the account, a recovery link, signing out. The Supabase `Account` itself is tested live in `../data/supabase/`.
+`invite.test.ts` (jsdom): link format, capture, keeping query and hash, clearing. `accountSession.test.tsx` (jsdom): `AccountSession` over an in-memory `Account` and the local store: sign-in screen, creating a family through to the app, a rotated code, the AI calls reaching the account, a recovery link, signing out, a failed membership read that opens on Try again, and one that opens by itself when the connection comes back, with the store it started (`openStore` called once). The Supabase `Account` itself is tested live in `../data/supabase/`.

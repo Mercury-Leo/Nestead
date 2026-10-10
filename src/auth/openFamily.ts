@@ -12,12 +12,29 @@ export interface OpenedFamily {
   setup: Promise<unknown>;
 }
 
-function start(account: Account, familyId: string): Omit<OpenedFamily, 'family'> {
+/**
+ * The families already started for one user on this device, by id. A try
+ * after a failure (../auth/accountSession.tsx) carries on with the store it
+ * began, whose rows may have arrived meanwhile: a second store for the same
+ * family would ask realtime for channels the first still holds. Setup runs
+ * again only if it failed, so a slow first run is never doubled.
+ */
+export type Started = Map<string, { store: DataStore; setup: Promise<unknown>; setupFailed: boolean }>;
+
+function start(account: Account, familyId: string, started: Started): Omit<OpenedFamily, 'family'> {
+  const known = started.get(familyId);
   // Every table starts loading now, alongside the setup, so the board and the
-  // kitchen have their rows by the time they mount.
-  const store = withCache(account.openStore(familyId));
+  // kitchen have their rows by the time they mount. Again for a known store,
+  // in case its collections closed while the tries went on (a no-op if not).
+  const store = known?.store ?? withCache(account.openStore(familyId));
   preloadStore(store);
-  return { store, setup: Promise.all([seedDefaultColumns(store), ensureKitchen(store)]) };
+  if (known !== undefined && !known.setupFailed) return known;
+  const entry = { store, setup: Promise.all([seedDefaultColumns(store), ensureKitchen(store)]) as Promise<unknown>, setupFailed: false };
+  entry.setup.catch(() => {
+    entry.setupFailed = true;
+  });
+  started.set(familyId, entry);
+  return entry;
 }
 
 /**
@@ -30,15 +47,20 @@ function start(account: Account, familyId: string): Omit<OpenedFamily, 'family'>
  * belongs to one family at most, so the backend shows the old one no rows and refuses
  * its setup writes, and it is dropped as soon as membership answers.
  */
-export async function openFamily(account: Account, userId: string, lastFamilyId: string | null): Promise<OpenedFamily | null> {
-  const early = lastFamilyId === null ? null : start(account, lastFamilyId);
+export async function openFamily(
+  account: Account,
+  userId: string,
+  lastFamilyId: string | null,
+  started: Started = new Map(),
+): Promise<OpenedFamily | null> {
+  const early = lastFamilyId === null ? null : start(account, lastFamilyId, started);
   // Judged below; until then a failure must not surface as unhandled.
   early?.setup.catch(() => undefined);
 
   const family = await account.readMembership(userId);
   if (family === null) return null;
-  const started = early !== null && lastFamilyId === family.id ? early : start(account, family.id);
-  return { family, ...started };
+  const opened = early !== null && lastFamilyId === family.id ? early : start(account, family.id, started);
+  return { family, store: opened.store, setup: opened.setup };
 }
 
 const LAST_FAMILY = 'lastFamily';

@@ -69,4 +69,5 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 - Don't add `StrictMode`: `src/main.tsx` leaves it out so the demo seed does not run twice.
 - `index.html` reads the theme and locale preferences before React; keep its keys in step with `src/components/theme/theme.tsx` and `src/i18n/i18n.ts`.
 - Auth screens take the `Account` as a prop from `AccountSession`; never reach for a backend client in a screen.
+- Without a session supabase-js sends the publishable key instead, and RLS answers reads with no rows and no error. Supabase reads call `requireSession()` first so they fail and get retried instead (`src/data/supabase/signedIn.ts`).
 - Local and production `AI_KEY_SECRET` differ while sharing one Supabase project: a family key saved locally answers `key-invalid` in production. The SQL tests for the AI functions run on PGlite (`tests/sql/`), never against the live project.

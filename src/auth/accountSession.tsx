@@ -3,9 +3,11 @@ import type { ReactNode } from 'react';
 import { Trans } from 'react-i18next';
 import type { Account, DataStore, Family } from '../data/types';
 import { LoadFailed } from '../components/LoadFailed';
+import { onComeBack, retryDelay } from '../data/retry';
 import { retryCollections, useCollectionState } from '../data/useCollection';
 import { clearInvite, pendingInvite } from './invite';
 import { lastFamilyOf, openFamily, rememberFamily } from './openFamily';
+import type { Started } from './openFamily';
 import { JoinOrCreate } from './screens/JoinOrCreate';
 import { SessionContext } from './session';
 import { SetNewPassword } from './screens/SetNewPassword';
@@ -17,6 +19,10 @@ import { SignIn } from './screens/SignIn';
  * Being signed in and being in a family are different things. A new account
  * has no member row, so the backend shows it nothing. That in-between state is
  * a screen, not an error.
+ *
+ * Opening the family can fail (no connection yet on a phone that just woke):
+ * then it shows LoadFailed and tries again by itself, after a growing wait and
+ * whenever the connection or the tab comes back.
  */
 
 type Phase =
@@ -24,6 +30,7 @@ type Phase =
   | { kind: 'signedOut' }
   | { kind: 'recovering'; userId: string }
   | { kind: 'noFamily'; userId: string }
+  | { kind: 'failed'; userId: string }
   | { kind: 'ready'; userId: string; store: DataStore; family: Family };
 
 export function AccountSession({ account, children }: { account: Account; children: ReactNode }): JSX.Element {
@@ -35,10 +42,26 @@ export function AccountSession({ account, children }: { account: Account; childr
   const recovering = useRef<boolean | null>(null);
   if (recovering.current === null) recovering.current = account.takeRecoveryLink();
 
+  // Which user the auth events last resolved. Startup can report the same
+  // session twice and a token refresh reports it again every hour; none of
+  // that changes the family, so the store is kept rather than rebuilt, which
+  // would drop every cached row and realtime channel.
+  const resolvedFor = useRef<string | null>(null);
+
+  // The stores begun for this user, so a try after a failure carries on with
+  // the one already started (openFamily.ts).
+  const started = useRef<{ userId: string; families: Started } | null>(null);
+  const startedFor = (userId: string): Started => {
+    if (started.current?.userId !== userId) started.current = { userId, families: new Map() };
+    return started.current.families;
+  };
+
   /** Works out which of the three states a signed-in user is actually in. */
   const resolve = useCallback(
     async (userId: string): Promise<void> => {
-      const opened = await openFamily(account, userId, lastFamilyOf(userId));
+      const opened = await openFamily(account, userId, lastFamilyOf(userId), startedFor(userId));
+      // Signed out, or someone else signed in, while this was out.
+      if (resolvedFor.current !== userId) return;
       if (opened === null) {
         // Out of the family this device remembered: stop guessing it.
         rememberFamily(userId, null);
@@ -52,16 +75,52 @@ export function AccountSession({ account, children }: { account: Account; childr
       rememberFamily(userId, opened.family.id);
 
       await opened.setup;
+      if (resolvedFor.current !== userId) return;
       setPhase({ kind: 'ready', userId, store: opened.store, family: opened.family });
     },
     [account],
   );
 
-  // Which user the auth events last resolved. Startup can report the same
-  // session twice and a token refresh reports it again every hour; none of
-  // that changes the family, so the store is kept rather than rebuilt, which
-  // would drop every cached row and realtime channel.
-  const resolvedFor = useRef<string | null>(null);
+  // Failed tries in a row, which set the wait before the next; and whose try is out now.
+  const failures = useRef(0);
+  const opening = useRef<string | null>(null);
+
+  /** resolve(), and on failure the failed phase, which tries again (below). */
+  const attempt = useCallback(
+    (userId: string): void => {
+      resolvedFor.current = userId;
+      if (opening.current === userId) return;
+      opening.current = userId;
+      resolve(userId)
+        .then(
+          () => {
+            failures.current = 0;
+          },
+          (error: unknown) => {
+            if (resolvedFor.current !== userId) return;
+            console.warn('Could not open the family:', error);
+            failures.current += 1;
+            setPhase({ kind: 'failed', userId });
+          },
+        )
+        .finally(() => {
+          if (opening.current === userId) opening.current = null;
+        });
+    },
+    [resolve],
+  );
+
+  // Every failure sets a new phase, so each one waits a little longer.
+  useEffect(() => {
+    if (phase.kind !== 'failed') return;
+    const again = (): void => attempt(phase.userId);
+    const timer = setTimeout(again, retryDelay(failures.current));
+    const stop = onComeBack(again);
+    return () => {
+      clearTimeout(timer);
+      stop();
+    };
+  }, [phase, attempt]);
 
   useEffect(
     () =>
@@ -69,6 +128,7 @@ export function AccountSession({ account, children }: { account: Account; childr
         if (recovery) recovering.current = true;
         if (userId === null) {
           resolvedFor.current = null;
+          started.current = null;
           recovering.current = false;
           setPhase({ kind: 'signedOut' });
           return;
@@ -79,14 +139,9 @@ export function AccountSession({ account, children }: { account: Account; childr
           return;
         }
         if (resolvedFor.current === userId) return;
-        resolvedFor.current = userId;
-        void resolve(userId).catch((error: unknown) => {
-          // Let the next auth event try again.
-          resolvedFor.current = null;
-          throw error;
-        });
+        attempt(userId);
       }),
-    [account, resolve],
+    [account, attempt],
   );
 
   const signOut = useCallback((): Promise<void> => account.signOut(), [account]);
@@ -106,7 +161,7 @@ export function AccountSession({ account, children }: { account: Account; childr
           account={account}
           onDone={() => {
             recovering.current = false;
-            void resolve(phase.userId);
+            attempt(phase.userId);
           }}
           onSignOut={signOut}
         />
@@ -116,8 +171,18 @@ export function AccountSession({ account, children }: { account: Account; childr
         <JoinOrCreate
           account={account}
           inviteCode={pendingInvite()}
-          onJoined={() => void resolve(phase.userId)}
+          onJoined={() => attempt(phase.userId)}
           onSignOut={signOut}
+        />
+      );
+    case 'failed':
+      return (
+        <LoadFailed
+          onRetry={() => {
+            failures.current = 0;
+            setPhase({ kind: 'loading' });
+            attempt(phase.userId);
+          }}
         />
       );
     case 'ready':

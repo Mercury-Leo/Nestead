@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Account, Family } from '../types';
 import { toAiStatus } from './aiStatus';
+import { requireSession } from './signedIn';
 import { getRememberMe, getSupabaseClient, setRememberMe, takeLinkError, takeRecoveryLink } from './supabaseClient';
 import { createSupabaseStore } from './supabaseStore';
 
@@ -20,6 +21,7 @@ function fail(error: { message: string } | null): void {
 
 export function createSupabaseAccount(client: SupabaseClient = getSupabaseClient()): Account {
   async function readFamily(familyId: string): Promise<Family> {
+    await requireSession(client);
     const row = await client.from('families').select('id, name, join_code').eq('id', familyId).single();
     if (row.error !== null) throw new Error(row.error.message);
     return { id: row.data.id as string, name: row.data.name as string, joinCode: row.data.join_code as string };
@@ -83,6 +85,9 @@ export function createSupabaseAccount(client: SupabaseClient = getSupabaseClient
      * alone: the second person to join would make this return two.
      */
     async readMembership(userId) {
+      // Without a session RLS shows no member row, which would read as "in no
+      // family": the join screen, and the remembered family forgotten.
+      await requireSession(client);
       const { data, error } = await client
         .from('members')
         .select('family_id, families(id, name, join_code)')

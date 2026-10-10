@@ -328,6 +328,36 @@ describe('CachedCollection', () => {
       expect(backend.source.list).toHaveBeenCalledTimes(3);
     });
 
+    it('reads open collections again when the tab comes back after a while away, not after a moment', async () => {
+      let state: DocumentVisibilityState = 'visible';
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+      const away = (ms: number): void => {
+        state = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+        vi.advanceTimersByTime(ms);
+        state = 'visible';
+        document.dispatchEvent(new Event('visibilitychange'));
+      };
+      try {
+        const backend = controlledSource([task('1', 'Bins')]);
+        const cache = new CachedCollection(backend.source);
+        cache.subscribe(() => undefined);
+        await backend.finishRead();
+
+        away(5_000);
+        expect(backend.source.list).toHaveBeenCalledTimes(1);
+
+        away(30_000);
+        expect(backend.source.list).toHaveBeenCalledTimes(2);
+        // The rows stay on screen while the new read is out.
+        expect(cache.getSnapshot()).toEqual({ rows: [task('1', 'Bins')], loaded: true, failed: false });
+        await backend.finishRead([task('1', 'Bins'), task('2', 'Dishes')]);
+        expect(titles(cache)).toEqual(['Bins', 'Dishes']);
+      } finally {
+        delete (document as { visibilityState?: unknown }).visibilityState;
+      }
+    });
+
     it('stops trying once nobody is watching', async () => {
       const backend = controlledSource([]);
       const cache = new CachedCollection(backend.source);

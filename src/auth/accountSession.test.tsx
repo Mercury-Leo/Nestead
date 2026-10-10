@@ -1,11 +1,12 @@
 import { act, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createLocalStore } from '../data/local/localStore';
 import type { Account, ChangeListener, Collection, Family } from '../data/types';
 import type { Member, NewRow } from '../domain/types';
 import { LocaleProvider, i18n } from '../i18n';
 import { AccountSession } from './accountSession';
+import { rememberFamily } from './openFamily';
 import { useSession } from './session';
 
 /*
@@ -48,6 +49,7 @@ function fakeAccount(options: { recovery?: boolean } = {}) {
   const families = new Map<string, Family>();
   const members: Member[] = [];
   let codes = 0;
+  let membershipFailures = 0;
 
   const addMember = (familyId: string, name: string): void => {
     members.push({ id: userId!, familyId, name, color: '#4f8ef7', createdAt: '', updatedAt: '' });
@@ -73,6 +75,10 @@ function fakeAccount(options: { recovery?: boolean } = {}) {
       watcher?.(null, false);
     },
     async readMembership(id) {
+      if (membershipFailures > 0) {
+        membershipFailures -= 1;
+        throw new Error('Failed to fetch');
+      }
       const member = members.find((row) => row.id === id);
       return member === undefined ? null : families.get(member.familyId)!;
     },
@@ -112,6 +118,10 @@ function fakeAccount(options: { recovery?: boolean } = {}) {
     signInAs(id: string) {
       userId = id;
       watcher?.(id, false);
+    },
+    /** The next reads of membership fail, as with no connection. */
+    failMembership(times: number) {
+      membershipFailures = times;
     },
   };
 }
@@ -228,6 +238,48 @@ describe('AccountSession on another backend', () => {
     const page = await render(fake.account);
     await settle();
     expect(page.textContent).toContain(i18n.t('auth.newPassword.subtitle'));
+  });
+
+  it('says the family could not be read, and opens it on Try again', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fake = fakeAccount();
+    fake.inFamily('u-sam', 'Sam', 'The Levis');
+    fake.failMembership(1);
+    const page = await render(fake.account);
+    await act(async () => fake.signInAs('u-sam'));
+    await settle();
+    expect(page.textContent).toContain(i18n.t('loadFailed.title'));
+
+    const retry = [...page.querySelectorAll('button')].find((button) => button.textContent === i18n.t('loadFailed.retry'))!;
+    await act(async () => retry.click());
+    await settle();
+    expect(page.textContent).toContain('Sam in The Levis with CODE1');
+    vi.restoreAllMocks();
+  });
+
+  it('tries again by itself when the connection comes back, with the store it began', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fake = fakeAccount();
+    fake.inFamily('u-sam', 'Sam', 'The Levis');
+    // A device that opened this family before starts its store before membership answers.
+    rememberFamily('u-sam', 'f-1');
+    const opened: string[] = [];
+    const openStore = fake.account.openStore;
+    fake.account.openStore = (familyId) => {
+      opened.push(familyId);
+      return openStore(familyId);
+    };
+    fake.failMembership(1);
+    const page = await render(fake.account);
+    await act(async () => fake.signInAs('u-sam'));
+    await settle();
+    expect(page.textContent).toContain(i18n.t('loadFailed.title'));
+
+    await act(async () => window.dispatchEvent(new Event('online')));
+    await settle();
+    expect(page.textContent).toContain('Sam in The Levis with CODE1');
+    expect(opened).toEqual(['f-1']);
+    vi.restoreAllMocks();
   });
 
   it('goes back to sign-in on signing out', async () => {

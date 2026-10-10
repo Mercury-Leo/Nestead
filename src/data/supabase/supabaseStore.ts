@@ -13,6 +13,7 @@ import type {
   Show,
   Task,
 } from '../../domain/types';
+import { refreshIfExpired, requireSession } from './signedIn';
 import { getSupabaseClient } from './supabaseClient';
 import type { ChangeListener, Collection, DataStore, PhotoStore, Unsubscribe } from '../types';
 
@@ -146,12 +147,17 @@ function createCollection<T extends Base>(
 
   return {
     async list(): Promise<T[]> {
+      await requireSession(client);
       const { data, error } = await client.from(table).select('*').eq('family_id', familyId);
-      if (error !== null) fail(table, 'list', error.message);
+      if (error !== null) {
+        refreshIfExpired(client, error.message);
+        fail(table, 'list', error.message);
+      }
       return (data ?? []).map((row) => fromRow<T>(row as Record<string, unknown>));
     },
 
     async create(row: NewRow<T>): Promise<T> {
+      await requireSession(client);
       const payload = {
         ...toRow(row as Record<string, unknown>),
         family_id: familyId,
@@ -164,6 +170,7 @@ function createCollection<T extends Base>(
     },
 
     async update(id: string, patch: Partial<NewRow<T>>): Promise<T> {
+      await requireSession(client);
       const { data, error } = await client
         .from(table)
         .update(toRow(patch as Record<string, unknown>))
@@ -185,6 +192,9 @@ function createCollection<T extends Base>(
     },
 
     async remove(id: string): Promise<void> {
+      // Without a session a delete matches nothing and still succeeds: the row
+      // would leave the screen and come back on the next read.
+      await requireSession(client);
       const { error } = await client
         .from(table)
         .delete()
@@ -198,6 +208,7 @@ function createCollection<T extends Base>(
       listeners.add(onChange);
 
       if (channel === null) {
+        let joined = false;
         // Rows this client cannot see under RLS are never delivered, so the
         // family filter is belt and braces rather than the security boundary.
         channel = client
@@ -215,7 +226,14 @@ function createCollection<T extends Base>(
               notify();
             },
           )
-          .subscribe();
+          .subscribe((status) => {
+            // The channel joins again by itself after the connection drops (a
+            // phone asleep, a network change), but changes made meanwhile are
+            // never sent: read the table again once it is back.
+            if (status !== 'SUBSCRIBED') return;
+            if (joined) notify();
+            joined = true;
+          });
       }
 
       return () => {

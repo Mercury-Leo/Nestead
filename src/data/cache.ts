@@ -1,4 +1,5 @@
 import type { Base, NewRow } from '../domain/types';
+import { AWAY_MS, onComeBack, retryDelay } from './retry';
 import type { ChangeListener, Collection, DataStore, Unsubscribe } from './types';
 
 /**
@@ -22,6 +23,8 @@ import type { ChangeListener, Collection, DataStore, Unsubscribe } from './types
  *     at once when the browser comes back online or the tab is shown again,
  *     and when a screen's Try again calls retry(). It never counts as loaded,
  *     so a screen cannot mistake rows it never got for an empty table.
+ *   * Coming back to the tab after a while away reads every open collection
+ *     again, for the changes realtime missed while the device slept.
  *
  * It wraps any backend and passes the same contract, so screens and backends
  * stay unaware of it. list() always reads the backend.
@@ -46,26 +49,30 @@ export interface Rows<T> {
  */
 const LINGER_MS = 30_000;
 
-/** The waits before re-reading after each failure in a row; the last repeats. */
-const RETRY_MS = [1_000, 2_000, 5_000, 10_000, 30_000];
+interface Rereadable {
+  retry: () => void;
+  refresh: () => void;
+}
+
+/** Collections being watched or preloaded: their rows are on show, or about to be. */
+const open = new Set<Rereadable>();
+/** Open collections whose latest read failed. */
+const failing = new Set<Rereadable>();
+let watchingComeBack = false;
 
 /**
- * Open collections whose latest read failed. A phone that wakes, or a laptop
- * back on the network, usually fails its first reads, so these try again as
- * soon as the connection or the tab comes back rather than at their next turn.
+ * When the connection or the tab comes back, failed collections try again at
+ * once rather than at their next turn. After a while away, every open one is
+ * read again too: realtime drops while a phone sleeps, and changes made
+ * meanwhile, deletes above all, never arrive on their own.
  */
-const failing = new Set<{ retry: () => void }>();
-let watchingConnection = false;
-
-function watchConnection(): void {
-  if (watchingConnection || typeof window === 'undefined') return;
-  watchingConnection = true;
-  const retryAll = (): void => {
+function watchComeBack(): void {
+  if (watchingComeBack) return;
+  watchingComeBack = true;
+  onComeBack((awayMs) => {
     for (const cache of [...failing]) cache.retry();
-  };
-  window.addEventListener('online', retryAll);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') retryAll();
+    if (awayMs < AWAY_MS) return;
+    for (const cache of [...open]) if (!failing.has(cache)) cache.refresh();
   });
 }
 
@@ -151,6 +158,11 @@ export class CachedCollection<T extends Base> implements Collection<T> {
     else this.read();
   };
 
+  /** Reads again now, keeping the rows on screen until the new ones land. */
+  readonly refresh = (): void => {
+    if (this.stopSource !== null) this.read();
+  };
+
   readonly subscribe = (onChange: ChangeListener): Unsubscribe => {
     this.listeners.add(onChange);
     this.open();
@@ -209,6 +221,8 @@ export class CachedCollection<T extends Base> implements Collection<T> {
     }
     if (this.stopSource === null) {
       this.stopSource = this.source.subscribe(() => this.read());
+      open.add(this);
+      watchComeBack();
       this.read();
     }
   }
@@ -222,6 +236,7 @@ export class CachedCollection<T extends Base> implements Collection<T> {
         this.stopSource = null;
         // Closed, so nothing retries: the next open reads anyway.
         this.cancelRetry();
+        open.delete(this);
         failing.delete(this);
       }
     }, LINGER_MS);
@@ -276,12 +291,10 @@ export class CachedCollection<T extends Base> implements Collection<T> {
   private retryLater(): void {
     if (this.stopSource === null) return;
     failing.add(this);
-    watchConnection();
-    const wait = RETRY_MS[Math.min(this.failures, RETRY_MS.length) - 1] as number;
     this.retrying = setTimeout(() => {
       this.retrying = null;
       this.read();
-    }, wait);
+    }, retryDelay(this.failures));
   }
 
   private cancelRetry(): void {
