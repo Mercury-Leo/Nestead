@@ -114,9 +114,14 @@ describe('HistoryPage', () => {
 
   it('ignores a second press while a Restore is under way, so a double tap makes one card', async () => {
     await store.taskCompletions.create({ taskId: 'gone', title: 'Parcel', columnId: house.id, memberId: 'm-dana' });
+    // The task's create waits until the test lets it through, like a slow backend.
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const create = store.tasks.create.bind(store.tasks);
-    vi.spyOn(store.tasks, 'create').mockImplementation(async (row) => {
-      await new Promise((resolve) => setTimeout(resolve, 20));
+    const creating = vi.spyOn(store.tasks, 'create').mockImplementation(async (row) => {
+      await gate;
       return create(row);
     });
     const host = await render();
@@ -128,10 +133,14 @@ describe('HistoryPage', () => {
       button.click();
     });
     expect(button.disabled).toBe(true);
+    // Restore's last write points the entry at the new task; the page then goes to the board.
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 60));
+      release();
+      await vi.waitFor(async () => expect((await store.taskCompletions.list())[0]?.taskId).not.toBe('gone'));
     });
+    await flush();
 
+    expect(creating).toHaveBeenCalledTimes(1);
     expect(await store.tasks.list()).toHaveLength(1);
     expect(landed?.pathname).toBe('/');
   });
