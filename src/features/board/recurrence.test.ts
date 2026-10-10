@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import type { BoardColumn, Task } from '../../domain/types';
+import type { Task } from '../../domain/types';
 import {
   REPEAT_OPTIONS,
   addDays,
   addMonths,
+  doneAtOf,
   fromIsoDate,
   isDueAgain,
   isOverdue,
   nextOccurrence,
   repeatOf,
-  reviveColumn,
+  returnDate,
   schedulePatch,
   toIsoDate,
 } from './recurrence';
@@ -27,18 +28,6 @@ function task(overrides: Partial<Task> = {}): Task {
     position: 1000,
     done: false,
     ...overrides,
-  };
-}
-
-function column(name: string, isDone: boolean, position: number): BoardColumn {
-  return {
-    id: name,
-    familyId: 'f',
-    createdAt: '2026-09-01T00:00:00.000Z',
-    updatedAt: '2026-09-01T00:00:00.000Z',
-    name,
-    position,
-    isDone,
   };
 }
 
@@ -185,29 +174,79 @@ describe('schedulePatch', () => {
   });
 });
 
+/** Local time, as an ISO timestamp: the tick happened on that local day. */
+const at = (year: number, month: number, day: number, hour = 12): string => new Date(year, month - 1, day, hour).toISOString();
+
+describe('doneAtOf', () => {
+  it('is doneAt', () => {
+    expect(doneAtOf(task({ done: true, doneAt: at(2026, 9, 20) })).toISOString()).toBe(at(2026, 9, 20));
+  });
+
+  it('falls back to updatedAt for a task ticked before doneAt existed', () => {
+    expect(doneAtOf(task({ done: true, updatedAt: '2026-09-03T10:00:00.000Z' })).toISOString()).toBe('2026-09-03T10:00:00.000Z');
+  });
+});
+
+describe('returnDate', () => {
+  const weekly = { recurEveryDays: 7, recurFrom: '2026-09-01' };
+
+  it('is the next round after the one it covered, done on time', () => {
+    expect(returnDate(task({ ...weekly, done: true, dueDate: '2026-09-15', doneAt: at(2026, 9, 15) }))).toBe('2026-09-22');
+  });
+
+  it('skips only the covered round when done early', () => {
+    expect(returnDate(task({ ...weekly, done: true, dueDate: '2026-09-15', doneAt: at(2026, 9, 13) }))).toBe('2026-09-22');
+  });
+
+  it('skips missed rounds when done late, so it does not come straight back overdue', () => {
+    expect(returnDate(task({ ...weekly, done: true, dueDate: '2026-09-01', doneAt: at(2026, 9, 17) }))).toBe('2026-09-22');
+  });
+
+  it('keeps a monthly chore on the 31st through a short month', () => {
+    const monthly = { recurEveryMonths: 1, recurFrom: '2026-01-31' };
+    expect(returnDate(task({ ...monthly, done: true, dueDate: '2026-10-31', doneAt: at(2026, 10, 31) }))).toBe('2026-11-30');
+    expect(returnDate(task({ ...monthly, done: true, dueDate: '2026-11-30', doneAt: at(2026, 11, 30) }))).toBe('2026-12-31');
+  });
+
+  it('counts from the day it was done when the repeat has no due date', () => {
+    expect(returnDate(task({ recurEveryDays: 7, done: true, doneAt: at(2026, 9, 10) }))).toBe('2026-09-17');
+  });
+
+  it('returns a repeat the migration moved back a day on the date it showed before', () => {
+    // Before the change: done on 23 Sep, due date already moved on to the 29th.
+    // The migration made it the 28th.
+    expect(returnDate(task({ ...weekly, done: true, dueDate: '2026-09-28', doneAt: at(2026, 9, 23) }))).toBe('2026-09-29');
+    const monthly = { recurEveryMonths: 1, recurFrom: '2026-01-31' };
+    expect(returnDate(task({ ...monthly, done: true, dueDate: '2026-11-29', doneAt: at(2026, 10, 31) }))).toBe('2026-11-30');
+  });
+
+  it('is undefined for an open task or a one-off', () => {
+    expect(returnDate(task({ ...weekly, done: false, dueDate: '2026-09-15' }))).toBeUndefined();
+    expect(returnDate(task({ done: true, dueDate: '2026-09-15', doneAt: at(2026, 9, 15) }))).toBeUndefined();
+  });
+});
+
 describe('isDueAgain', () => {
-  it('is true for a done monthly task whose date has arrived', () => {
-    expect(isDueAgain(task({ done: true, recurEveryMonths: 1, dueDate: '2026-09-22' }), NOW)).toBe(true);
+  const weekly = { recurEveryDays: 7, recurFrom: '2026-09-01', dueDate: '2026-09-15' };
+
+  it('is true on the return date', () => {
+    expect(isDueAgain(task({ ...weekly, done: true, doneAt: at(2026, 9, 15) }), NOW)).toBe(true);
   });
 
-  it('is true for a done recurring task whose date has arrived', () => {
-    expect(isDueAgain(task({ done: true, recurEveryDays: 7, dueDate: '2026-09-22' }), NOW)).toBe(true);
+  it('is true after the return date', () => {
+    expect(isDueAgain(task({ ...weekly, done: true, doneAt: at(2026, 9, 15) }), new Date(2026, 8, 25))).toBe(true);
   });
 
-  it('is true when the date has passed', () => {
-    expect(isDueAgain(task({ done: true, recurEveryDays: 7, dueDate: '2026-09-01' }), NOW)).toBe(true);
-  });
-
-  it('is false before the date arrives', () => {
-    expect(isDueAgain(task({ done: true, recurEveryDays: 7, dueDate: '2026-09-29' }), NOW)).toBe(false);
+  it('is false before the return date', () => {
+    expect(isDueAgain(task({ ...weekly, done: true, doneAt: at(2026, 9, 15) }), new Date(2026, 8, 21, 23, 59))).toBe(false);
   });
 
   it('is false while the task is still outstanding', () => {
-    expect(isDueAgain(task({ done: false, recurEveryDays: 7, dueDate: '2026-09-01' }), NOW)).toBe(false);
+    expect(isDueAgain(task({ ...weekly, done: false }), NOW)).toBe(false);
   });
 
   it('is false for a one-off task, however old', () => {
-    expect(isDueAgain(task({ done: true, dueDate: '2020-01-01' }), NOW)).toBe(false);
+    expect(isDueAgain(task({ done: true, dueDate: '2020-01-01', doneAt: at(2020, 1, 1) }), NOW)).toBe(false);
   });
 });
 
@@ -226,21 +265,5 @@ describe('isOverdue', () => {
 
   it('does not flag a task with no due date', () => {
     expect(isOverdue(task(), NOW)).toBe(false);
-  });
-});
-
-describe('reviveColumn', () => {
-  it('picks the first column that is not a done column', () => {
-    const columns = [column('To do', false, 1000), column('Doing', false, 2000), column('Done', true, 3000)];
-    expect(reviveColumn(columns)?.name).toBe('To do');
-  });
-
-  it('skips a leading done column', () => {
-    const columns = [column('Done', true, 1000), column('To do', false, 2000)];
-    expect(reviveColumn(columns)?.name).toBe('To do');
-  });
-
-  it('is undefined when every column is a done column', () => {
-    expect(reviveColumn([column('Done', true, 1000)])).toBeUndefined();
   });
 });

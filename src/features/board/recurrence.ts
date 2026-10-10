@@ -1,12 +1,14 @@
-import type { BoardColumn, Task } from '../../domain/types';
+import type { Task } from '../../domain/types';
 
 /**
  * Recurring chores.
  *
  * A recurring task is one row that comes back round, not a new row each time.
- * Completing it moves its due date to the next date on its schedule; when that
- * date arrives the same task becomes not-done again. Nothing is ever
- * duplicated, so there is no way for two clients to spawn the same chore twice.
+ * Ticking it leaves its due date alone (the round it covered) and records
+ * doneAt; its return date is worked out from the two, and when that date
+ * arrives the same task is unticked with the new due date (reviveRecurring()
+ * in actions.ts). Nothing is ever duplicated, so there is no way for two
+ * clients to spawn the same chore twice.
  *
  * The schedule counts from the task's due date, kept in recurFrom: a monthly
  * chore due on 5 July comes round on the 5th of every month, whenever it is
@@ -124,14 +126,27 @@ export function nextOccurrence(
 }
 
 /**
- * Done, recurring, and its next occurrence has come round. These are the tasks
- * to bring back.
+ * When a done task was ticked. A task ticked before doneAt existed falls back
+ * to its last change, which the migration also used.
  */
+export function doneAtOf(task: Task): Date {
+  return new Date(task.doneAt ?? task.updatedAt);
+}
+
+/**
+ * The day a done repeating task comes back: the next date on its schedule
+ * after both the round it covered and the day it was done. Undefined for an
+ * open task or a one-off.
+ */
+export function returnDate(task: Task): string | undefined {
+  if (!task.done) return undefined;
+  return nextOccurrence(task, doneAtOf(task))?.dueDate;
+}
+
+/** Done, recurring, and its return date has come round. These are the tasks to bring back. */
 export function isDueAgain(task: Task, now: Date): boolean {
-  if (!repeats(task)) return false;
-  if (!task.done) return false;
-  if (task.dueDate === undefined) return false;
-  return task.dueDate <= toIsoDate(now);
+  const date = returnDate(task);
+  return date !== undefined && date <= toIsoDate(now);
 }
 
 /**
@@ -142,9 +157,4 @@ export function isOverdue(task: Task, now: Date): boolean {
   if (task.done) return false;
   if (task.dueDate === undefined) return false;
   return task.dueDate < toIsoDate(now);
-}
-
-/** Where a revived task goes: the first column that is not a done column. */
-export function reviveColumn(columns: readonly BoardColumn[]): BoardColumn | undefined {
-  return columns.find((column) => !column.isDone);
 }
