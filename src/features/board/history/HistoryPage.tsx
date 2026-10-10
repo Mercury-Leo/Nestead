@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { History as HistoryIcon, RotateCcw } from 'lucide-react';
@@ -28,6 +28,13 @@ export function HistoryPage(): JSX.Element {
   const { rows: tasks, loaded: tasksLoaded, failed: tasksFailed } = useCollectionState(store.tasks);
   const { rows: columns, loaded: columnsLoaded, failed: columnsFailed } = useCollectionState(store.columns);
   const [who, setWho] = useState('');
+  // Tasks being restored. A second press on the same task, or on another entry
+  // of it, must not start another restore: until the first finishes the task is
+  // still missing from the board, so it would be created again. The ref is the
+  // guard, since two presses can land before a render; the state redraws the
+  // buttons as busy.
+  const inFlight = useRef(new Set<string>());
+  const [restoring, setRestoring] = useState<ReadonlySet<string>>(new Set());
 
   // Restore decides from the board's tasks and columns: with either unread it
   // would put a task back that is already there, so they must have arrived too.
@@ -43,14 +50,25 @@ export function HistoryPage(): JSX.Element {
   const onBoard = (entry: TaskCompletion): boolean => tasks.some((task) => task.id === entry.taskId && !task.done);
 
   const restore = async (entry: TaskCompletion): Promise<void> => {
-    const result = await restoreTask(store, entry, {
-      tasks,
-      columns: [...columns].sort(comparePosition),
-      entries: history.rows,
-      memberId: me.id,
-    });
-    if (result === null) return;
-    navigate('/', { state: { restored: { taskId: result.taskId, title: entry.title, column: result.column.name } } });
+    if (inFlight.current.has(entry.taskId)) return;
+    inFlight.current.add(entry.taskId);
+    setRestoring(new Set(inFlight.current));
+    try {
+      const result = await restoreTask(store, entry, {
+        tasks,
+        columns: [...columns].sort(comparePosition),
+        entries: history.rows,
+        memberId: me.id,
+      });
+      if (result !== null) {
+        navigate('/', { state: { restored: { taskId: result.taskId, title: entry.title, column: result.column.name } } });
+      }
+    } catch {
+      // A failed write is undone by the cache, as everywhere else; the button comes back to try again.
+    } finally {
+      inFlight.current.delete(entry.taskId);
+      setRestoring(new Set(inFlight.current));
+    }
   };
 
   return (
@@ -102,6 +120,7 @@ export function HistoryPage(): JSX.Element {
                       variant="ghost"
                       icon={RotateCcw}
                       aria-label={t('board.history.restoreTitle', { title: entry.title })}
+                      disabled={restoring.has(entry.taskId)}
                       onClick={() => void restore(entry)}
                     >
                       {t('board.history.restore')}

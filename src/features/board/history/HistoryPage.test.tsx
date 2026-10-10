@@ -112,6 +112,48 @@ describe('HistoryPage', () => {
     expect(host.querySelector('button[aria-label^="' + i18n.t('board.history.restore') + '"]')).toBeNull();
   });
 
+  it('ignores a second press while a Restore is under way, so a double tap makes one card', async () => {
+    await store.taskCompletions.create({ taskId: 'gone', title: 'Parcel', columnId: house.id, memberId: 'm-dana' });
+    const create = store.tasks.create.bind(store.tasks);
+    vi.spyOn(store.tasks, 'create').mockImplementation(async (row) => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return create(row);
+    });
+    const host = await render();
+    const button = host.querySelector<HTMLButtonElement>(`button[aria-label="${i18n.t('board.history.restoreTitle', { title: 'Parcel' })}"]`)!;
+
+    // Both presses land before the first Restore has finished or the page has redrawn.
+    await act(async () => {
+      button.click();
+      button.click();
+    });
+    expect(button.disabled).toBe(true);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    });
+
+    expect(await store.tasks.list()).toHaveLength(1);
+    expect(landed?.pathname).toBe('/');
+  });
+
+  it('brings the button back, with no unhandled rejection, when a Restore fails', async () => {
+    await store.taskCompletions.create({ taskId: 'gone', title: 'Parcel', columnId: house.id, memberId: 'm-dana' });
+    vi.spyOn(store.tasks, 'create').mockRejectedValueOnce(new Error('offline'));
+    const host = await render();
+    const label = i18n.t('board.history.restoreTitle', { title: 'Parcel' });
+
+    await click(host.querySelector(`button[aria-label="${label}"]`));
+
+    const button = host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
+    expect(button?.disabled).toBe(false);
+    expect(landed).toBeNull();
+
+    // And the next press works.
+    await click(button);
+    expect(await store.tasks.list()).toHaveLength(1);
+    expect(landed?.pathname).toBe('/');
+  });
+
   it('filters by who did it', async () => {
     await store.taskCompletions.create({ taskId: 'a', title: 'Mop', memberId: 'm-sam' });
     await store.taskCompletions.create({ taskId: 'b', title: 'Bins', memberId: 'm-dana' });
