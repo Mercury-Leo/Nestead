@@ -40,6 +40,8 @@ export function Board({ highlightId }: { highlightId?: string } = {}): JSX.Eleme
   const narrow = useIsNarrow();
 
   const [newColumn, setNewColumn] = useState('');
+  // The last New column was refused: its name is back in the box, and this says so.
+  const [columnFailed, setColumnFailed] = useState(false);
   // Remembered per family in this browser, so a reload keeps you where you were.
   const [savedFilter, setFilter] = useState<TaskFilter>(() =>
     parseFilter(readPreference(store.familyId, 'boardFilter')),
@@ -113,10 +115,18 @@ export function Board({ highlightId }: { highlightId?: string } = {}): JSX.Eleme
     const name = newColumn.trim();
     if (name === '') return;
     setNewColumn('');
-    await store.columns.create({
-      name,
-      position: endPosition(ordered),
-    });
+    setColumnFailed(false);
+    try {
+      await store.columns.create({
+        name,
+        position: endPosition(ordered),
+      });
+    } catch (error) {
+      console.warn('Could not add the column:', error);
+      // Back in the box to try again, unless another name was typed meanwhile.
+      setNewColumn((current) => (current === '' ? name : current));
+      setColumnFailed(true);
+    }
   };
 
   return (
@@ -201,6 +211,11 @@ export function Board({ highlightId }: { highlightId?: string } = {}): JSX.Eleme
           <button type="submit" disabled={newColumn.trim() === ''}>
             {t('board.newColumn.add')}
           </button>
+          {columnFailed && (
+            <p className="column-new-failed" role="alert">
+              {t('board.newColumn.failed')}
+            </p>
+          )}
         </form>
       </div>
 

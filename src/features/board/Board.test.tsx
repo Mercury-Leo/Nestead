@@ -404,3 +404,67 @@ describe('the icon picker', () => {
     expect(trigger(composer)?.textContent).toBe(DEFAULT_TASK_ICON);
   });
 });
+
+describe('New column', () => {
+  const box = (host: ParentNode): HTMLInputElement => host.querySelector('.column-new input') as HTMLInputElement;
+  const alert = (host: ParentNode): Element | null => host.querySelector('.column-new [role="alert"]');
+
+  async function addColumn(host: ParentNode, name: string): Promise<void> {
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(box(host), name);
+      box(host).dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await click(host.querySelector('.column-new button[type="submit"]'));
+  }
+
+  it('adds the column at the end and empties the box', async () => {
+    const host = await render();
+
+    await addColumn(host, 'Garden');
+
+    expect((await store.columns.list()).map((column) => column.name)).toEqual(['House', 'Garden']);
+    expect(box(host).value).toBe('');
+    expect(alert(host)).toBeNull();
+  });
+
+  it('keeps the name and says so, with no unhandled rejection, when the column cannot be added', async () => {
+    vi.spyOn(store.columns, 'create').mockRejectedValueOnce(new Error('offline'));
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const host = await render();
+
+    await addColumn(host, 'Garden');
+
+    expect(box(host).value).toBe('Garden');
+    expect(alert(host)?.textContent).toBe(i18n.t('board.newColumn.failed'));
+    expect((await store.columns.list()).map((column) => column.name)).toEqual(['House']);
+
+    // Trying again works and takes the message away.
+    await click(host.querySelector('.column-new button[type="submit"]'));
+    expect((await store.columns.list()).map((column) => column.name)).toEqual(['House', 'Garden']);
+    expect(box(host).value).toBe('');
+    expect(alert(host)).toBeNull();
+  });
+
+  it('does not put the name back over one typed while the failed add was on its way', async () => {
+    let refuse: () => void = () => undefined;
+    vi.spyOn(store.columns, 'create').mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          refuse = () => reject(new Error('offline'));
+        }),
+    );
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const host = await render();
+    await addColumn(host, 'Garden');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(box(host), 'Shed');
+      box(host).dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    await act(async () => refuse());
+    await flush();
+
+    expect(box(host).value).toBe('Shed');
+    expect(alert(host)?.textContent).toBe(i18n.t('board.newColumn.failed'));
+  });
+});

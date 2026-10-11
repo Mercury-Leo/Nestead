@@ -129,7 +129,8 @@
     "newColumn": {
       "placeholder": "New column",
       "label": "New column name",
-      "add": "Add column"
+      "add": "Add column",
+      "failed": "Couldn’t add the column. Try again."
     },
     "column": {
       "rename": "Rename {{name}}",
