@@ -331,9 +331,52 @@
   font-size: 0.8rem;
 }
 
-/* The icon picker (IconPicker.tsx): this device's recent picks above a line,
-   the everyday sixteen, then "More icons" opens the groups in a box of their
-   own that scrolls, so an open card stays short. */
+/* The icon picker (IconPicker.tsx): an "Icon" row like the others, its
+   button showing the icon. The choices open in a Popover, outside the card:
+   this device's recent picks above a line, the everyday sixteen, then "More
+   icons" and the groups. The popover scrolls, so the groups need no scroller
+   of their own. Its class names are global, so they reach it in <body>. */
+.icon-field {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.icon-trigger {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  padding: 0.1rem 0.35rem 0.1rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.icon-trigger:hover,
+.icon-trigger[aria-expanded='true'] {
+  border-color: var(--accent);
+}
+
+.icon-trigger svg {
+  transition: transform 0.15s;
+}
+
+.icon-trigger svg.is-open {
+  transform: rotate(180deg);
+}
+
+.icon-popover {
+  width: min(20rem, calc(100vw - 16px));
+}
+
 .icon-picker {
   display: flex;
   flex-direction: column;
@@ -363,11 +406,12 @@
 }
 
 .icon-grid button {
-  padding: 0.15rem;
+  padding: 0.25rem 0;
   border: 1px solid transparent;
-  border-radius: 0.3rem;
+  border-radius: 0.4rem;
   background: none;
-  font-size: 0.95rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
   cursor: pointer;
 }
 
@@ -407,9 +451,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 14rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .card-actions {
@@ -483,31 +524,6 @@ button.danger:hover:not(:disabled) {
 /* Shares the open card's look, but sits flush in the column. */
 .composer .composer-more {
   padding: 0.5rem 0 0;
-}
-
-/* Side by side a column stops at the window's height, and only its cards
-   shrink: the open panel, icon groups and all, would squeeze them to one. So
-   the panel stops at half the window and scrolls as one box, without a second
-   scroller for the groups inside it. Stacked, the page scrolls instead.
-   A scroll box clips what is drawn outside it, so 5px of room on each side,
-   given back by the margin, keeps the focus ring (3px, 2px out) whole. */
-.board:not(.board-stacked) .composer-more {
-  max-height: 50vh;
-  margin-inline: -5px;
-  padding: 0.5rem 5px 5px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* It is a flex column: capped, its fields would shrink (the description to a
-   sliver) rather than scroll. */
-.board:not(.board-stacked) .composer-more > * {
-  flex-shrink: 0;
-}
-
-.board:not(.board-stacked) .composer-more .icon-more {
-  max-height: none;
-  overflow-y: visible;
 }
 
 .composer-row input,

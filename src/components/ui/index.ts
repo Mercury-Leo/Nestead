@@ -10,6 +10,7 @@ export { Chip, RemovableChip, Tag } from './Chip';
 export { Checkbox, RadioList, Segmented, Stepper, Switch, TextField } from './controls';
 export type { SegmentOption } from './controls';
 export { EmptyState } from './EmptyState';
+export { Popover } from './Popover';
 export { BackArrow, ForwardArrow, ForwardChevron, SignOutIcon } from './icons';
 export { SelectButton } from './SelectButton';
 export { Sheet } from './Sheet';
