@@ -161,6 +161,30 @@ describe('CachedCollection', () => {
     expect(titles(cache)).toEqual(['Bins', 'Dishes']);
   });
 
+  it('says when no write is on its way, refused ones included, for a reload to wait on', async () => {
+    // A fresh copy of the module: writes other cases leave unfinished count in this one's.
+    vi.resetModules();
+    const { CachedCollection, writesSettled } = await import('./cache');
+    const backend = controlledSource([task('1', 'Bins'), task('2', 'Dishes')]);
+    const cache = new CachedCollection(backend.source);
+    cache.subscribe(() => undefined);
+    await backend.finishRead();
+    await writesSettled();
+
+    const update = cache.update('1', { title: 'Recycling' });
+    const remove = cache.remove('2').catch(() => undefined);
+    let settled = false;
+    void writesSettled().then(() => (settled = true));
+
+    await backend.finishWrite();
+    await update;
+    expect(settled).toBe(false);
+    await backend.finishWrite(false);
+    await remove;
+    await flush();
+    expect(settled).toBe(true);
+  });
+
   it('keeps a pending edit on top of a read that lands before the write does', async () => {
     const backend = controlledSource([task('1', 'Bins')]);
     const cache = new CachedCollection(backend.source);

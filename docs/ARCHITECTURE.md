@@ -493,5 +493,10 @@ swapped before.
   signed-in member.
 - **No offline use.** There is no service worker: the app installs to a home
   screen (`public/manifest.webmanifest`) but does not load offline.
+- **A deploy reaches an open tab late.** A tab compares its build with
+  `/version.json` and reloads only when that loses nothing: on its next page
+  change, or when shown again before anyone touches it (`src/app/update.ts`).
+  Until then it runs the old build, so a schema change the old build cannot
+  write against goes in after the deploy (`supabase/README.md`).
 - **No prices.** Adding a table before the feature that uses it is a guess you
   later have to migrate, so costs wait for a feature that needs them.

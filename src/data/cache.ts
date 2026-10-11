@@ -59,6 +59,18 @@ const open = new Set<Rereadable>();
 /** Open collections whose latest read failed. */
 const failing = new Set<Rereadable>();
 let watchingComeBack = false;
+/** Writes on their way to the backend, in every collection. */
+let writing = 0;
+const onSettled: Array<() => void> = [];
+
+/**
+ * Resolves once no write is on its way to the backend, at once if none is. A
+ * reload waits for this so it cuts no write off (../app/update.ts).
+ */
+export function writesSettled(): Promise<void> {
+  if (writing === 0) return Promise.resolve();
+  return new Promise((resolve) => onSettled.push(resolve));
+}
 
 /**
  * When the connection or the tab comes back, failed collections try again at
@@ -202,6 +214,7 @@ export class CachedCollection<T extends Base> implements Collection<T> {
       this.edits.add(edit);
       this.emit();
     }
+    writing += 1;
     try {
       const result = await run();
       const landed = settle(result);
@@ -211,6 +224,8 @@ export class CachedCollection<T extends Base> implements Collection<T> {
     } finally {
       if (edit !== null) this.edits.delete(edit);
       this.emit();
+      writing -= 1;
+      if (writing === 0) for (const resolve of onSettled.splice(0)) resolve();
     }
   }
 

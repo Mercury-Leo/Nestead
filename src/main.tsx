@@ -8,6 +8,7 @@ import '@fontsource/hanken-grotesk/600.css';
 import '@fontsource/hanken-grotesk/700.css';
 import './styles/fonts.css';
 import { App } from './app/App';
+import { UpdateWatcher } from './app/UpdateWatcher';
 import { captureInvite } from './auth/invite';
 import { SessionProvider } from './auth/session';
 import { LocaleProvider, localeReady } from './i18n';
@@ -32,6 +33,7 @@ void localeReady.then(() => {
     <LocaleProvider>
       <ThemeProvider>
         <BrowserRouter>
+          <UpdateWatcher />
           <SessionProvider>
             <App />
           </SessionProvider>

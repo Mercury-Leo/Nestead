@@ -13,5 +13,10 @@
 /manifest.webmanifest
   Cache-Control: public, max-age=86400
 
+# Read by open tabs to learn that a deploy has happened (src/app/update.ts):
+# never kept anywhere, so the answer is always this deploy's.
+/version.json
+  Cache-Control: no-store
+
 # index.html and client routes keep the default, so a deploy is picked up on
 # the next launch.

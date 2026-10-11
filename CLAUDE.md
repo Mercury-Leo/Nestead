@@ -21,11 +21,12 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 - Places API: the same shape in `server/places/` (`functions/api/places.ts`): address suggestions from an `AddressProvider` chosen in `server/places/provider.ts` (Photon today); the browser calls only `/api/places`.
 - AI API: the same shape in `server/ai/` (`functions/api/ai/[[path]].ts`): one model call per read, validated into `ImportedRecipe`, never acted on; Supabase is called with the member's own token; family keys are encrypted by the server (`AI_KEY_SECRET`).
 - Text: UI strings come from `t()`, with keys typed from `src/i18n/locales/en.json`.
+- Deploys: every build carries an id, in the bundle and in `/version.json` (`buildVersion()` in `vite.config.ts`); an open tab reloads onto a new deploy at a moment that loses nothing (`src/app/update.ts`). Not at once, so a migration that breaks the old build still follows the deploy (`supabase/README.md`).
 
 ## Where things live
 | Folder | What | Guide |
 | --- | --- | --- |
-| `src/app/` | Shell, sections (sidebar, tab bar with More, page pills), routes | [README](src/app/README.md) |
+| `src/app/` | Shell, sections (sidebar, tab bar with More, page pills), routes, reloading onto a new deploy | [README](src/app/README.md) |
 | `src/auth/` | Demo session and `AccountSession` (any backend), sign-in, invite links | [README](src/auth/README.md) |
 | `src/data/` | `DataStore` and `Account` interfaces, contract, cache, local and Supabase backends | [README](src/data/README.md) |
 | `src/domain/` | Types, ordering, pure kitchen logic, Shows filtering and the refresh patch | [README](src/domain/README.md) |

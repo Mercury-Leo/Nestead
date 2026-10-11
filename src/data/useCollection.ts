@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { Base } from '../domain/types';
-import { cacheOf } from './cache';
+import { cacheOf, writesSettled } from './cache';
 import type { Rows } from './cache';
 import type { Collection } from './types';
 
@@ -33,6 +33,9 @@ export function useCollection<T extends Base>(collection: Collection<T>): T[] {
 export function preloadCollection<T extends Base>(collection: Collection<T>): void {
   cacheOf(collection).preload();
 }
+
+/** Resolves once no write is on its way to the backend, in any collection (cache.ts). */
+export { writesSettled };
 
 /**
  * Reads again now those of these collections whose read failed, for a

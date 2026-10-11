@@ -88,6 +88,25 @@ function apiRoutes(env: Record<string, string>): Plugin {
 }
 
 /**
+ * Gives every build an id: in the bundle as __APP_VERSION__, and beside it as
+ * version.json, which a tab left open across a deploy reads to learn that it
+ * runs an old build and should reload (src/app/update.ts). Builds only: the
+ * dev server and tests have neither, and the check stays off there. The id is
+ * when the build ran, so a rebuild of the same commit also counts as new.
+ */
+function buildVersion(): Plugin {
+  const version = new Date().toISOString();
+  return {
+    name: 'nestead-build-version',
+    apply: 'build',
+    config: () => ({ define: { __APP_VERSION__: JSON.stringify(version) } }),
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: `${JSON.stringify({ version })}\n` });
+    },
+  };
+}
+
+/**
  * Refuses a production build that would ship demo mode.
  *
  * VITE_BACKEND is inlined at build time and falls back to "local" when unset,
@@ -121,7 +140,7 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    plugins: [react(), apiRoutes(env)],
+    plugins: [react(), apiRoutes(env), buildVersion()],
     build: {
       rollupOptions: {
         output: {
