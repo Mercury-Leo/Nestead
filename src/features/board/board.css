@@ -485,6 +485,31 @@ button.danger:hover:not(:disabled) {
   padding: 0.5rem 0 0;
 }
 
+/* Side by side a column stops at the window's height, and only its cards
+   shrink: the open panel, icon groups and all, would squeeze them to one. So
+   the panel stops at half the window and scrolls as one box, without a second
+   scroller for the groups inside it. Stacked, the page scrolls instead.
+   A scroll box clips what is drawn outside it, so 5px of room on each side,
+   given back by the margin, keeps the focus ring (3px, 2px out) whole. */
+.board:not(.board-stacked) .composer-more {
+  max-height: 50vh;
+  margin-inline: -5px;
+  padding: 0.5rem 5px 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* It is a flex column: capped, its fields would shrink (the description to a
+   sliver) rather than scroll. */
+.board:not(.board-stacked) .composer-more > * {
+  flex-shrink: 0;
+}
+
+.board:not(.board-stacked) .composer-more .icon-more {
+  max-height: none;
+  overflow-y: visible;
+}
+
 .composer-row input,
 .column-new input {
   flex: 1;

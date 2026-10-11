@@ -5,6 +5,7 @@ import { useSession } from '../../auth/session';
 import type { BoardColumn, Task } from '../../domain/types';
 import { endPosition } from './actions';
 import { DEFAULT_TASK_ICON } from './icons';
+import { IconPicker } from './IconPicker';
 import { REPEAT_OPTIONS, repeats, schedulePatch } from './recurrence';
 import { DueDateInput } from './DueDateInput';
 
@@ -16,7 +17,8 @@ interface TaskComposerProps {
 
 /**
  * Adds a task to a column. A title is all it asks for; the arrow opens the
- * rest (description, due date, repeat, who it is for) for when it matters.
+ * rest (description, due date, repeat, who it is for, its icon) for when it
+ * matters.
  */
 export function TaskComposer({ column, tasks }: TaskComposerProps): JSX.Element {
   const { t } = useTranslation();
@@ -27,6 +29,7 @@ export function TaskComposer({ column, tasks }: TaskComposerProps): JSX.Element 
   const [dueDate, setDueDate] = useState<string>();
   const [repeatKey, setRepeatKey] = useState<string>('never');
   const [assigneeId, setAssigneeId] = useState('');
+  const [icon, setIcon] = useState<string>(DEFAULT_TASK_ICON);
 
   const repeat = REPEAT_OPTIONS.find((option) => option.key === repeatKey);
   const repeating = repeat !== undefined && repeats({ recurEveryDays: repeat.days, recurEveryMonths: repeat.months });
@@ -36,7 +39,7 @@ export function TaskComposer({ column, tasks }: TaskComposerProps): JSX.Element 
     if (trimmed === '') return;
     const task = {
       title: trimmed,
-      icon: DEFAULT_TASK_ICON,
+      icon,
       description: description.trim() === '' ? undefined : description,
       columnId: column.id,
       position: endPosition(tasks),
@@ -52,6 +55,7 @@ export function TaskComposer({ column, tasks }: TaskComposerProps): JSX.Element 
     setDueDate(undefined);
     setRepeatKey('never');
     setAssigneeId('');
+    setIcon(DEFAULT_TASK_ICON);
     setMore(false);
     await store.tasks.create(task);
   };
@@ -127,6 +131,8 @@ export function TaskComposer({ column, tasks }: TaskComposerProps): JSX.Element 
               ))}
             </select>
           </label>
+
+          <IconPicker value={icon} onPick={setIcon} />
         </div>
       )}
     </form>

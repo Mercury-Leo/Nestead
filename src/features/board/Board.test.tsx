@@ -4,12 +4,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionContext } from '../../auth/session';
 import type { Session } from '../../auth/session';
-import { createLocalStore, readDevicePreference, writePreference } from '../../data/local/localStore';
+import { createLocalStore, readDevicePreference, writeDevicePreference, writePreference } from '../../data/local/localStore';
 import type { DataStore } from '../../data/types';
 import type { BoardColumn, Member, NewRow, Task } from '../../domain/types';
 import { LocaleProvider, i18n } from '../../i18n';
 import { Board } from './Board';
-import { TASK_ICONS, TASK_ICON_GROUPS } from './icons';
+import { DEFAULT_TASK_ICON, TASK_ICONS, TASK_ICON_GROUPS } from './icons';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -314,5 +314,39 @@ describe('the icon picker', () => {
     await click(iconButton(row as Element, '🧽'));
     expect((await store.tasks.list()).find((task) => task.title === 'Cat food')?.icon).toBe('🧽');
     expect(readDevicePreference('recentTaskIcons')).toEqual(['🧽', '🐈']);
+  });
+
+  it('lets a new task start on any icon in the composer, then goes back to the default', async () => {
+    writeDevicePreference('recentTaskIcons', ['🐈']);
+    const host = await render();
+    const composer = host.querySelector('form.composer') as HTMLFormElement;
+    const openMore = (): Promise<void> => click(composer.querySelector('button.composer-more-toggle'));
+    await openMore();
+
+    // The same picker as a card's: recent picks, then the everyday icons, the default chosen.
+    expect(icons(recentRow(composer) as Element, '')).toEqual(['🐈']);
+    expect(iconButton(composer, DEFAULT_TASK_ICON)?.getAttribute('aria-pressed')).toBe('true');
+
+    await click(moreToggle(composer));
+    await click(iconButton(composer, '🧽'));
+
+    expect(iconButton(composer, '🧽')?.getAttribute('aria-pressed')).toBe('true');
+    // Its buttons sit in the form, but a pick never adds the task.
+    expect(await store.tasks.list()).toEqual([]);
+
+    await act(async () => {
+      const input = composer.querySelector('input') as HTMLInputElement;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, 'Scrub the sink');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await click(composer.querySelector('button[type="submit"]'));
+
+    expect((await store.tasks.list()).map((task) => [task.title, task.icon])).toEqual([['Scrub the sink', '🧽']]);
+    expect(readDevicePreference('recentTaskIcons')).toEqual(['🧽', '🐈']);
+
+    // Ready for the next one: the panel closed and the default back.
+    expect(composer.querySelector('.icon-picker')).toBeNull();
+    await openMore();
+    expect(iconButton(composer, DEFAULT_TASK_ICON)?.getAttribute('aria-pressed')).toBe('true');
   });
 });
