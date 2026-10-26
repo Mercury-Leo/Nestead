@@ -110,6 +110,12 @@ export interface Account {
    * Calls back with the signed-in user's id, or null, now and after every
    * change. `recovery` is true when the change came from a password-reset link.
    * Repeat calls for the same user are allowed (token refresh, say).
+   *
+   * Signed in means this device holds the person's session, even while it
+   * cannot be renewed for want of a connection: then reads fail and are
+   * retried until it renews. Null means signed out, or a session the backend
+   * refused. The first call must come in bounded time, even over a
+   * connection that hangs, since the app shows Loading until then.
    */
   watchUser(onChange: (userId: string | null, recovery: boolean) => void): Unsubscribe;
   /** True once, if the page was opened from a password-reset link. Read before watchUser. */

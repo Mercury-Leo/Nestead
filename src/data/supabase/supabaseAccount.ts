@@ -1,8 +1,9 @@
+import { isAuthRetryableFetchError } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Account, Family } from '../types';
 import { toAiStatus } from './aiStatus';
 import { requireSession } from './signedIn';
-import { getRememberMe, getSupabaseClient, setRememberMe, takeLinkError, takeRecoveryLink } from './supabaseClient';
+import { getRememberMe, getSupabaseClient, setRememberMe, storedUserId, takeLinkError, takeRecoveryLink } from './supabaseClient';
 import { createSupabaseStore } from './supabaseStore';
 
 /**
@@ -19,7 +20,10 @@ function fail(error: { message: string } | null): void {
   if (error !== null) throw new Error(error.message);
 }
 
-export function createSupabaseAccount(client: SupabaseClient = getSupabaseClient()): Account {
+export function createSupabaseAccount(
+  client: SupabaseClient = getSupabaseClient(),
+  storedUser: () => string | null = storedUserId,
+): Account {
   async function readFamily(familyId: string): Promise<Family> {
     await requireSession(client);
     const row = await client.from('families').select('id, name, join_code').eq('id', familyId).single();
@@ -30,11 +34,22 @@ export function createSupabaseAccount(client: SupabaseClient = getSupabaseClient
   return {
     watchUser(onChange) {
       let active = true;
-      void client.auth.getSession().then(({ data }) => {
-        if (active) onChange(data.session?.user.id ?? null, false);
-      });
+      // A session this device holds but cannot renew for want of a connection
+      // is still this person's: their reads fail and are retried until it
+      // renews, rather than sending them to sign in again. A refresh the
+      // server refused is not retryable, so that still signs them out.
+      void client.auth.getSession().then(
+        ({ data, error }) => {
+          if (active) onChange(data.session?.user.id ?? (isAuthRetryableFetchError(error) ? storedUser() : null), false);
+        },
+        () => {
+          if (active) onChange(storedUser(), false);
+        },
+      );
       const { data } = client.auth.onAuthStateChange((event, session) => {
-        if (active) onChange(session?.user.id ?? null, event === 'PASSWORD_RECOVERY');
+        // The first answer is getSession()'s above. INITIAL_SESSION repeats it,
+        // but as null while a refresh is failing.
+        if (active && event !== 'INITIAL_SESSION') onChange(session?.user.id ?? null, event === 'PASSWORD_RECOVERY');
       });
       return () => {
         active = false;

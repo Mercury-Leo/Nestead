@@ -5,8 +5,8 @@ Translation and locale: the i18next instance, the provider that owns language an
 | File | Responsibility |
 | --- | --- |
 | `index.ts` | The public surface: screens import from `../i18n`, never the files below. |
-| `i18n.ts` (+ `i18n.test.ts`) | i18next with English bundled; `LOCALES`, `loadLocale()`, `localeReady`, `readLocale()`. |
-| `LocaleProvider.tsx` | `LocaleProvider` and `useLocale()`: owns `lang` and `dir` on `<html>`; `setLocale()` loads, then switches. |
+| `i18n.ts` (+ `i18n.test.ts`) | i18next with English bundled; `LOCALES`, `loadLocale()`, `localeReady` (at most `LOCALE_WAIT_MS`), `readLocale()`. |
+| `LocaleProvider.tsx` (+ `LocaleProvider.test.tsx`) | `LocaleProvider` and `useLocale()`: owns `lang` and `dir` on `<html>`; `setLocale()` loads, then switches; switches to the stored language when its late strings arrive. |
 | `format.ts` | `formatNumber`, `formatDate`, `formatRelative`, `daysFromToday`, `formatList`, `formatListParts`, `localizeDigits`, `isolateNumber`. |
 | `i18next.d.ts` | Types `t()` keys from `locales/en.json`, so an unknown key fails to compile. |
 | `literals.test.ts` | Fails on English interface text written straight into code. |
@@ -14,7 +14,7 @@ Translation and locale: the i18next instance, the provider that owns language an
 | `locales/he.json` | Hebrew strings, a separate chunk fetched on first use. |
 
 ## How it works
-- Other locales load through `LOADERS` (`i18n.ts`); `main.tsx` waits for `localeReady`, so a Hebrew page never shows English first.
+- Other locales load through `LOADERS` (`i18n.ts`); `main.tsx` waits for `localeReady`, so a Hebrew page never shows English first. It waits `LOCALE_WAIT_MS` (3 s) at most: over a connection that hung the page stayed blank for good (2026-10-27). Past that it draws in English, left to right, and `LocaleProvider` switches to the stored language once its strings arrive, unless a language was chosen meanwhile.
 - The locale is the person's choice per device, under the device preference `locale`; there is no language detector (`i18n.ts`).
 - `index.html` sets `lang` and `dir` from the same key before first paint; `LocaleProvider` then takes over (`LocaleProvider.tsx`).
 - In right-to-left locales `formatList()` and `isolateNumber()` add Unicode isolates, so English names and "1½" keep their order (`format.ts`).
@@ -36,4 +36,4 @@ Translation and locale: the i18next instance, the provider that owns language an
 - A link in a string is `<a>…</a>`, with `components={{ a: <Link to=… /> }}` or `a: <a href=… />`, never `<link>`: `<Trans>` parses strings with html-parse-stringify, which treats `link`, like `br` or `img`, as an HTML void element, so the words land after an empty anchor (`board.invite`, `import.writeYourself`).
 
 ## Tests
-`i18n.test.ts`: every key the source uses exists, plural forms, no string wraps words in an HTML void element such as `<link>`, each locale file matches `en.json` (keys, placeholders, tags), `index.html` agrees with the provider, right-to-left formatting. `literals.test.ts`: the untranslated-text net and a check that it still catches strays.
+`i18n.test.ts`: every key the source uses exists, plural forms, no string wraps words in an HTML void element such as `<link>`, each locale file matches `en.json` (keys, placeholders, tags), `index.html` agrees with the provider, right-to-left formatting. `literals.test.ts`: the untranslated-text net and a check that it still catches strays. `LocaleProvider.test.tsx`: late Hebrew strings switch the page to Hebrew and right to left, unless English was chosen first.

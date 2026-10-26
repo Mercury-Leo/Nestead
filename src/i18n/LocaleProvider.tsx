@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { writeDevicePreference } from '../data/local/localStore';
 import { DEFAULT_LOCALE, LOCALE_PREFERENCE, i18n, loadLocale, localeInfo, readLocale } from './i18n';
@@ -19,13 +19,33 @@ const LocaleContext = createContext<LocaleValue | null>(null);
  * this keeps them, and i18next's language, matched to the choice.
  */
 export function LocaleProvider({ children }: { children: ReactNode }): JSX.Element {
-  // English if the stored choice's strings could not be fetched (main.tsx
-  // waited for them), rather than right to left with English words.
+  // English if the stored choice's strings could not be fetched or are late
+  // (main.tsx waited for them), rather than right to left with English words.
   const [locale, setLocaleState] = useState(() => {
     const stored = readLocale();
     return i18n.hasResourceBundle(stored, 'translation') ? stored : DEFAULT_LOCALE;
   });
   const info = localeInfo(locale);
+
+  // main.tsx stops waiting for the stored choice's strings after
+  // LOCALE_WAIT_MS, so they can arrive after the first render. Switch to them
+  // then, unless a language was chosen meanwhile. Runs once, for the first
+  // render's locale.
+  const chosen = useRef(false);
+  useEffect(() => {
+    const stored = readLocale();
+    if (locale === stored) return undefined;
+    let live = true;
+    loadLocale(stored).then(
+      () => {
+        if (live && !chosen.current) setLocaleState(stored);
+      },
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = info.code;
@@ -36,6 +56,7 @@ export function LocaleProvider({ children }: { children: ReactNode }): JSX.Eleme
   // The strings arrive before the switch, so the page never shows the new
   // direction with the old language.
   const setLocale = useCallback((code: string) => {
+    chosen.current = true;
     const next = localeInfo(code).code;
     loadLocale(next).then(
       () => {

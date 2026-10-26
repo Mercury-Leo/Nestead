@@ -30,7 +30,8 @@ startOfflineCopy();
 const container = document.getElementById('root');
 if (container === null) throw new Error('#root is missing from index.html');
 
-// Only waits when the chosen language is not English and not yet fetched.
+// Only waits when the chosen language is not English and not yet fetched, and
+// then for LOCALE_WAIT_MS at most (src/i18n/i18n.ts).
 void localeReady.then(() => {
   createRoot(container).render(
     <LocaleProvider>

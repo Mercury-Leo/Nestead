@@ -84,10 +84,21 @@ export async function loadLocale(code: string): Promise<void> {
 }
 
 /**
- * Settles once the stored locale's strings are in memory. main.tsx renders
- * after it, so a Hebrew page never shows English first. If they cannot be
- * fetched the page renders anyway, in English.
+ * How long main.tsx waits for the stored locale's strings before drawing in
+ * English: a connection that hung left the page blank for good (2026-10-27).
  */
-export const localeReady: Promise<void> = loadLocale(initialLocale).catch((error: unknown) => {
-  console.warn('Could not load the chosen language:', error);
-});
+export const LOCALE_WAIT_MS = 3_000;
+
+/**
+ * Settles once the stored locale's strings are in memory, or after
+ * LOCALE_WAIT_MS. main.tsx renders after it, so a Hebrew page never shows
+ * English first while the strings are on their way. If they cannot be fetched
+ * the page renders in English; if they are only late, LocaleProvider switches
+ * to them when they arrive.
+ */
+export const localeReady: Promise<void> = Promise.race([
+  loadLocale(initialLocale).catch((error: unknown) => {
+    console.warn('Could not load the chosen language:', error);
+  }),
+  new Promise<void>((resolve) => setTimeout(resolve, LOCALE_WAIT_MS)),
+]);

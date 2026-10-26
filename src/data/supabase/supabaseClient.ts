@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { withTimeLimits } from './timeLimits';
 
 /**
  * The browser's Supabase client, built from the VITE_* config.
@@ -53,6 +54,31 @@ const sessionStore = {
   },
 };
 
+/**
+ * Where supabase-js keeps the session. It is the name supabase-js would pick
+ * itself, so sessions stored before it was set here still count.
+ */
+function sessionKey(url: string): string {
+  return `sb-${new URL(url).hostname.split('.')[0]}-auth-token`;
+}
+
+/**
+ * The user of the session this device holds, whether or not its token is
+ * still fresh; null when it holds none. getSession() answers null while a
+ * refresh is failing, so this reads the stored session itself, which carries
+ * its user.
+ */
+export function storedUserId(url: string | undefined = import.meta.env.VITE_SUPABASE_URL): string | null {
+  if (url === undefined || url === '') return null;
+  try {
+    const stored = sessionStore.getItem(sessionKey(url));
+    const id = stored === null ? undefined : (JSON.parse(stored) as { user?: { id?: unknown } } | null)?.user?.id;
+    return typeof id === 'string' ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 let recoveryLink = false;
 let linkError: string | null = null;
 
@@ -100,6 +126,11 @@ export function getSupabaseClient(): SupabaseClient {
   }
 
   readEmailLink();
-  client = createClient(url, key, { auth: { storage: sessionStore } });
+  client = createClient(url, key, {
+    auth: { storage: sessionStore, storageKey: sessionKey(url) },
+    // A launch over a connection that hangs must end in a failure that is
+    // retried, not wait for good (timeLimits.ts).
+    global: { fetch: withTimeLimits((input, init) => fetch(input, init)) },
+  });
   return client;
 }
