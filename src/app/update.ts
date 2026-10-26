@@ -1,10 +1,12 @@
 import { writesSettled } from '../data/useCollection';
+import { keepLatestBuild } from './offline';
 
 /**
  * Reloads a tab left open across a deploy, so it stops running the old build.
  *
- * Nothing else would: there is no service worker, and a phone keeps a tab or a
- * home-screen app alive for days. An old build carries on until a deploy
+ * Nothing else would: the service worker (shellCache.ts) answers only a
+ * launch or reload, and a phone keeps a tab or a home-screen app alive for
+ * days. An old build carries on until a deploy
  * changes the database under it, and then its writes fail. On 2026-10-11 a
  * phone still on the build from before the board's done-tasks migration could
  * not add a column: it sent a field the migration had dropped.
@@ -20,8 +22,9 @@ import { writesSettled } from '../data/useCollection';
  *     tab being shown, the connection coming back or a page change, nothing
  *     has been pressed or typed since then, and no text field holds text.
  *
- * Either way it first waits for writes on their way to the backend, for up
- * to WRITE_WAIT_MS. It
+ * Either way it first waits for writes on their way to the backend, and for
+ * the service worker to keep the new build (offline.ts), for up to
+ * WRITE_WAIT_MS. It
  * reloads at most once for a given build, so a server still sending the old
  * page cannot keep reloading the tab.
  */
@@ -32,7 +35,7 @@ export const CHECK_GAP_MS = 60_000;
 /** A check this often while the tab stays in view. */
 export const CHECK_EVERY_MS = 15 * 60_000;
 
-/** The longest a reload waits for writes on their way: one that hangs must not keep the old build forever. */
+/** The longest a reload waits for writes on their way and the new build's download: one that hangs must not keep the old build forever. */
 export const WRITE_WAIT_MS = 10_000;
 
 /** The build this tab last reloaded for, kept for the tab across the reload. */
@@ -49,6 +52,12 @@ export interface UpdateWatchOptions {
   reload?: () => void;
   /** Resolves once no write is on its way. */
   settled?: () => Promise<void>;
+  /**
+   * Resolves once the service worker keeps the server's build, so the reload
+   * opens it from there rather than racing the worker's wait on a slow
+   * connection (shellCache.ts).
+   */
+  download?: () => Promise<void>;
 }
 
 export interface UpdateWatch {
@@ -62,6 +71,7 @@ export function watchForUpdates({
   latest = readLatest,
   reload = () => window.location.reload(),
   settled = writesSettled,
+  download = keepLatestBuild,
 }: UpdateWatchOptions): UpdateWatch {
   /** The other build the server has, once a check has found one. */
   let waiting: string | null = null;
@@ -92,7 +102,8 @@ export function watchForUpdates({
     // Recorded first: without it a reload could be the start of a loop.
     if (!writeReloadedFor(version)) return;
     reloading = true;
-    void Promise.race([settled(), new Promise((resolve) => setTimeout(resolve, WRITE_WAIT_MS))]).then(reload);
+    const ready = Promise.all([settled(), download().catch(() => undefined)]);
+    void Promise.race([ready, new Promise((resolve) => setTimeout(resolve, WRITE_WAIT_MS))]).then(reload);
   };
 
   const reloadIfIdle = (): void => {

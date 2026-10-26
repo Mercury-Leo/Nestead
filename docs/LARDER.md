@@ -116,8 +116,8 @@ placeholder, stars, badges, match bar, status marker, step text).
   covered peanuts and tree nuts; peanuts now have their own allergy switch.
   A profile saved before the split keeps peanuts covered until the family sets
   that switch, so nobody loses a warning they had.
-- **Not built:** offline use (there is no service worker; the app does install
-  to a home screen through `public/manifest.webmanifest`), Playwright
+- **Not built:** offline data (a service worker opens the page itself with no
+  connection, `src/app/shellCache.ts`, but rows come from the backend), Playwright
   end-to-end tests and the screenshot comparison. Verified instead by unit tests
   and by walking each screen at 360, 375, 768, 1024, 1280 and 1440px.
 

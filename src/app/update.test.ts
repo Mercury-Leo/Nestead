@@ -253,6 +253,40 @@ describe('watchForUpdates', () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
+  it("waits for the service worker to keep the new build before reloading, and for writes too", async () => {
+    let downloaded: () => void = () => undefined;
+    let written: () => void = () => undefined;
+    const download = vi.fn(() => new Promise<void>((resolve) => (downloaded = resolve)));
+    start({ download, settled: () => new Promise<void>((resolve) => (written = resolve)) });
+
+    await hideAndShow();
+    expect(download).toHaveBeenCalled();
+
+    downloaded();
+    await settle();
+    expect(reload).not.toHaveBeenCalled();
+
+    written();
+    await settle();
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('reloads anyway once the download has hung for WRITE_WAIT_MS, or at once when it fails', async () => {
+    start({ download: () => new Promise<void>(() => undefined) });
+    await hideAndShow();
+    await settle(WRITE_WAIT_MS - 1);
+    expect(reload).not.toHaveBeenCalled();
+    await settle(1);
+    expect(reload).toHaveBeenCalledTimes(1);
+
+    watch?.stop();
+    sessionStorage.clear();
+    reload.mockReset();
+    start({ download: () => Promise.reject(new Error('No worker')) });
+    await hideAndShow();
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
   it('stops listening when stopped', async () => {
     const latest = vi.fn(async () => 'v2');
     start({ latest }).stop();

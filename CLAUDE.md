@@ -22,11 +22,12 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 - AI API: the same shape in `server/ai/` (`functions/api/ai/[[path]].ts`): one model call per read, validated into `ImportedRecipe`, never acted on; Supabase is called with the member's own token; family keys are encrypted by the server (`AI_KEY_SECRET`).
 - Text: UI strings come from `t()`, with keys typed from `src/i18n/locales/en.json`.
 - Deploys: every build carries an id, in the bundle and in `/version.json` (`buildVersion()` in `vite.config.ts`); an open tab reloads onto a new deploy at a moment that loses nothing (`src/app/update.ts`). Not at once, so a migration that breaks the old build still follows the deploy (`supabase/README.md`).
+- Launch: a service worker (`src/app/sw.ts`, built to `/sw.js`, builds only) keeps the last page that opened and its start files; a launch opens the server's page if it and its files arrive within 4 s, else that copy, so a hung connection is never a white screen (`src/app/shellCache.ts`).
 
 ## Where things live
 | Folder | What | Guide |
 | --- | --- | --- |
-| `src/app/` | Shell, sections (sidebar, tab bar with More, page pills), routes, reloading onto a new deploy | [README](src/app/README.md) |
+| `src/app/` | Shell, sections (sidebar, tab bar with More, page pills), routes, reloading onto a new deploy, the service worker | [README](src/app/README.md) |
 | `src/auth/` | Demo session and `AccountSession` (any backend), sign-in, invite links | [README](src/auth/README.md) |
 | `src/data/` | `DataStore` and `Account` interfaces, contract, cache, local and Supabase backends | [README](src/data/README.md) |
 | `src/domain/` | Types, ordering, pure kitchen logic, Shows filtering and the refresh patch | [README](src/domain/README.md) |
@@ -68,6 +69,7 @@ Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, s
 - `src/features/larder/seed/webIndex.ts` is production code (the Search page's web recipes, and "Search online"'s fallback without a key), not demo data.
 - Hebrew ingredient names live apart from the catalog, in `src/domain/kitchen/hebrewNames.ts`, keyed by catalog id: a new catalog item needs its Hebrew names there too. A recipe whose lines mostly match nothing (another language) gets no diet verdict in the import preview (`mostlyUnrecognised()`).
 - Don't add `StrictMode`: `src/main.tsx` leaves it out so the demo seed does not run twice.
+- The Browser pane cannot register service workers: check `/sw.js` on a build in headless Chrome (`src/app/README.md`).
 - `index.html` reads the theme and locale preferences before React; keep its keys in step with `src/components/theme/theme.tsx` and `src/i18n/i18n.ts`.
 - Auth screens take the `Account` as a prop from `AccountSession`; never reach for a backend client in a screen.
 - Without a session supabase-js sends the publishable key instead, and RLS answers reads with no rows and no error. Supabase reads call `requireSession()` first so they fail and get retried instead (`src/data/supabase/signedIn.ts`).

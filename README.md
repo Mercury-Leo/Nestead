@@ -214,8 +214,9 @@ from the build.
 - **Last write wins.** No merge, no conflict detection.
 - **The demo syncs within one browser.** The `storage` event reaches other tabs,
   not other devices; with Supabase, changes reach every member live.
-- **No offline use.** The app installs to a phone's home screen but has no
-  service worker.
+- **The page opens offline, the data does not.** Once the app has opened on a
+  device, a service worker keeps a copy of it, so a launch with no connection,
+  or one that hangs, opens within 4 s. Family data still comes from the backend.
 - **No prices.** Shopping lists have quantities, not costs.
 - **Two languages of ingredients.** The catalog matches English and Hebrew
   names (`src/domain/kitchen/hebrewNames.ts`); a recipe in any other language

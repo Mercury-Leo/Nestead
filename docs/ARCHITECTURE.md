@@ -491,8 +491,12 @@ swapped before.
 - **Demo sync is same-browser only.** The `storage` event reaches other tabs on
   the same device, not other devices. With Supabase, realtime reaches every
   signed-in member.
-- **No offline use.** There is no service worker: the app installs to a home
-  screen (`public/manifest.webmanifest`) but does not load offline.
+- **The page opens offline, the data does not.** A service worker
+  (`src/app/sw.ts`) keeps the last page that opened and the files it starts
+  with. A launch opens the server's page when that and its files arrive within
+  4 s, and the kept copy otherwise (`src/app/shellCache.ts`), so a connection
+  that hangs no longer leaves a white screen. Rows still come from the backend,
+  so with no connection the screens show Loading or LoadFailed.
 - **A deploy reaches an open tab late.** A tab compares its build with
   `/version.json` and reloads only when that loses nothing: on its next page
   change, or when shown again before anyone touches it (`src/app/update.ts`).

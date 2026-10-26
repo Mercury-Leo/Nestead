@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import { lookup } from 'node:dns/promises';
 import type { IncomingMessage } from 'node:http';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 import type { Connect, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -107,6 +108,28 @@ function buildVersion(): Plugin {
 }
 
 /**
+ * Builds src/app/sw.ts to /sw.js, the service worker that opens the app from a
+ * kept copy when the network hangs (src/app/shellCache.ts). The browser fetches a
+ * worker by a fixed name and runs it as one classic script, so the build fails
+ * if it would import another file. Builds only, like the worker's registration.
+ */
+function serviceWorker(): Plugin {
+  return {
+    name: 'nestead-service-worker',
+    apply: 'build',
+    buildStart() {
+      this.emitFile({ type: 'chunk', id: fileURLToPath(new URL('./src/app/sw.ts', import.meta.url)), fileName: 'sw.js' });
+    },
+    generateBundle(_options, bundle) {
+      const worker = bundle['sw.js'];
+      if (worker?.type !== 'chunk' || worker.imports.length > 0 || worker.dynamicImports.length > 0) {
+        this.error('sw.js must be one file that imports nothing: src/app/sw.ts may import only src/app/shellCache.ts, which nothing else imports.');
+      }
+    },
+  };
+}
+
+/**
  * Refuses a production build that would ship demo mode.
  *
  * VITE_BACKEND is inlined at build time and falls back to "local" when unset,
@@ -140,7 +163,7 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    plugins: [react(), apiRoutes(env), buildVersion()],
+    plugins: [react(), apiRoutes(env), buildVersion(), serviceWorker()],
     build: {
       rollupOptions: {
         output: {

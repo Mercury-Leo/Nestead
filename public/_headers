@@ -19,4 +19,6 @@
   Cache-Control: no-store
 
 # index.html and client routes keep the default, so a deploy is picked up on
-# the next launch.
+# the next launch. So does /sw.js: the browser checks it for a new service
+# worker on every launch, and the worker asks for index.html first, falling
+# back to its kept copy only when that hangs (src/app/shellCache.ts).
