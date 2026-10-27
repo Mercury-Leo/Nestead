@@ -26,7 +26,6 @@ describe('locate', () => {
 
   it("finds Larder's other pages", () => {
     expect(where('/search')).toBe('larder/search');
-    expect(where('/pantry')).toBe('larder/pantry');
     expect(where('/profile')).toBe('larder/profile');
   });
 

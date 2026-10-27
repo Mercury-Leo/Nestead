@@ -18,10 +18,9 @@ import ImportRecipe from './ImportRecipe';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-// Only what the screen and the preview read: no pantry, no diet profile, no bundled search hits.
+// Only what the screen and the preview read: no diet profile, no bundled search hits.
 vi.mock('../KitchenContext', () => ({
   useKitchen: () => ({
-    pantry: { have: new Set<string>(), staples: new Set<string>(), haveCount: 0, stapleCount: 0 },
     profile: null,
     provider: { search: async () => [] },
   }),

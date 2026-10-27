@@ -7,7 +7,6 @@ import type {
   ListItem,
   Member,
   NewRow,
-  PantryItem,
   Recipe,
   Show,
   Task,
@@ -28,7 +27,7 @@ import type { ChangeListener, Collection, DataStore, Unsubscribe } from '../type
 
 const NAMESPACE = 'nestead';
 
-type CollectionName = 'members' | 'columns' | 'tasks' | 'taskCompletions' | 'recipes' | 'pantry' | 'diet' | 'list' | 'listGroups' | 'shows' | 'addresses';
+type CollectionName = 'members' | 'columns' | 'tasks' | 'taskCompletions' | 'recipes' | 'diet' | 'list' | 'listGroups' | 'shows' | 'addresses';
 
 export function storageKey(familyId: string, collection: CollectionName): string {
   return `${NAMESPACE}:${familyId}:${collection}`;
@@ -199,7 +198,6 @@ export function createLocalStore(familyId: string): DataStore {
     tasks: createCollection<Task>(familyId, 'tasks'),
     taskCompletions: createCollection<TaskCompletion>(familyId, 'taskCompletions'),
     recipes: createCollection<Recipe>(familyId, 'recipes'),
-    pantry: createCollection<PantryItem>(familyId, 'pantry'),
     dietProfiles: createCollection<DietProfile>(familyId, 'diet'),
     listItems: createCollection<ListItem>(familyId, 'list'),
     listGroups: createCollection<ListGroup>(familyId, 'listGroups'),

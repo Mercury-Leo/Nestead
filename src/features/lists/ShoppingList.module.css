@@ -28,13 +28,6 @@
   font-weight: 700;
 }
 
-.sectionTitle {
-  margin: 0 0 16px;
-  font-family: var(--serif);
-  font-size: 28px;
-  font-weight: 600;
-}
-
 .muted {
   color: var(--ink-2);
   font-size: 14px;
@@ -478,10 +471,6 @@ a.recipeTitle:hover {
   padding: 8px 24px 24px;
 }
 
-.ready {
-  margin-top: 32px;
-}
-
 /* ------------------------------------------------------------- mobile -- */
 
 .recipeChips {
@@ -550,11 +539,6 @@ a.recipeTitle:hover {
 }
 
 /* Takes what Clear leaves; width: 100% beside it would overflow. */
-.moveMobile {
-  flex: 1;
-  min-width: 0;
-}
-
 .stickySpace {
   height: 80px;
 }

@@ -106,11 +106,11 @@ afterEach(() => {
 
 describe('the sidebar', () => {
   it("lists every section, and the current section's pages", async () => {
-    const host = await render(<Sidebar />, '/pantry');
-    for (const key of ['nav.board', 'nav.lists', 'nav.larder', 'nav.library', 'nav.search', 'nav.pantry', 'nav.diet', 'nav.activities', 'nav.family'] as const) {
+    const host = await render(<Sidebar />, '/profile');
+    for (const key of ['nav.board', 'nav.lists', 'nav.larder', 'nav.library', 'nav.search', 'nav.diet', 'nav.activities', 'nav.family'] as const) {
       expect(link(host, i18n.t(key)), key).toBeDefined();
     }
-    expect(link(host, i18n.t('nav.pantry'))?.getAttribute('aria-current')).toBe('page');
+    expect(link(host, i18n.t('nav.diet'))?.getAttribute('aria-current')).toBe('page');
     // The section header is not the page.
     expect(link(host, i18n.t('nav.larder'))?.getAttribute('aria-current')).toBeNull();
   });
@@ -123,7 +123,7 @@ describe('the sidebar', () => {
     expect(link(host, i18n.t('nav.history'))?.getAttribute('href')).toBe('/history');
     expect(link(host, i18n.t('nav.history'))?.getAttribute('aria-current')).toBeNull();
     expect(link(host, i18n.t('nav.larder'))?.getAttribute('href')).toBe('/library');
-    expect(link(host, i18n.t('nav.pantry'))).toBeUndefined();
+    expect(link(host, i18n.t('nav.diet'))).toBeUndefined();
   });
 
   it('counts recipe pages as Library', async () => {
@@ -217,15 +217,14 @@ describe('the tab bar', () => {
 
 describe('the page pills', () => {
   it("show a section's pages, with the current one marked", async () => {
-    const host = await render(<PagePills />, '/pantry');
+    const host = await render(<PagePills />, '/search');
     const pills = host.querySelector(`nav[aria-label="${i18n.t('nav.sectionPages', { section: i18n.t('nav.larder') })}"]`);
     expect([...(pills?.querySelectorAll('a') ?? [])].map((a) => a.textContent)).toEqual([
       i18n.t('nav.library'),
       i18n.t('nav.search'),
-      i18n.t('nav.pantry'),
       i18n.t('nav.diet'),
     ]);
-    expect(link(pills as HTMLElement, i18n.t('nav.pantry'))?.getAttribute('aria-current')).toBe('page');
+    expect(link(pills as HTMLElement, i18n.t('nav.search'))?.getAttribute('aria-current')).toBe('page');
   });
 
   it("show Family's pages, Addresses among them", async () => {

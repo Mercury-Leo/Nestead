@@ -109,7 +109,7 @@ const PANS = /\b(pan|skillet|pot|dish|tray|wok|tin|dutch oven|casserole)\b/i;
 /**
  * True when most ingredient lines match nothing in the catalog, as with a
  * recipe in a language it has no names for (anything but English and Hebrew). The diet
- * and pantry checks see nothing in such lines, so "no nuts found" would mean
+ * check sees nothing in such lines, so "no nuts found" would mean
  * only "no nuts recognised": the preview must not vouch for the recipe.
  */
 export function mostlyUnrecognised(recipe: Pick<AnyRecipe, 'ingredients'>): boolean {

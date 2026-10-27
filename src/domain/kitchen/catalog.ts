@@ -1,8 +1,8 @@
 import type { DietFlag, StoreSection } from '../types';
 
 /**
- * The ingredient catalog. It drives pantry suggestions, store-section grouping,
- * diet checks and calorie estimates.
+ * The ingredient catalog. It drives store-section grouping, diet checks and
+ * calorie estimates.
  *
  * Kept as a compact table rather than JSON so each entry fits on a line and a
  * typo in a section or flag is a type error. Values are per 100 g of the

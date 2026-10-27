@@ -2,31 +2,27 @@ import type { AnyRecipe, DietProfile, IngredientLine } from '../types';
 import { catalogFor } from './calories';
 import { checkDiet } from './diet';
 import type { DietCheck } from './diet';
-import { pantryFit } from './fit';
-import type { PantryFit, PantryIndex } from './fit';
 import { containsPhrase, normalizeText } from './normalize';
 
 /**
  * Search over the library and the web index: by ingredients or by name, with
- * pantry-fit ranking, filters, diet hiding and "loosen a filter" suggestions.
+ * ranking, filters, diet hiding and "loosen a filter" suggestions.
  */
 
-export type SortKey = 'fit' | 'fewest' | 'rating' | 'kcal' | 'time';
+export type SortKey = 'match' | 'rating' | 'kcal' | 'time';
 export type TimeBucket = 'under30' | '30to60' | 'over60';
 
 // i18n: SORT_LABELS, SORT_SHORT and TIME_LABELS are for the domain's own labels and tests; screens
 // translate by key (features/larder/labels.ts).
 export const SORT_LABELS: Record<SortKey, string> = {
-  fit: 'Best pantry fit',
-  fewest: 'Fewest items to buy',
+  match: 'Best match',
   rating: 'Star rating',
   kcal: 'Calories (lowest first)',
   time: 'Total time (shortest first)',
 };
 
 export const SORT_SHORT: Record<SortKey, string> = {
-  fit: 'Best fit',
-  fewest: 'Fewest to buy',
+  match: 'Best match',
   rating: 'Rating',
   kcal: 'Calories',
   time: 'Total time',
@@ -47,14 +43,10 @@ export interface SearchQuery {
   tokens: string[];
   /** Free text, in "By recipe name" mode. */
   text: string;
-  /** "Cook from my pantry". */
-  pantry: boolean;
 }
 
 export interface SearchFilters {
   sort: SortKey;
-  /** At most this many to buy; null is Any. */
-  maxBuy: number | null;
   time: TimeBucket[];
   kcalMin: number;
   kcalMax: number;
@@ -69,8 +61,7 @@ export interface SearchFilters {
 
 export function defaultFilters(conflictMode: 'hide' | 'warn' = 'hide'): SearchFilters {
   return {
-    sort: 'fit',
-    maxBuy: null,
+    sort: 'match',
     time: [],
     kcalMin: KCAL_MIN,
     kcalMax: KCAL_MAX,
@@ -85,13 +76,11 @@ export function defaultFilters(conflictMode: 'hide' | 'warn' = 'hide'): SearchFi
 export interface SearchContext {
   library: readonly AnyRecipe[];
   web: readonly AnyRecipe[];
-  pantry: PantryIndex;
   profile: Pick<DietProfile, 'presets' | 'custom'> | null;
 }
 
 export interface SearchHit {
   recipe: AnyRecipe;
-  fit: PantryFit;
   diet: DietCheck;
   tokensMatched: number;
 }
@@ -151,18 +140,13 @@ function candidates(ctx: SearchContext, filters: SearchFilters): AnyRecipe[] {
   return [...library, ...web];
 }
 
-function compare(a: SearchHit, b: SearchHit, query: SearchQuery, sort: SortKey): number {
+function compare(a: SearchHit, b: SearchHit, sort: SortKey): number {
   const rating = (displayRating(b.recipe) ?? 0) - (displayRating(a.recipe) ?? 0);
   switch (sort) {
-    case 'fit':
-      if (query.pantry) {
-        return b.fit.ratio - a.fit.ratio || a.fit.missing - b.fit.missing || rating;
-      }
+    case 'match':
       return b.tokensMatched - a.tokensMatched || rating;
-    case 'fewest':
-      return a.fit.missing - b.fit.missing || b.fit.ratio - a.fit.ratio || rating;
     case 'rating':
-      return rating || b.fit.ratio - a.fit.ratio;
+      return rating || b.tokensMatched - a.tokensMatched;
     case 'kcal':
       return (a.recipe.kcalPerServing ?? Infinity) - (b.recipe.kcalPerServing ?? Infinity) || rating;
     case 'time':
@@ -183,8 +167,6 @@ export function search(query: SearchQuery, filters: SearchFilters, ctx: SearchCo
     if (tokens.length > 0 && matched < needed) continue;
     if (text !== '' && !recipe.title.toLowerCase().includes(text)) continue;
 
-    const fit = pantryFit(recipe, ctx.pantry);
-    if (filters.maxBuy !== null && fit.missing > filters.maxBuy) continue;
     if (!inTimeBuckets(totalMinutes(recipe), filters.time)) continue;
     // The slider's ends mean "no limit", so a 900 kcal recipe still shows at 800.
     const kcal = recipe.kcalPerServing;
@@ -195,12 +177,12 @@ export function search(query: SearchQuery, filters: SearchFilters, ctx: SearchCo
     if (filters.minRating !== null && (displayRating(recipe) ?? 0) < filters.minRating) continue;
 
     const diet = checkDiet(recipe, ctx.profile);
-    const hit: SearchHit = { recipe, fit, diet, tokensMatched: matched };
+    const hit: SearchHit = { recipe, diet, tokensMatched: matched };
     if (!diet.ok && filters.matchProfile && filters.conflictMode === 'hide') hidden.push(hit);
     else results.push(hit);
   }
 
-  results.sort((a, b) => compare(a, b, query, filters.sort));
+  results.sort((a, b) => compare(a, b, filters.sort));
   return { results, hidden };
 }
 
@@ -214,15 +196,8 @@ export interface ActiveFilter {
   without: (filters: SearchFilters) => SearchFilters;
 }
 
-export function buyLabel(maxBuy: number): string {
-  return maxBuy === 0 ? '0 to buy' : `≤ ${maxBuy} to buy`;
-}
-
 export function activeFilters(filters: SearchFilters): ActiveFilter[] {
   const active: ActiveFilter[] = [];
-  if (filters.maxBuy !== null) {
-    active.push({ key: 'buy', label: buyLabel(filters.maxBuy), without: (f) => ({ ...f, maxBuy: null }) });
-  }
   for (const bucket of filters.time) {
     active.push({
       key: `time:${bucket}`,
@@ -261,9 +236,6 @@ export function suggestions(query: SearchQuery, filters: SearchFilters, ctx: Sea
   const options: Omit<Suggestion, 'count'>[] = [];
   for (const filter of activeFilters(filters)) {
     options.push({ label: `Remove “${filter.label}”`, query, filters: filter.without(filters) });
-  }
-  if (query.pantry) {
-    options.push({ label: 'Turn off Cook from my pantry', query: { ...query, pantry: false }, filters });
   }
   if (query.mode === 'ingredients' && query.tokens.length > 1) {
     for (const token of query.tokens) {

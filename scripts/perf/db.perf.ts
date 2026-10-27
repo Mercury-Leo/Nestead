@@ -21,14 +21,13 @@ import { cacheOf, withCache } from '../../src/data/cache';
 import { createSupabaseStore } from '../../src/data/supabase/supabaseStore';
 import { signInTester } from '../../src/data/supabase/supabaseTestSession';
 import type { Collection, DataStore } from '../../src/data/types';
-import type { Base, BoardColumn, ListItem, NewRow, Recipe } from '../../src/domain/types';
+import type { Base, BoardColumn, Recipe } from '../../src/domain/types';
 import { openFamily } from '../../src/auth/openFamily';
 import { createSupabaseAccount } from '../../src/data/supabase/supabaseAccount';
 import { placeTask } from '../../src/features/board/actions';
-import { addRecipeToList, moveToPantry, removeRecipeFromList } from '../../src/features/larder/actions';
-import { keyForText, pantryIndex } from '../../src/domain/kitchen/fit';
+import { addRecipeToList, removeRecipeFromList } from '../../src/features/larder/actions';
 import { planAddRecipe } from '../../src/domain/kitchen/list';
-import { COLUMNS, GROUPS, SIZES, TINY_JPEG, TWELVE, listRows, pantryRows, recipeRows, taskRows } from './fixtures';
+import { COLUMNS, GROUPS, SIZES, TINY_JPEG, TWELVE, listRows, recipeRows, taskRows } from './fixtures';
 import { show, summarise } from './stats';
 import type { Spread } from './stats';
 
@@ -48,10 +47,10 @@ const OUT = process.env.PERF_OUT ?? 'perf-db.json';
 const EXTRA = Number(process.env.PERF_EXTRA_LATENCY_MS ?? 0);
 const wanted = (name: string): boolean => ONLY === null || ONLY.has(name);
 
-type Table = 'board_columns' | 'tasks' | 'recipes' | 'pantry_items' | 'list_items' | 'list_groups' | 'diet_profiles';
-const TABLES: Table[] = ['list_items', 'tasks', 'recipes', 'pantry_items', 'list_groups', 'diet_profiles', 'board_columns'];
-const COLLECTIONS = ['members', 'columns', 'tasks', 'recipes', 'pantry', 'dietProfiles', 'listItems', 'listGroups'] as const;
-const KITCHEN = ['recipes', 'pantry', 'dietProfiles', 'listItems', 'listGroups'] as const;
+type Table = 'board_columns' | 'tasks' | 'recipes' | 'list_items' | 'list_groups' | 'diet_profiles';
+const TABLES: Table[] = ['list_items', 'tasks', 'recipes', 'list_groups', 'diet_profiles', 'board_columns'];
+const COLLECTIONS = ['members', 'columns', 'tasks', 'recipes', 'dietProfiles', 'listItems', 'listGroups'] as const;
+const KITCHEN = ['recipes', 'dietProfiles', 'listItems', 'listGroups'] as const;
 
 interface Signed {
   client: SupabaseClient;
@@ -297,7 +296,7 @@ async function measureSize(sizeName: keyof typeof SIZES, app: Signed, peer: Sign
       `${startup.requests!.median} requests, read ${show(startup.readKB!, 'KB', 1)}`);
   }
 
-  const actionNames = ['addTask', 'moveTask', 'checkItem', 'addRecipe', 'removeRecipe', 'moveToPantry', 'photos'];
+  const actionNames = ['addTask', 'moveTask', 'checkItem', 'addRecipe', 'removeRecipe', 'photos'];
   if (actionNames.some(wanted) || wanted('sync') || wanted('syncDelete')) {
     const store = withCache(createSupabaseStore(app.familyId, app.client));
     const close = await openApp(store, app.client);
@@ -349,12 +348,12 @@ async function measureSize(sizeName: keyof typeof SIZES, app: Signed, peer: Sign
 
       if (wanted('addRecipe')) {
         const twelve = rowsOf(store.recipes).find((recipe) => recipe.title === TWELVE.title)!;
-        const plan = planAddRecipe(rowsOf(store.listItems), twelve, twelve.servings, pantryIndex(rowsOf(store.pantry)));
+        const plan = planAddRecipe(rowsOf(store.listItems), twelve, twelve.servings);
         console.log(`  (recipe plan: ${plan.create.length} creates, ${plan.update.length} updates, ${plan.remove.length} removes)`);
         actions.addRecipe = await measure('add recipe to list', 'app',
           async () => ({ ids: [] as string[] }),
           async (context) => {
-            context.ids = await addRecipeToList(store, rowsOf(store.listItems), twelve, twelve.servings, pantryIndex(rowsOf(store.pantry)));
+            context.ids = await addRecipeToList(store, rowsOf(store.listItems), twelve, twelve.servings);
           },
           async (context) => removeVia(store.listItems, 'list_items', context.ids));
       }
@@ -363,32 +362,12 @@ async function measureSize(sizeName: keyof typeof SIZES, app: Signed, peer: Sign
         const twelve = rowsOf(store.recipes).find((recipe) => recipe.title === TWELVE.title)!;
         actions.removeRecipe = await measure('take recipe off list', 'app',
           async () => {
-            const ids = await addRecipeToList(store, rowsOf(store.listItems), twelve, twelve.servings, pantryIndex(rowsOf(store.pantry)));
+            const ids = await addRecipeToList(store, rowsOf(store.listItems), twelve, twelve.servings);
             await settle();
             return ids;
           },
           async () => removeRecipeFromList(store, rowsOf(store.listItems), twelve.id),
           async () => {});
-      }
-
-      if (wanted('moveToPantry')) {
-        actions.moveToPantry = await measure('move 15 to pantry', 'app',
-          async () => {
-            const have = new Set(rowsOf(store.pantry).filter((row) => row.kind === 'have').map((row) => keyForText(row.name, row.canonicalId)));
-            const items = rowsOf(store.listItems)
-              .filter((item) => seeded.list_items.has(item.id) && !have.has(keyForText(item.name, item.canonicalId)))
-              .slice(0, 15);
-            return { items, pantryBefore: new Set(rowsOf(store.pantry).map((row) => row.id)) };
-          },
-          async ({ items }) => moveToPantry(store, items, rowsOf(store.pantry)),
-          async ({ items, pantryBefore }) => {
-            const added = rowsOf(store.pantry).filter((row) => !pantryBefore.has(row.id)).map((row) => row.id);
-            await removeVia(store.pantry, 'pantry_items', added);
-            for (const item of items) seeded.list_items.delete(item.id);
-            const back = await insert('list_items', items.map(({ id: _id, familyId: _f, createdAt: _c, updatedAt: _u, ...row }) => row as NewRow<ListItem>));
-            const ids = new Set(back.map((row) => row.id as string));
-            await until(() => rowsOf(store.listItems).filter((row) => ids.has(row.id)).length === ids.size, 30_000, 're-added list items');
-          });
       }
 
       if (wanted('photos') && photoIds.length > 0) {
@@ -501,7 +480,6 @@ async function grow(size: keyof typeof SIZES, memberId: string): Promise<void> {
     if (error !== null) throw new Error(error.message);
   }
 
-  await insert('pantry_items', pantryRows(have('pantry_items'), target.pantry));
   const groups = [...seeded.list_groups];
   // One insert gives every row the same created_at, so titles break the tie.
   const ordered = recipes

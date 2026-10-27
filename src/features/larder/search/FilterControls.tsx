@@ -14,7 +14,6 @@ import s from './Search.module.css';
  * controls in a different order and shape.
  */
 
-type Buy = 'any' | '0' | '1' | '2' | '3';
 type MinRating = 'any' | '3' | '4' | '4.5';
 
 const BUCKETS: TimeBucket[] = ['under30', '30to60', 'over60'];
@@ -80,24 +79,6 @@ export function FilterControls({
   const { t } = useTranslation();
   const set = (patch: Partial<SearchFilters>): void => onChange({ ...filters, ...patch });
   const rules = ruleLabels(t, profile);
-
-  const buy = (
-    <Group title={t('search.filter.itemsToBuy')} key="buy">
-      <Segmented<Buy>
-        label={t('search.filter.itemsToBuyLabel')}
-        className={s.full}
-        value={filters.maxBuy === null ? 'any' : (String(filters.maxBuy) as Buy)}
-        onChange={(value) => set({ maxBuy: value === 'any' ? null : Number(value) })}
-        options={[
-          { value: '0', label: formatNumber(0) },
-          { value: '1', label: t('search.filter.atMostOption', { count: 1 }) },
-          { value: '2', label: t('search.filter.atMostOption', { count: 2 }) },
-          { value: '3', label: t('search.filter.atMostOption', { count: 3 }) },
-          { value: 'any', label: t('search.filter.any') },
-        ]}
-      />
-    </Group>
-  );
 
   const time = (
     <Group title={t('search.filter.totalTime')} key="time">
@@ -187,6 +168,6 @@ export function FilterControls({
     </Group>
   );
 
-  const order = layout === 'panel' ? [buy, time, calories, rating, diet, source] : [buy, diet, time, rating, calories, source];
+  const order = layout === 'panel' ? [time, calories, rating, diet, source] : [diet, time, rating, calories, source];
   return <div className={cx(s.filters, layout === 'sheet' && s.filtersSheet)}>{order}</div>;
 }

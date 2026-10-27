@@ -1,4 +1,4 @@
-import { BookOpen, Clapperboard, CookingPot, History, LayoutGrid, Leaf, ListChecks, MapPin, Milk, Search, Settings, Ticket, Users } from 'lucide-react';
+import { BookOpen, Clapperboard, CookingPot, History, LayoutGrid, Leaf, ListChecks, MapPin, Search, Settings, Ticket, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type en from '../i18n/locales/en.json';
 
@@ -52,7 +52,6 @@ export const SECTIONS: readonly Section[] = [
     pages: [
       { path: '/library', labelKey: 'nav.library', icon: BookOpen, also: ['/recipe', '/add', '/import'] },
       { path: '/search', labelKey: 'nav.search', icon: Search },
-      { path: '/pantry', labelKey: 'nav.pantry', icon: Milk },
       { path: '/profile', labelKey: 'nav.diet', icon: Leaf },
     ],
   },

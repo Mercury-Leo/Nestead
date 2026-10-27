@@ -1,12 +1,9 @@
-import type { BoardColumn, IngredientLine, ListGroup, ListItem, NewRow, PantryItem, Recipe, Show, Task } from '../../src/domain/types';
-import { CATALOG } from '../../src/domain/kitchen/catalog';
+import type { BoardColumn, IngredientLine, ListGroup, ListItem, NewRow, Recipe, Show, Task } from '../../src/domain/types';
 import { catalogFor } from '../../src/domain/kitchen/calories';
 import { GENERAL, SUPERMARKET } from '../../src/domain/kitchen/list';
 import { canonicalId } from '../../src/domain/kitchen/normalize';
-import { pantryRow } from '../../src/domain/kitchen/pantry';
 import { buildRecipe } from '../../src/features/larder/seed/build';
 import { SEED_LIBRARY } from '../../src/features/larder/seed/recipes';
-import { DEFAULT_STAPLES } from '../../src/features/larder/setup';
 
 /**
  * Rows for the measurements: a typical family and a heavy one. The heavy set
@@ -19,14 +16,13 @@ export interface Size {
   tasks: number;
   recipes: number;
   photos: number;
-  pantry: number;
   listItems: number;
   shows: number;
 }
 
 export const SIZES: Record<'typical' | 'heavy', Size> = {
-  typical: { tasks: 40, recipes: 25, photos: 0, pantry: 30, listItems: 40, shows: 40 },
-  heavy: { tasks: 300, recipes: 150, photos: 30, pantry: 120, listItems: 200, shows: 300 },
+  typical: { tasks: 40, recipes: 25, photos: 0, listItems: 40, shows: 40 },
+  heavy: { tasks: 300, recipes: 150, photos: 30, listItems: 200, shows: 300 },
 };
 
 export const COLUMNS: NewRow<BoardColumn>[] = [
@@ -99,7 +95,7 @@ export function recipeRows(from: number, to: number, memberId: string): NewRow<R
   return rows;
 }
 
-/** Twelve things no seeded list item or pantry row has, so adding it to the list creates twelve rows. */
+/** Twelve things no seeded list item has and none a staple, so adding it to the list creates twelve rows. */
 export const TWELVE = (() => {
   const { id: _slug, inLibrary: _inLibrary, ...content } = buildRecipe({
     slug: 'perf-twelve',
@@ -122,21 +118,6 @@ export const TWELVE = (() => {
 
 const keyOf = (name: string, id?: string): string => id ?? canonicalId(name) ?? name.toLowerCase();
 const TWELVE_KEYS = new Set(TWELVE.ingredients.map((line) => keyOf(line.item, line.canonicalId)));
-
-export function pantryRows(from: number, to: number): NewRow<PantryItem>[] {
-  const staples = new Set(DEFAULT_STAPLES.map((name) => keyOf(name)));
-  const have = CATALOG.map((item) => item.name).filter((name) => !TWELVE_KEYS.has(keyOf(name)) && !staples.has(keyOf(name)));
-  const rows: NewRow<PantryItem>[] = [];
-  for (let i = from; i < to; i += 1) {
-    if (i < DEFAULT_STAPLES.length) {
-      rows.push(pantryRow(DEFAULT_STAPLES[i]!, 'staple'));
-    } else {
-      const name = have[(i - DEFAULT_STAPLES.length) % have.length]!;
-      rows.push(pantryRow(name.charAt(0).toUpperCase() + name.slice(1), 'have'));
-    }
-  }
-  return rows;
-}
 
 const HOUSEHOLD = ['Batteries', 'Light bulbs', 'Toothpaste', 'Bin bags', 'Washing-up liquid', 'Plasters', 'Sponges', 'Screws', 'Kitchen roll', 'Shampoo'];
 

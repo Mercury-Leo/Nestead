@@ -8,7 +8,6 @@ import type {
   ListItem,
   Member,
   NewRow,
-  PantryItem,
   Recipe,
   Show,
   Task,
@@ -61,7 +60,6 @@ export interface DataStore {
    */
   taskCompletions: Collection<TaskCompletion>;
   recipes: Collection<Recipe>;
-  pantry: Collection<PantryItem>;
   /** At most one row per family. */
   dietProfiles: Collection<DietProfile>;
   listItems: Collection<ListItem>;

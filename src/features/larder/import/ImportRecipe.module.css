@@ -276,17 +276,6 @@
   background: var(--line);
 }
 
-.match {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.match > :last-child {
-  align-self: stretch;
-}
-
 .dietOk,
 .dietBad {
   display: flex;
@@ -437,7 +426,7 @@
 
 .line {
   display: grid;
-  grid-template-columns: 24px minmax(56px, auto) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(56px, auto) minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   min-height: 48px;
@@ -451,21 +440,6 @@
 
 .lineItem {
   min-width: 0;
-}
-
-.stapleLabel {
-  color: var(--ink-3);
-  font-size: 12.5px;
-  font-weight: 600;
-}
-
-.toBuy {
-  padding: 3px 9px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-tint);
-  color: var(--accent-ink);
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .flag {

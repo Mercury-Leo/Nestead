@@ -101,29 +101,6 @@
   margin-bottom: 16px;
 }
 
-.pantryCard {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  min-height: 56px;
-  padding-block: 6px;
-  padding-inline: 16px 8px;
-  border-radius: 16px;
-  background: var(--sage-tint);
-}
-
-.pantryIcon {
-  flex-shrink: 0;
-  color: var(--sage);
-}
-
-.pantryTitle {
-  flex: 1;
-  min-width: 0;
-  font-size: 15.5px;
-  font-weight: 700;
-}
-
 /*
  * Full-width option rows stay on one row, as they always have; in a longer
  * language each option's label wraps by word inside its own segment instead.
@@ -554,11 +531,5 @@
     gap: 16px;
     align-items: center;
     margin-bottom: 24px;
-  }
-
-  .pantryCard {
-    min-height: 56px;
-    padding-block: 6px;
-    padding-inline: 16px 6px;
   }
 }

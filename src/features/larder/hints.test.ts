@@ -13,7 +13,7 @@ describe('hints', () => {
 
   it('start over from a stored value that is not a list', () => {
     localStorage.setItem('nestead:device:pref:hintsUsed', '"timers"');
-    markHintUsed('pantryAdd');
-    expect(JSON.parse(localStorage.getItem('nestead:device:pref:hintsUsed') ?? 'null')).toEqual(['pantryAdd']);
+    markHintUsed('cookSwipe');
+    expect(JSON.parse(localStorage.getItem('nestead:device:pref:hintsUsed') ?? 'null')).toEqual(['cookSwipe']);
   });
 });

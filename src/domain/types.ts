@@ -92,7 +92,7 @@ export interface TaskCompletion extends Base {
 
 /* -------------------------------------------------------------- kitchen -- */
 /*
- * Larder, the kitchen feature: recipes, the pantry, the diet profile and the
+ * Larder, the kitchen feature: recipes, the diet profile and the
  * shopping list. Every one of these is shared by the whole family.
  *
  * Nested structures (ingredient lines, steps, list parts, rules) are stored as
@@ -204,17 +204,6 @@ export interface Recipe extends Base, RecipeContent {
 
 /** Anything the kitchen logic can work on: a stored recipe or a web result. */
 export type AnyRecipe = RecipeContent & { id: string; inLibrary?: boolean };
-
-/**
- * Something in the kitchen. 'have' is the pantry ("Have now"); 'staple' is
- * assumed to be there always and never lands on a shopping list.
- */
-export interface PantryItem extends Base {
-  name: string;
-  canonicalId?: string;
-  section: StoreSection;
-  kind: 'have' | 'staple';
-}
 
 export type PresetId =
   | 'vegetarian'

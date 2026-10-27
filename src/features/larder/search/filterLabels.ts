@@ -10,11 +10,8 @@ import { timeLabel } from '../labels';
  * kept for its tests; these are rebuilt from the same filter state.
  */
 
-/** A removable chip's words: "≤ 2 to buy", "Under 30 min", "Up to 600 kcal". */
+/** A removable chip's words: "Under 30 min", "Up to 600 kcal". */
 export function activeFilterLabel(t: TFunction, filter: ActiveFilter, filters: SearchFilters): string {
-  if (filter.key === 'buy' && filters.maxBuy !== null) {
-    return filters.maxBuy === 0 ? t('search.active.buyZero') : t('search.active.buy', { count: filters.maxBuy });
-  }
   if (filter.key.startsWith('time:')) return timeLabel(t, filter.key.slice('time:'.length) as TimeBucket);
   if (filter.key === 'kcal') {
     return filters.kcalMin > KCAL_MIN
@@ -27,11 +24,10 @@ export function activeFilterLabel(t: TFunction, filter: ActiveFilter, filters: S
 }
 
 /**
- * A "loosen a filter" button's words, from what the suggestion changes: the
- * pantry switch, one ingredient, or one filter.
+ * A "loosen a filter" button's words, from what the suggestion changes: one
+ * ingredient, or one filter.
  */
 export function loosenLabel(t: TFunction, option: Suggestion, query: SearchQuery, filters: SearchFilters): string {
-  if (query.pantry && !option.query.pantry) return t('search.loosen.pantryOff');
   const token = query.tokens.find((existing) => !option.query.tokens.includes(existing));
   if (token !== undefined) return t('search.loosen.remove', { label: token });
   const kept = new Set(activeFilters(option.filters).map((filter) => filter.key));

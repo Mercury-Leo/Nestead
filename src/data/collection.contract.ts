@@ -233,7 +233,6 @@ export function runDataStoreContract(
         parts: [{ recipeId: recipe.id, recipeTitle: 'Soup', qty: 1, unit: 'bunch' }],
         checked: false,
       });
-      await store.pantry.create({ name: 'Salt', canonicalId: 'salt', section: 'Spices & dried herbs', kind: 'staple' });
 
       const [storedRecipe] = await store.recipes.list();
       expect(storedRecipe).toEqual(recipe);
@@ -242,7 +241,6 @@ export function runDataStoreContract(
 
       const updated = await store.listItems.update(listItem.id, { checked: true });
       expect(updated.parts).toEqual(listItem.parts);
-      expect((await store.pantry.list()).map((row) => row.kind)).toEqual(['staple']);
     });
 
     it('shows round-trip dates, timestamps and numbers, clear watchedAt, and keep a star', async () => {

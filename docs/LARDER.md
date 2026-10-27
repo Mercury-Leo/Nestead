@@ -10,28 +10,27 @@ onto the code, and every place the integration departs from the original brief.
 | Design artboard                              | Route / state                         | Code                                   |
 | -------------------------------------------- | ------------------------------------- | -------------------------------------- |
 | Library (desktop, mobile)                    | `/library`                            | `features/larder/library/`             |
-| Search, pantry fit (desktop, mobile)         | `/search?q=…&pantry=1`                | `features/larder/search/`              |
+| Search (desktop, mobile)                     | `/search?q=…`                         | `features/larder/search/`              |
 | Filters sheet (mobile)                       | Search → Filters                      | `search/FilterControls.tsx`            |
 | Search, no results (desktop, mobile)         | any search with no hits               | `search/Search.tsx`                    |
 | Recipe detail (desktop, mobile)              | `/recipe/:id`                         | `features/larder/detail/`              |
 | Add recipe (desktop, mobile)                 | `/add`, `/add?edit=:id`               | `features/larder/add/`                 |
 | Import from web (desktop, mobile)            | `/import`                             | `features/larder/import/`              |
 | Diet profile (desktop, mobile)               | `/profile`                            | `features/larder/profile/`             |
-| Pantry, and its empty state                  | `/pantry`                             | `features/larder/pantry/`              |
 | Shopping list, and its empty state           | `/lists`                              | `features/lists/`                      |
 | Cook mode, and timer done                    | `/recipe/:id/cook?step=6`             | `features/larder/cook/`, `timers/`     |
 
 Shared pieces: the generic kit in `components/ui/` (buttons, chips,
 segmented, switch, checkbox, radios, fields, stepper, empty state, sheet), and
 the recipe pieces in `features/larder/recipe/` (card and row, photo and its
-placeholder, stars, badges, match bar, status marker, step text).
+placeholder, stars, badges, step text).
 
 ## Decisions made for the integration
 
-- **Family-shared, not per device.** Recipes, pantry, staples, diet profile and
-  shopping list are Nestead collections, so they sync live between family
-  members through Supabase and pass the same backend contract. Only cook-mode
-  timers stay on the device.
+- **Family-shared, not per device.** Recipes, the diet profile and the shopping
+  list are Nestead collections, so they sync live between family members
+  through Supabase and pass the same backend contract. Only cook-mode timers
+  stay on the device.
 - **One shell, one look.** Larder's sidebar and tab bar became Nestead's. The
   board is the first item and the home page; the kitchen items sit under a
   "Larder" heading. The board adopted Larder's palette and fonts; its
@@ -69,22 +68,20 @@ placeholder, stars, badges, match bar, status marker, step text).
   any section, and an item's menu renames it, adds a note ("2 packs"), moves it
   to another section or takes it off. Something added by hand stays when the
   last recipe that also needed it comes off the list. Deleting a section moves
-  its items to General. "Move to pantry" takes only groceries (Supermarket,
-  recipe or catalog items); "Clear checked" takes everything ticked. The
-  sidebar count is what is still to buy, not everything on the list.
+  its items to General. "Clear checked" takes everything ticked. The sidebar
+  count is what is still to buy, not everything on the list.
 - **Copy.** The diet profile says its scope once, as the subtitle ("Shared by
   the family, and applied everywhere.") instead of the brief's info box; the
   sidebar wordmark is Nestead with the jar mark.
 - **Less text than the artboards** (September 2026). Recipe cards and rows show
-  the title (two lines at most), one line of time, rating and what to buy, the
-  fit bar and any diet warning; tags, description, calories, "You have 9/10",
-  the need list and the source open from a toggle beside the bar. The recipe
-  page puts time, calories and to-buy on one line with the rest behind a
-  toggle, and drops the "What it requires" summary, the legend and the second
-  shopping-list button. Counts replace sentences (the shopping list's "2/8",
-  "Left off this list · 18", Import's "What we read"), subtitles that
-  restated counts are gone, and learn-once hints (timers, arrow keys, swipes,
-  pantry Enter) show until used on that device (`features/larder/hints.ts`).
+  the title (two lines at most), any diet warning and one line of time and
+  rating; tags, description, calories and the source open from a toggle at
+  the end of that line. The recipe page puts time and calories on one line
+  with the rest behind a toggle, and drops the "What it requires" summary, the
+  legend and the second shopping-list button. Counts replace sentences (the
+  shopping list's "2/8", "Left off this list · 3", Import's "What we read"),
+  subtitles that restated counts are gone, and learn-once hints (timers, arrow
+  keys, swipes) show until used on that device (`features/larder/hints.ts`).
   Search has one sort control, beside the results.
 - **Library ratings** show the family's own rating when set, as the brief says,
   so One-Pan Lemon Chicken shows 4.0 where the artboard shows 4.6.
@@ -116,6 +113,17 @@ placeholder, stars, badges, match bar, status marker, step text).
   covered peanuts and tree nuts; peanuts now have their own allergy switch.
   A profile saved before the split keeps peanuts covered until the family sets
   that switch, so nobody loses a warning they had.
+- **No pantry** (October 2026). Keeping the pantry up to date did not work
+  for the family, so the kitchen is for recipes and finding them. Gone: the
+  Pantry page, have-now and staples rows, the fit bar, "You have 9/10" and
+  "to buy" counts, Search's "Cook from my pantry", its "Items to buy" filter
+  and pantry sorts, the Library's "ready without shopping" banner and sort,
+  and the list's "Move to pantry" and "Ready without shopping". A recipe puts
+  all its lines on the list but a fixed set of staples (water, salt, black
+  pepper, olive and vegetable oil, sugar, flour, baking soda;
+  `domain/kitchen/staples.ts`), which the recipe page labels "Staple" and
+  the list names under "Left off this list". Search's default sort is Best
+  match: more of the typed ingredients, then rating.
 - **Not built:** offline data (a service worker opens the page itself with no
   connection, `src/app/shellCache.ts`, but rows come from the backend), Playwright
   end-to-end tests and the screenshot comparison. Verified instead by unit tests

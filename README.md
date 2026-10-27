@@ -1,9 +1,9 @@
 # Nestead
 
 A shared home-organisation app for one family: a kanban board of household
-tasks, and **Larder**, the family kitchen — recipes, a pantry, a diet profile, a
-shopping list and a cook mode with timers. Everyone in the family sees the same
-board, pantry and list.
+tasks, and **Larder**, the family kitchen — recipes, a diet profile, a shopping
+list and a cook mode with timers. Everyone in the family sees the same board,
+recipes and list.
 
 The board is the home page; the kitchen and the other sections sit beside it in the same sidebar (or
 tab bar on a phone). Underneath both is the core: a family-scoped data layer,
@@ -44,19 +44,18 @@ horizontal swipe. Desktop keeps the side-by-side board.
 
 | Screen          | Route              | What it does                                                        |
 | --------------- | ------------------ | ------------------------------------------------------------------- |
-| Library         | `/library`         | The family's recipes, with how much of each you already have        |
-| Search          | `/search`          | By ingredients or name, ranked by pantry fit, filtered by diet      |
-| Recipe          | `/recipe/:id`      | Scaled ingredients, have/staple/to-buy, steps with timers           |
+| Library         | `/library`         | The family's recipes, searched and sorted                           |
+| Search          | `/search`          | By ingredients or name, best match first, filtered by diet          |
+| Recipe          | `/recipe/:id`      | Scaled ingredients with staples marked, steps with timers           |
 | Cook mode       | `/recipe/:id/cook` | Full screen, one step at a time, tap-to-start timers                |
 | Add / edit      | `/add`             | Write a recipe; `?edit=:id` edits one                               |
 | Import          | `/import`          | Read a recipe from a link, or search recipe sites in English and Hebrew |
-| Pantry          | `/pantry`          | What you have now, and the staples assumed always present           |
-| Shopping list   | `/lists`           | Everything to buy, by shop: recipes' missing groceries by aisle, General, your own sections |
+| Shopping list   | `/lists`           | Everything to buy, by shop: recipes' groceries (all but staples) by aisle, General, your own sections |
 | Diet profile    | `/profile`         | Rules every search and import is checked against                    |
 
-The local (demo) backend seeds a full kitchen: 9 recipes, 34 pantry items, 8
-staples, a diet profile and a shopping list. Open the app with `?reset-kitchen`
-to put it back. A real family starts with the 8 staples and nothing else.
+The local (demo) backend seeds a full kitchen: 9 recipes, a diet profile and a
+shopping list. Open the app with `?reset-kitchen` to put it back. A real family
+starts with an empty diet profile and nothing else.
 
 Cook-mode timers belong to the device, not the family: they survive reloads and
 leaving cook mode, and alert (sound, vibration, notification) on any screen.
@@ -132,7 +131,7 @@ src/
                              useCollection, the contract; local/ and supabase/ backends.
   domain/                    Entities, Base, NewRow, ordering for board rows and list sections.
   domain/kitchen/            Pure kitchen logic: ingredient catalog and parser,
-                             pantry fit, diet rules, scaling, timers in text,
+                             staples, diet rules, scaling, timers in text,
                              calorie estimates, shopping list, search.
   components/ui/             The generic UI kit, one file per component family.
   components/theme/          Light/dark theme provider and toggle.
@@ -220,7 +219,7 @@ from the build.
 - **No prices.** Shopping lists have quantities, not costs.
 - **Two languages of ingredients.** The catalog matches English and Hebrew
   names (`src/domain/kitchen/hebrewNames.ts`); a recipe in any other language
-  imports as written but gets no pantry match, diet check or calorie estimate,
+  imports as written but gets no diet check or calorie estimate,
   and the import preview says it was not checked rather than that it fits.
   Hebrew products the catalog has no item for (silan, baharat, pearl barley)
   stay unmatched too, and catalog names still show in English.

@@ -93,34 +93,24 @@
   color: var(--ink-2);
 }
 
-.toBuy,
-.toBuy > svg {
-  color: var(--accent-ink);
-}
-
-.nothing,
-.nothing > svg {
-  color: var(--sage);
-}
-
-/* The toggle keeps a 44px target without making the row taller than the bar. */
-.barRow {
+.metaRow {
   display: flex;
   gap: 6px;
   align-items: center;
-  height: 20px;
 }
 
-.barRow > :first-child {
+.metaRow > .meta {
   flex: 1;
 }
 
+/* The toggle keeps a 44px target without making the row taller than the line. */
 .toggle {
   display: inline-grid;
   flex-shrink: 0;
   place-items: center;
   width: 44px;
   height: 44px;
+  margin-block: -12px;
   margin-inline-end: -12px;
   padding: 0;
   border: 0;
@@ -171,17 +161,6 @@
   font-size: 15px;
   font-style: italic;
   line-height: 1.45;
-}
-
-.facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  align-items: center;
-}
-
-.facts strong {
-  color: var(--ink);
 }
 
 .source {

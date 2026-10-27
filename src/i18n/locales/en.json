@@ -23,7 +23,6 @@
     "lists": "Lists",
     "library": "Library",
     "search": "Search",
-    "pantry": "Pantry",
     "diet": "Diet",
     "larder": "Larder",
     "activities": "Activities",
@@ -330,15 +329,13 @@
       "other": "Other"
     },
     "sort": {
-      "fit": "Best pantry fit",
-      "fewest": "Fewest items to buy",
+      "match": "Best match",
       "rating": "Star rating",
       "kcal": "Calories (lowest first)",
       "time": "Total time (shortest first)"
     },
     "sortShort": {
-      "fit": "Best fit",
-      "fewest": "Fewest to buy",
+      "match": "Best match",
       "rating": "Rating",
       "kcal": "Calories",
       "time": "Total time"
@@ -497,18 +494,7 @@
     "badge": {
       "mine": "Mine",
       "web": "Web",
-      "nothingToBuy": "Nothing to buy",
-      "toBuy": "{{count, number}} to buy",
       "estimated": "EST."
-    },
-    "status": {
-      "have": "Have",
-      "staple": "Staple",
-      "toBuy": "To buy"
-    },
-    "match": {
-      "haveCompact": "You have <strong>{{have, number}}/{{total, number}}</strong>",
-      "need": "Need: <strong>{{names}}</strong>"
     },
     "stars": "{{value}} out of 5 stars",
     "rate_one": "Rate {{count, number}} star",
@@ -519,7 +505,8 @@
     "kcalPer": "{{kcal, number}} kcal/{{unit}}",
     "card": {
       "more": "More about {{title}}"
-    }
+    },
+    "staple": "Staple"
   },
   "library": {
     "title": "Library",
@@ -540,21 +527,13 @@
       "recent": "Recently added",
       "rating": "Rating",
       "time": "Total time",
-      "kcal": "Calories",
-      "fewest": "Fewest to buy"
+      "kcal": "Calories"
     },
     "sortShort": {
       "recent": "Recent",
       "rating": "Rating",
       "time": "Time",
-      "kcal": "Calories",
-      "fewest": "To buy"
-    },
-    "ready": {
-      "label": "Ready without shopping",
-      "compact_one": "{{count, number}} recipe needs nothing from the shop",
-      "compact_other": "{{count, number}} recipes need nothing from the shop",
-      "cook": "Cook from my pantry"
+      "kcal": "Calories"
     },
     "noMatch": "No recipes match “<bdi>{{query}}</bdi>”."
   },
@@ -564,9 +543,6 @@
     "byIngredients": "By ingredients",
     "byName": "By recipe name",
     "quoted": "“{{text}}”",
-    "pantry": {
-      "title": "Cook from my pantry"
-    },
     "hiddenCompact": "{{count, number}} hidden by your diet: <bdi>{{things}}</bdi>",
     "showAnyway": "Show anyway",
     "noResults": {
@@ -577,8 +553,6 @@
     "active": {
       "label": "Active filters",
       "remove": "Remove {{label}}",
-      "buyZero": "0 to buy",
-      "buy": "≤ {{count, number}} to buy",
       "kcalRange": "{{min, number}}–{{max, number}} kcal",
       "kcalUpTo": "Up to {{max, number}} kcal",
       "rating": "Rating {{rating}}+",
@@ -586,8 +560,7 @@
       "webOnly": "Web only"
     },
     "loosen": {
-      "remove": "Remove “{{label}}”",
-      "pantryOff": "Turn off Cook from my pantry"
+      "remove": "Remove “{{label}}”"
     },
     "filters": "Filters",
     "filtersCount": "Filters · {{count, number}}",
@@ -608,9 +581,6 @@
       "namePlaceholder": "Recipe name…"
     },
     "filter": {
-      "itemsToBuy": "Items to buy",
-      "itemsToBuyLabel": "Items to buy, at most",
-      "atMostOption": "≤ {{count, number}}",
       "any": "Any",
       "totalTime": "Total time",
       "calories": "Calories per serving",
@@ -839,7 +809,7 @@
       "fits": "Fits your diet profile",
       "conflicts": "Conflicts with your diet profile",
       "unchecked": "Not checked against your diet profile",
-      "uncheckedWhy": "We couldn’t recognise these ingredients, so your diet and pantry weren’t checked. Read them yourself before you cook.",
+      "uncheckedWhy": "We couldn’t recognise these ingredients, so your diet wasn’t checked. Read them yourself before you cook.",
       "whatWeRead": "What we read",
       "ingredients": "Ingredients · {{count, number}}",
       "cantRead": "Couldn’t read a quantity for “<item/>”",
@@ -870,54 +840,13 @@
       "servings_other": "{{count, number}} servings"
     }
   },
-  "pantry": {
-    "title": "Pantry",
-    "haveNow": "Have now",
-    "empty": {
-      "title": "Your pantry is empty",
-      "body": "Add what’s in your kitchen to see what you can cook without shopping.",
-      "placeholder": "Type an item — e.g. eggs"
-    },
-    "paste": "Paste a list to bulk add",
-    "quickAdd": "Quick add",
-    "remove": "Remove {{name}}",
-    "swipeHintLtr": "Swipe left to remove",
-    "swipeHintRtl": "Swipe right to remove",
-    "alwaysHave": "Always have",
-    "staplesNote": "Never added to shopping lists.",
-    "removeStaple": "Remove {{name}} from staples",
-    "addStaple": "Add a staple",
-    "bulkAdd": "Bulk add",
-    "tabs": "Pantry",
-    "haveTab": "Have now · {{count, number}}",
-    "alwaysTab": "Always have · {{count, number}}",
-    "add": {
-      "placeholder": "Add items — e.g. eggs, feta, basil",
-      "label": "Add to pantry",
-      "suggestions": "Suggestions",
-      "neededFor": "Needed for {{recipe}}",
-      "hint": "Enter adds · commas add several"
-    },
-    "bulk": {
-      "title": "Bulk add",
-      "add_one": "Add {{count, number}} item",
-      "add_other": "Add {{count, number}} items",
-      "label": "Paste or type what you have, one per line or separated by commas.",
-      "placeholder": "eggs\nfeta\nbasil, lemons",
-      "preview": "Preview",
-      "already": "Already in your pantry",
-      "newItem": "New item · {{section}}"
-    }
-  },
   "lists": {
     "title": "Shopping list",
     "progress": "{{checked, number}}/{{total, number}}",
     "progressLabel": "Checked off",
     "checked": "<strong>{{count, number}} checked</strong>",
     "clearChecked": "Clear checked",
-    "clear": "Clear",
     "clearCount": "Clear {{count, number}} checked",
-    "moveToPantry": "Move {{count, number}} to pantry",
     "renameGroup": "Rename or delete {{name}}",
     "moveSection": "Move {{name}}: drag, or use the up and down arrow keys",
     "supermarketEmpty": "Add a recipe: only what’s missing comes across.",
@@ -930,11 +859,9 @@
     "addRecipe": "Add a recipe",
     "addAnother": "Add another recipe",
     "leftOffTitle": "Left off this list",
-    "pantryNames": "<strong>Pantry · {{count, number}}</strong> <bdi>{{names}}</bdi>",
     "stapleNames": "<strong>Staples · {{count, number}}</strong> <bdi>{{names}}</bdi>",
     "nothingToBuy": "Nothing to buy",
     "emptyBody": "Add anything below, or add a recipe.",
-    "ready": "Ready without shopping",
     "item": "Item",
     "addFromRecipe": "Add from a recipe",
     "forRecipes": "for {{recipes}}",

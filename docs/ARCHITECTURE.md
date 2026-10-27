@@ -2,8 +2,8 @@
 
 Nestead is a shared home-organisation app for one family: a kanban board of
 household tasks, a shopping list for everything the house needs, and a
-kitchen (Larder) of recipes, pantry and diet profile, all shared by everyone in
-the family.
+kitchen (Larder) of recipes and a diet profile, all shared by everyone in the
+family.
 
 Scope is kept to what exists. Prices are planned but unbuilt, so they appear
 neither in the schema nor in the types: a table with no feature behind it is a
@@ -99,7 +99,7 @@ src/
     position.ts              Sparse ordering for board rows and list sections.
     shows.ts                 Shows: filters, sorts, the status cycle, the refresh patch.
     kitchen/                 Pure kitchen logic, unit-tested: catalog, parser,
-                             pantry fit and rows, store sections, diet,
+                             staples, store sections, diet,
                              scaling, durations, calories, shopping list, search.
   components/
     ui/                      The generic kit, one file per family (Button, Chip,
@@ -122,13 +122,12 @@ src/
     activities/shows/        Shows: page, cards, add sheet, /api/shows client, writes.
     larder/
       KitchenContext.tsx     The kitchen's rows, read once for every screen.
-      actions.ts             Writes that span collections (list and pantry).
-      setup.ts               ensureKitchen(): a new family's profile and staples.
+      actions.ts             Writes that span collections (recipes and the list).
+      setup.ts               ensureKitchen(): a new family's diet profile.
       labels.ts              Translated words for the domain's fixed ids.
       recipe/                Recipe presentation the screens share: card, photo,
-                             badges, stars, match bar, status marker, step
-                             text, servings, the view model.
-      library/ search/ detail/ add/ import/ pantry/ profile/ cook/
+                             badges, stars, step text, servings, the view model.
+      library/ search/ detail/ add/ import/ profile/ cook/
                              One folder per screen.
       timers/                Cook-mode timer engine and host.
       seed/                  The demo family's kitchen, and the offline web index
@@ -167,7 +166,7 @@ supabase/schema.sql          Postgres schema; migrations/ for existing projects.
 [features/activities](../src/features/activities/README.md) ·
 [features/larder](../src/features/larder/README.md) and its
 [add](../src/features/larder/add/README.md), [cook](../src/features/larder/cook/README.md),
-[import](../src/features/larder/import/README.md), [pantry](../src/features/larder/pantry/README.md),
+[import](../src/features/larder/import/README.md),
 [recipe](../src/features/larder/recipe/README.md), [search](../src/features/larder/search/README.md),
 [seed](../src/features/larder/seed/README.md), [timers](../src/features/larder/timers/README.md) ·
 [server/import](../server/import/README.md) · [server/search](../server/search/README.md) ·
@@ -256,14 +255,13 @@ control, and the move arrows point up and down rather than left and right.
 
 ## The kitchen (Larder)
 
-The kitchen is five family-scoped collections on the same `DataStore`, plus a
+The kitchen is four family-scoped collections on the same `DataStore`, plus a
 photo store. The shopping list's two are here because recipes write to it,
 though the list itself is for anything and its screen is `features/lists/`:
 
 | Collection      | Table           | Holds                                                     |
 | --------------- | --------------- | --------------------------------------------------------- |
 | `recipes`       | `recipes`       | Recipes; ingredient lines, steps and tags as jsonb         |
-| `pantry`        | `pantry_items`  | "Have now" (`kind = 'have'`) and staples (`'staple'`)     |
 | `dietProfiles`  | `diet_profiles` | One row per family (unique `family_id`)                    |
 | `listItems`     | `list_items`    | Shopping list rows; `parts` records which recipe needs what |
 | `listGroups`    | `list_groups`   | Sections the family added, in the family's order; built-in Supermarket and General get a row (`builtin`) only once moved |
@@ -281,15 +279,22 @@ JPEGs before they are stored.
 
 **Setting up a family's kitchen.** The diet profile row is the marker: a family
 with one has been set up. `ensureKitchen()` runs at sign-in and, for a family
-without one, creates an empty profile and the eight default staples. The
-unique constraint means two devices racing to do it cannot both succeed. It
-never throws: a kitchen that cannot be set up must not keep anyone off the
-board. The demo family gets the full seed instead (`seedDemoKitchen()`).
+without one, creates an empty profile. The unique constraint means two devices
+racing to do it cannot both succeed. It never throws: a kitchen that cannot be
+set up must not keep anyone off the board. The demo family gets the full seed
+instead (`seedDemoKitchen()`).
+
+**No pantry.** Nestead does not track what the family has: keeping a pantry up
+to date did not work out, so it was removed on 2026-10-27, with its page, the
+fit bars and "to buy" counts, Search's "Cook from my pantry" and the
+`pantry_items` table. A recipe goes on the shopping list whole, bar a fixed set
+of staples (`domain/kitchen/staples.ts`), which the recipe page labels and the
+list names under "Left off this list".
 
 **Pure logic lives in `src/domain/kitchen/`**, with no React and no storage:
 the ingredient catalog (about 280 items with store section, diet flags, calories,
 carbs, unit weights and the water dry grains take up), the ingredient-line
-parser, pantry fit, the diet engine, scaling and formatting, timer detection in
+parser, staples, the diet engine, scaling and formatting, timer detection in
 step text, calorie estimates per serving and per 100 g, the shopping-list merge
 and search. All of it is unit-tested, including the numbers
 the design shows, computed from the seed rather than typed in.
@@ -320,7 +325,7 @@ it the endpoint answers `not-configured` and the screen searches the bundled
 web index instead. Hebrew lines match the catalog through
 `domain/kitchen/hebrewNames.ts`, read from their first word since Hebrew puts
 the noun first; a recipe in a language the catalog has no names for is not
-checked against the pantry or diet, and the preview says so
+checked against the diet, and the preview says so
 (`mostlyUnrecognised()` in `features/larder/import/imported.ts`).
 
 **AI reading** is `server/ai/`, the same shape of handler again.

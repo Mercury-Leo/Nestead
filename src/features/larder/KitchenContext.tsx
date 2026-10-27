@@ -2,9 +2,7 @@ import { createContext, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useSession } from '../../auth/session';
 import { retryCollections, useCollectionState } from '../../data/useCollection';
-import type { AnyRecipe, DietProfile, ListGroup, ListItem, PantryItem, Recipe } from '../../domain/types';
-import { pantryIndex } from '../../domain/kitchen/fit';
-import type { PantryIndex } from '../../domain/kitchen/fit';
+import type { AnyRecipe, DietProfile, ListGroup, ListItem, Recipe } from '../../domain/types';
 import { offlineProvider } from './seed/webIndex';
 import type { RecipeSearchProvider } from './seed/webIndex';
 
@@ -21,9 +19,6 @@ export interface Kitchen {
   /** Reads the kitchen's failed collections again now. */
   retry: () => void;
   recipes: Recipe[];
-  have: PantryItem[];
-  staples: PantryItem[];
-  pantry: PantryIndex;
   /** The family's diet profile; null until it exists. */
   profile: DietProfile | null;
   listItems: ListItem[];
@@ -51,7 +46,6 @@ function byNewest(a: Recipe, b: Recipe): number {
 export function KitchenProvider({ children }: { children: ReactNode }): JSX.Element {
   const { store } = useSession();
   const recipes = useCollectionState(store.recipes);
-  const pantryRows = useCollectionState(store.pantry);
   const profiles = useCollectionState(store.dietProfiles);
   const list = useCollectionState(store.listItems);
   const groups = useCollectionState(store.listGroups);
@@ -61,16 +55,12 @@ export function KitchenProvider({ children }: { children: ReactNode }): JSX.Elem
     const byId = new Map<string, AnyRecipe>(sorted.map((recipe) => [recipe.id, { ...recipe, inLibrary: true }]));
     for (const recipe of offlineProvider.all()) byId.set(recipe.id, recipe);
 
-    const byAdded = (a: PantryItem, b: PantryItem): number => a.createdAt.localeCompare(b.createdAt);
-    const all = [recipes, pantryRows, profiles, list, groups];
+    const all = [recipes, profiles, list, groups];
     return {
       loaded: all.every((rows) => rows.loaded),
       failed: all.some((rows) => rows.failed && !rows.loaded),
-      retry: () => retryCollections(store.recipes, store.pantry, store.dietProfiles, store.listItems, store.listGroups),
+      retry: () => retryCollections(store.recipes, store.dietProfiles, store.listItems, store.listGroups),
       recipes: sorted,
-      have: pantryRows.rows.filter((row) => row.kind === 'have').sort(byAdded),
-      staples: pantryRows.rows.filter((row) => row.kind === 'staple').sort(byAdded),
-      pantry: pantryIndex(pantryRows.rows),
       // Oldest wins if two devices ever raced to create one.
       profile: [...profiles.rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0] ?? null,
       listItems: [...list.rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
@@ -79,7 +69,7 @@ export function KitchenProvider({ children }: { children: ReactNode }): JSX.Elem
       web: offlineProvider.all(),
       findRecipe: (id) => byId.get(id),
     };
-  }, [store, recipes, pantryRows, profiles, list, groups]);
+  }, [store, recipes, profiles, list, groups]);
 
   return <KitchenContext.Provider value={value}>{children}</KitchenContext.Provider>;
 }

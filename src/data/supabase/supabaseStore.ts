@@ -8,7 +8,6 @@ import type {
   ListItem,
   Member,
   NewRow,
-  PantryItem,
   Recipe,
   Show,
   Task,
@@ -34,7 +33,6 @@ type TableName =
   | 'tasks'
   | 'task_completions'
   | 'recipes'
-  | 'pantry_items'
   | 'diet_profiles'
   | 'list_items'
   | 'list_groups'
@@ -286,7 +284,6 @@ export function createSupabaseStore(
     tasks: createCollection<Task>(client, familyId, 'tasks'),
     taskCompletions: createCollection<TaskCompletion>(client, familyId, 'task_completions'),
     recipes: createCollection<Recipe>(client, familyId, 'recipes'),
-    pantry: createCollection<PantryItem>(client, familyId, 'pantry_items'),
     dietProfiles: createCollection<DietProfile>(client, familyId, 'diet_profiles'),
     listItems: createCollection<ListItem>(client, familyId, 'list_items'),
     listGroups: createCollection<ListGroup>(client, familyId, 'list_groups'),

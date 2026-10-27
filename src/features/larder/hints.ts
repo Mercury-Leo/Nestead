@@ -9,9 +9,8 @@ import { readDevicePreference, writeDevicePreference } from '../../data/local/lo
  * - timers: a timer started in cook mode. Hides the detail footnote, the
  *   Steps aside in the recipe form and cook mode's empty-tray line.
  * - cookKeys, cookSwipe: moving between steps with the arrow keys, or a swipe.
- * - pantrySwipe: a pantry row swiped away. pantryAdd: an item added with Enter.
  */
-export type Hint = 'timers' | 'cookKeys' | 'cookSwipe' | 'pantrySwipe' | 'pantryAdd';
+export type Hint = 'timers' | 'cookKeys' | 'cookSwipe';
 
 const KEY = 'hintsUsed';
 const listeners = new Set<() => void>();

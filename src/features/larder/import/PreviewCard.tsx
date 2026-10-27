@@ -5,13 +5,11 @@ import { AlertTriangle, Check, ChevronDown, Clock, Flame, Leaf, Pencil, Plus, Ti
 import { useSession } from '../../../auth/session';
 import { Button, Chip, SelectButton, cx } from '../../../components/ui';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
-import { BuyPill, EstTag, SourceBadge } from '../recipe/badges';
-import { MatchBar } from '../recipe/MatchBlock';
+import { EstTag, SourceBadge } from '../recipe/badges';
 import { Stars } from '../recipe/Rating';
 import type { AnyRecipe, Unit } from '../../../domain/types';
 import { checkDiet } from '../../../domain/kitchen/diet';
 import { detectDurations } from '../../../domain/kitchen/durations';
-import { pantryFit } from '../../../domain/kitchen/fit';
 import { totalMinutes } from '../../../domain/kitchen/search';
 import { formatNumber } from '../../../i18n';
 import { saveToLibrary } from '../actions';
@@ -19,7 +17,6 @@ import type { ImportHandoff } from '../add/AddRecipe';
 import { UNITS } from '../add/draft';
 import { dietLabel, fitsProfileText, formatAmountT, formatMinutes } from '../labels';
 import { equipmentIcon } from '../recipe/equipment';
-import { StatusMarker } from '../recipe/StatusMarker';
 import { useKitchen } from '../KitchenContext';
 import { RecipePhoto } from '../recipe/RecipePhoto';
 import { recipeView } from '../recipe/recipeView';
@@ -27,7 +24,7 @@ import { applyFixes, mostlyUnrecognised, suggestedTags, whatWeRead } from './imp
 import type { Fix } from './imported';
 import s from './ImportRecipe.module.css';
 
-/** The imported recipe, checked against the pantry and diet, with fixes to apply before saving. */
+/** The imported recipe, checked against the diet profile, with fixes to apply before saving. */
 
 export interface Preview {
   recipe: AnyRecipe;
@@ -49,8 +46,7 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
   const stepsId = useId();
 
   const recipe = applyFixes(preview.recipe, fixes, tags);
-  const view = recipeView(recipe, kitchen.pantry, kitchen.profile);
-  const fit = pantryFit(recipe, kitchen.pantry);
+  const view = recipeView(recipe, kitchen.profile);
   const diet = checkDiet(recipe, kitchen.profile);
   const site = recipe.source.kind === 'web' ? recipe.source.site : '';
   const flagged = preview.recipe.ingredients.filter((line) => line.needsFix === true);
@@ -123,11 +119,6 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
             </div>
           </div>
           <div className={s.divider} />
-          {/* The ingredient list marks what to buy, so the fit is the bar and a count. */}
-          <div className={s.match}>
-            <BuyPill missing={fit.missing} />
-            <MatchBar have={fit.have + fit.staple} total={fit.total} />
-          </div>
 
           {/* A conflict found is always shown; a pass is only claimed for ingredients the app could read. */}
           {!diet.ok ? (
@@ -191,21 +182,15 @@ export function PreviewCard({ preview, onSaved }: { preview: Preview; onSaved: (
           <ul className={s.lines}>
             {recipe.ingredients
               .filter((line) => !flagged.some((f) => f.id === line.id))
-              .map((line) => {
-                const status = fit.status[line.id] ?? 'missing';
-                return (
-                  <li key={line.id} className={s.line}>
-                    <StatusMarker status={status} />
-                    <span className={cx(s.lineQty, 'tabular')} dir="auto">{formatAmountT(t, line.qty, line.unit, line.qtyMax)}</span>
-                    <span className={s.lineItem} dir="auto">
-                      {line.item}
-                      {line.note !== undefined && `, ${line.note}`}
-                    </span>
-                    {status === 'staple' && <span className={s.stapleLabel}>{t('recipe.status.staple')}</span>}
-                    {status === 'missing' && <span className={s.toBuy}>{t('recipe.status.toBuy')}</span>}
-                  </li>
-                );
-              })}
+              .map((line) => (
+                <li key={line.id} className={s.line}>
+                  <span className={cx(s.lineQty, 'tabular')} dir="auto">{formatAmountT(t, line.qty, line.unit, line.qtyMax)}</span>
+                  <span className={s.lineItem} dir="auto">
+                    {line.item}
+                    {line.note !== undefined && `, ${line.note}`}
+                  </span>
+                </li>
+              ))}
           </ul>
           {flagged.map((line) => {
             const fix = fixes[line.id] ?? { qty: '', unit: null };

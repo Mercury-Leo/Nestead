@@ -3,8 +3,8 @@
 -- STATUS: reviewed only. This file has NOT been applied to any project.
 --
 -- Scope is what the app actually does today: a kanban board, the people who
--- share it, the kitchen (recipes, pantry, diet profile, shopping list and
--- recipe photos), and activities (the family's movies and series). Prices are
+-- share it, the kitchen (recipes, diet profile, shopping list and recipe
+-- photos), and activities (the family's movies and series). Prices are
 -- not here, and should be added when the feature that needs them is being
 -- built, not before.
 --
@@ -408,7 +408,7 @@ create policy task_completions_all on task_completions
 alter publication supabase_realtime add table task_completions;
 
 -- ---------------------------------------------------------------------------
--- Kitchen (Larder): recipes, pantry, diet profile, shopping list, photos
+-- Kitchen (Larder): recipes, diet profile, shopping list, photos
 --
 -- Every table is family-scoped and gets RLS and its policy in the same run,
 -- like everything above. Nested structures (ingredient lines, steps, list
@@ -443,18 +443,6 @@ create table recipes (
   created_by       uuid        references members (id) on delete set null,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
-);
-
--- kind 'have' is the pantry ("Have now"); 'staple' is assumed always present.
-create table pantry_items (
-  id           uuid primary key default gen_random_uuid(),
-  family_id    uuid        not null references families (id) on delete cascade,
-  name         text        not null,
-  canonical_id text,
-  section      text        not null,
-  kind         text        not null check (kind in ('have', 'staple')),
-  created_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now()
 );
 
 -- One per family. The unique constraint is what stops two devices seeding a
@@ -509,14 +497,11 @@ create table list_groups (
   constraint list_groups_one_builtin unique (family_id, builtin)
 );
 
-create index recipes_family_id_idx      on recipes (family_id);
-create index pantry_items_family_id_idx on pantry_items (family_id);
-create index list_items_family_id_idx   on list_items (family_id);
-create index list_groups_family_id_idx  on list_groups (family_id);
+create index recipes_family_id_idx     on recipes (family_id);
+create index list_items_family_id_idx  on list_items (family_id);
+create index list_groups_family_id_idx on list_groups (family_id);
 
 create trigger recipes_set_updated_at       before update on recipes
-  for each row execute function set_updated_at();
-create trigger pantry_items_set_updated_at  before update on pantry_items
   for each row execute function set_updated_at();
 create trigger diet_profiles_set_updated_at before update on diet_profiles
   for each row execute function set_updated_at();
@@ -526,16 +511,11 @@ create trigger list_groups_set_updated_at   before update on list_groups
   for each row execute function set_updated_at();
 
 alter table recipes       enable row level security;
-alter table pantry_items  enable row level security;
 alter table diet_profiles enable row level security;
 alter table list_items    enable row level security;
 alter table list_groups   enable row level security;
 
 create policy recipes_all on recipes
-  for all to authenticated using (family_id = current_family_id())
-  with check (family_id = current_family_id());
-
-create policy pantry_items_all on pantry_items
   for all to authenticated using (family_id = current_family_id())
   with check (family_id = current_family_id());
 
@@ -552,7 +532,7 @@ create policy list_groups_all on list_groups
   with check (family_id = current_family_id());
 
 alter publication supabase_realtime add table
-  recipes, pantry_items, diet_profiles, list_items, list_groups;
+  recipes, diet_profiles, list_items, list_groups;
 
 -- Photos: a private bucket with one folder per family. The folder name is the
 -- family id and these policies are the only way in, so a member reads and

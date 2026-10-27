@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { BookmarkPlus, Check, ChevronDown, Clock, ExternalLink, Flame, Pencil, Play, ShoppingBag, Soup, Timer } from 'lucide-react';
 import { useSession } from '../../../auth/session';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
@@ -8,11 +8,10 @@ import { BackArrow, Button, ButtonLink, EmptyState, Segmented, Stepper, cx } fro
 import { RatingInput, Stars } from '../recipe/Rating';
 import { EstTag, SourceBadge, WarningBadge } from '../recipe/badges';
 import type { AnyRecipe, IngredientLine } from '../../../domain/types';
+import { isStaple, toBuy } from '../../../domain/kitchen/staples';
 import { kcalPer100g } from '../../../domain/kitchen/calories';
 import { checkDiet } from '../../../domain/kitchen/diet';
 import { detectDurations } from '../../../domain/kitchen/durations';
-import { pantryFit } from '../../../domain/kitchen/fit';
-import type { LineStatus } from '../../../domain/kitchen/fit';
 import { formatNumber } from '../../../i18n';
 import { totalMinutes } from '../../../domain/kitchen/search';
 import type { ListHandoff } from '../../lists/useJustAdded';
@@ -26,15 +25,14 @@ import type { KcalBasis } from '../recipe/kcalBasis';
 import { recipePath } from '../recipe/recipeView';
 import { scaledAmount, useServings } from '../recipe/servings';
 import { equipmentIcon } from '../recipe/equipment';
-import { StatusMarker } from '../recipe/StatusMarker';
 import { StepText } from '../recipe/StepText';
 import s from './RecipeDetail.module.css';
 
-function IngredientRow({ line, status, amount }: { line: IngredientLine; status: LineStatus; amount: string }): JSX.Element {
+/** A staple is marked, since it stays off the shopping list. */
+function IngredientRow({ line, amount }: { line: IngredientLine; amount: string }): JSX.Element {
   const { t } = useTranslation();
   return (
-    <li className={cx(s.ingredient, status === 'missing' && s.ingredientMissing)}>
-      <StatusMarker status={status} />
+    <li className={s.ingredient}>
       <span className={cx(s.qty, 'tabular')} dir="auto">
         {amount}
       </span>
@@ -46,8 +44,7 @@ function IngredientRow({ line, status, amount }: { line: IngredientLine; status:
           </span>
         )}
       </span>
-      {status === 'staple' && <span className={s.stapleLabel}>{t('recipe.status.staple')}</span>}
-      {status === 'missing' && <span className={s.toBuy}>{t('recipe.status.toBuy')}</span>}
+      {isStaple(line) && <span className={s.stapleLabel}>{t('recipe.staple')}</span>}
     </li>
   );
 }
@@ -104,7 +101,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
   const timersHint = useHint('timers');
 
   const inLibrary = recipe.inLibrary === true;
-  const fit = pantryFit(recipe, kitchen.pantry);
+  const buy = toBuy(recipe.ingredients).length;
   const diet = checkDiet(recipe, kitchen.profile);
   const factor = servings / recipe.servings;
   const site = recipe.source.kind === 'web' ? recipe.source.site : null;
@@ -114,7 +111,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
   const makeList = async (): Promise<void> => {
     setBusy(true);
     try {
-      const added = await addRecipeToList(store, kitchen.listItems, recipe, servings, kitchen.pantry);
+      const added = await addRecipeToList(store, kitchen.listItems, recipe, servings);
       const handoff: ListHandoff = { added };
       navigate('/lists', { state: handoff });
     } finally {
@@ -137,11 +134,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
   };
 
   const listLabel =
-    fit.missing === 0
-      ? t('detail.list.none')
-      : desktop
-        ? t('detail.list.make', { count: fit.missing })
-        : t('detail.list.short', { count: fit.missing });
+    buy === 0 ? t('detail.list.none') : desktop ? t('detail.list.make', { count: buy }) : t('detail.list.short', { count: buy });
   const rating = (value: number): string => formatNumber(value);
 
   // Tags get their own line, so a wrap never starts a line with a separator.
@@ -183,8 +176,8 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
     </div>
   );
 
-  // Time, calories and what to buy on one line; how each was worked out behind the
-  // toggle, where calories switch between per serving and per 100 g.
+  // Time and calories on one line; how each was worked out behind the toggle,
+  // where calories switch between per serving and per 100 g.
   const kcal = recipe.kcalPerServing;
   const per100 = kcalPer100g(recipe);
   const shown100 = kcalBasis === '100g' ? per100 : null;
@@ -210,10 +203,6 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
             </span>
             {/* A dish's weight is always an estimate, so per 100 g always is. */}
             {kcal !== undefined && (recipe.kcalEstimated || shown100 !== null) && <EstTag />}
-          </span>{' '}
-          <span className={cx(s.statItem, fit.missing > 0 ? s.statAccent : s.statSage)}>
-            {fit.missing > 0 ? <ShoppingBag size={18} strokeWidth={2} aria-hidden /> : <Check size={18} strokeWidth={2.4} aria-hidden />}
-            <span className="tabular">{fit.missing > 0 ? t('recipe.badge.toBuy', { count: fit.missing }) : t('recipe.badge.nothingToBuy')}</span>
           </span>
         </p>
         <button
@@ -257,16 +246,6 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
               : t(recipe.kcalEstimated ? 'detail.stats.perEstimated' : 'detail.stats.per', { unit })}
           </li>
         )}
-        <li>
-          <ShoppingBag size={15} strokeWidth={2} aria-hidden />
-          <span>
-            <Trans
-              i18nKey="recipe.match.haveCompact"
-              values={{ have: fit.have + fit.staple, total: fit.total }}
-              components={{ strong: <strong className="tabular" /> }}
-            />
-          </span>
-        </li>
       </ul>
     </div>
   );
@@ -279,8 +258,8 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
       <Button
         variant="secondary"
         size={desktop ? 'xl' : 'bar'}
-        icon={fit.missing === 0 ? Check : ShoppingBag}
-        disabled={fit.missing === 0 || busy}
+        icon={buy === 0 ? Check : ShoppingBag}
+        disabled={buy === 0 || busy}
         onClick={() => void makeList()}
         className={s.listButton}
       >
@@ -308,7 +287,7 @@ function Detail({ recipe }: { recipe: AnyRecipe }): JSX.Element {
       </header>
       <ul className={s.ingredients}>
         {recipe.ingredients.map((line) => (
-          <IngredientRow key={line.id} line={line} status={fit.status[line.id] ?? 'missing'} amount={scaledAmount(line, factor)} />
+          <IngredientRow key={line.id} line={line} amount={scaledAmount(line, factor)} />
         ))}
       </ul>
     </section>

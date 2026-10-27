@@ -1,5 +1,5 @@
 # Nestead
-Shared family app: a kanban board, Larder, the kitchen (recipes, pantry, diet, shopping list, cook mode), and Activities (Shows: the family's movies and series). React 18, TypeScript strict, Vite 5, Vitest 2 + jsdom, react-router 6, i18next; Supabase or a localStorage demo backend.
+Shared family app: a kanban board, Larder, the kitchen (recipes, search, diet, shopping list, cook mode), and Activities (Shows: the family's movies and series). React 18, TypeScript strict, Vite 5, Vitest 2 + jsdom, react-router 6, i18next; Supabase or a localStorage demo backend.
 
 ## Commands
 - `npm run dev`: Vite, plus `/api/import`, `/api/search`, `/api/shows`, `/api/places` and `/api/ai` from `server/`; `vite preview` mounts them too (`vite.config.ts`). Search needs `TAVILY_API_KEY` in `.env.local`; Shows needs `OMDB_API_KEY`; AI needs `OPENROUTER_API_KEY`, `OPENROUTER_FREE_MODELS` and `AI_KEY_SECRET` there (`.env.example`). Places needs no key.

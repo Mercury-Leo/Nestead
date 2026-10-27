@@ -4,7 +4,7 @@ Pure TypeScript shared by every layer: the entity types, board ordering, the kit
 ## Files
 | File | Responsibility |
 | --- | --- |
-| `types.ts` | `Base`, `NewRow`, `Member`, `BoardColumn`, `Task`, `TaskCompletion`, the recipe, pantry, diet and list types, `Show`, `Address`, and `AiStatus`. |
+| `types.ts` | `Base`, `NewRow`, `Member`, `BoardColumn`, `Task`, `TaskCompletion`, the recipe, diet and list types, `Show`, `Address`, and `AiStatus`. |
 | `position.ts` (+ `position.test.ts`) | `positionBetween()`, `comparePosition()`, `POSITION_STEP` (1000). |
 | `shows.ts` (+ `shows.test.ts`) | `SHOW_STATUSES` (to watch, watching, watched, dropped), `filterShows()` (All leaves dropped shows out; every genre and tag picked; search words in the title, the genres or the tags), `genreCounts()`, the tag rules (`MAX_TAGS` 20, `MAX_TAG_LENGTH` 30, `sameTag()`, `tidyTag()`, `withTag()`, `hasTags()`, `tagCounts()`, `spelledAs()`, `familyTags()`), `lacksGenres()` (added before genres), `sortShows()` (favourites first is one of its sorts), `parseShowView()` (the stored filters, genres and tags included, and sort), `nextStatus()` (cycles the first three; dropped comes back as to watch), `statusPatch()`, `refreshPatch()` with `REFRESHED_FIELDS`, `newShow()`, and paging: `SHOWS_PAGE` (60) and `shownCount()`. |
 | `kitchen/catalog.ts` | `CATALOG`: each ingredient's section, diet flags, calories, carbs and unit weights, the water dry grains take up, which lines are cooking water; `catalogItem()`. |
@@ -14,11 +14,10 @@ Pure TypeScript shared by every layer: the entity types, board ordering, the kit
 | `kitchen/quantity.ts` | `scaleQty()`, `formatAmount()`, `formatDuration()`, `formatClock()` and friends. |
 | `kitchen/durations.ts` | `detectDurations()`: times in step text, and what to call each timer. |
 | `kitchen/calories.ts` | `catalogFor()`, `lineGrams()`, `estimateKcal()`, `netCarbsPerServing()`, `dishGrams()`, `kcalPer100g()`. |
-| `kitchen/fit.ts` | `pantryIndex()`, `lineStatus()`, `pantryFit()`: have, staple or missing. |
-| `kitchen/pantry.ts` | `pantryRow()`: a pantry row filed under its catalog section. |
+| `kitchen/staples.ts` | `STAPLES` (water, salt, black pepper, olive and vegetable oil, sugar, flour, baking soda), `isStaple()`, `toBuy()`, `lineKey()`: what never goes on the shopping list. |
 | `kitchen/sections.ts` | `SECTION_ORDER` (supermarket walking order) and `groupBySection()`. |
 | `kitchen/diet.ts` | `PRESETS`, `presetOn()`, `withPreset()`, `checkDiet()`, `parseCustomRule()`, `dietTags()`. |
-| `kitchen/list.ts` (+ `groupOrder.test.ts`) | Shopping-list plans (`planAddRecipe`, `planRemoveRecipe`, `planAddOwn`, `planRemoveGroup`) and section order (`orderGroups`, `groupDropPosition`). |
+| `kitchen/list.ts` (+ `groupOrder.test.ts`) | Shopping-list plans (`planAddRecipe`, `planRemoveRecipe`, `planAddOwn`, `planRemoveGroup`), `staplesLeftOff()`, and section order (`orderGroups`, `groupDropPosition`). |
 | `kitchen/search.ts` | `search()`, `suggestions()`, `activeFilters()`, `defaultFilters()`. |
 | `addresses/links.ts` | `destination()`, `geoUrl()`, `appleMapsUrl()`, `googleMapsUrl()`, `navigationUrl()`: navigation links from the street and city only, one per kind of device. |
 | `addresses/search.ts` | `searchAddresses()`, `foldWords()`, `editDistance()`: fuzzy search over names, streets and cities. |
@@ -30,9 +29,10 @@ Pure TypeScript shared by every layer: the entity types, board ordering, the kit
 - `NewRow<T>` omits `Base`; the store fills `id`, `familyId`, `createdAt` and `updatedAt` (`types.ts`).
 - Done is a tick on the card: `Task.done`, with `doneAt` (when) and `completionId` (the history entry that tick made, so an untick removes exactly that one). `BoardColumn` has only a name and a position, no `isDone`. Each tick is also a `TaskCompletion`: a copy of the task's title, icon, description, column and assignee plus `memberId`, who ticked it, kept after the task is cleared; when it was done is its `createdAt` (`types.ts`).
 - A moved row takes the midpoint of its neighbours, so one move writes one row; ties sort by `createdAt`, then `id` (`position.ts`).
-- Free text reaches the catalog through one normaliser, `canonicalId()` (`kitchen/normalize.ts`), used by the parser, pantry fit, diet checks and search.
+- Free text reaches the catalog through one normaliser, `canonicalId()` (`kitchen/normalize.ts`), used by the parser, staples, diet checks and search.
 - Hebrew text matches through `HEBREW_NAMES` (`kitchen/hebrewNames.ts`), indexed after the English names and aliases. `canonicalId()` reads a Hebrew phrase from its first word and English from its last, since Hebrew puts the noun first: "ציר עוף" and "chicken stock" are both stock.
 - The parser reads Hebrew amounts as well as English: units ("2 כוסות", "3-4 שיני"), number words ("חצי", "שתי", "שלושת רבעי"), "and a half" ("כוס וחצי"), "one" after the noun ("ביצה אחת"), a singular unit alone as one ("כף רסק" is a tablespoon), and Walla's right-to-left "1/2 1" as 1½ (`kitchen/parse.ts`).
+- A staple is matched by catalog item, not wording: "fine salt" and "cold water" are staples, "brown sugar" and "sesame oil" are not. `planAddRecipe()` skips staples; nothing else is skipped, since there is no pantry (`kitchen/staples.ts`, `kitchen/list.ts`).
 - List planners return a `ListPlan` of creates, updates and removes; `../features/larder/actions.ts` applies it (`kitchen/list.ts`).
 - Calories per 100 g spread a recipe's calories, stated or estimated, over what the finished dish weighs: its ingredients, plus the water dry rice, pasta and grains take up beyond the water and stock the recipe lists. Water that boils off is not taken away, so long simmers read low (`kitchen/calories.ts`).
 - Peanuts and tree nuts are separate presets. The nut allergy used to cover peanuts, so a profile that has never set peanuts follows its nut allergy; `withPreset()` writes peanuts down with every switch (`kitchen/diet.ts`).
@@ -58,7 +58,7 @@ Imports nothing outside `domain/`. Used by `../data/`, `../auth/`, `../features/
 - `ListGroup` rows with `builtin` only hold a built-in section's place; rows without `position` sort at 1000, 2000, then 3000 onwards (`kitchen/list.ts`).
 - Read presets through `presetOn()` or `activePresets()`, never `presets[id]`, and write them through `withPreset()`: an unset peanut allergy follows the nut allergy (`kitchen/diet.ts`).
 - Lines keep the `canonicalId` they were parsed with, so a new catalog item (peanut oil, satay sauce) reaches a saved recipe only once it is edited and saved again (`kitchen/calories.ts` `catalogFor()`).
-- A new catalog item needs its Hebrew names in `kitchen/hebrewNames.ts` too, or Hebrew recipes never match it. A name stands for the product itself, not for something with the same diet flags: the item decides what merges on the shopping list and what counts as in the pantry. `hebrewNames.test.ts` fails on an id the catalog lacks and on a name given to two items.
+- A new catalog item needs its Hebrew names in `kitchen/hebrewNames.ts` too, or Hebrew recipes never match it. A name stands for the product itself, not for something with the same diet flags: the item decides what merges on the shopping list and what counts as a staple. `hebrewNames.test.ts` fails on an id the catalog lacks and on a name given to two items.
 
 ## Tests
 `position.test.ts`; `kitchen/kitchen.test.ts` (parser, normaliser, scaling, durations, diet with peanuts apart from tree nuts, calories per serving and per 100 g, list quantities, search tokens); `kitchen/parseHebrew.test.ts` (Hebrew amounts, headings, English unchanged); `kitchen/hebrewNames.test.ts` (each name's item exists and has it alone, real Hebrew lines, a Hebrew recipe's diet check and calories); `kitchen/groupOrder.test.ts`; `shows.test.ts` (each filter alone and together, genres picked and typed in any order, title words with genres, genre word starts but not middles, translated genre names, genre counts, never read told from read with none, the five sorts with missing values last and favourites first, the stored view with junk, tags included; tags picked whatever the case and with genres, tags found in the search by the start of a word, tag counts and the family's tags with case folded, tags named in the family's spellings by `tagCounts()` and `spelledAs()`, `tidyTag()` and `withTag()`; the status cycle and `watchedAt`, a refresh that updates the fetched fields and keeps `status`, `watchedAt`, the star and the tags, a new show unstarred, whole pages and reaching a show past them). Numbers checked against the seed are in `../features/larder/seed/seed.test.ts`.

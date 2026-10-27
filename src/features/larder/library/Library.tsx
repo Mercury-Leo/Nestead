@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { ArrowUpDown, BookOpen, Link2, Milk, Plus, Search as SearchIcon } from 'lucide-react';
+import { ArrowUpDown, BookOpen, Link2, Plus, Search as SearchIcon } from 'lucide-react';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { PageHeader } from '../../../components/PageHeader';
-import { ButtonLink, Chip, EmptyState, ForwardArrow, ForwardChevron, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
+import { ButtonLink, Chip, EmptyState, IconButton, Segmented, SelectButton, TextField } from '../../../components/ui';
 import { totalMinutes } from '../../../domain/kitchen/search';
 import { useKitchen } from '../KitchenContext';
 import { RecipeCard, RecipeGrid, RecipeList, RecipeRow } from '../recipe/RecipeCard';
@@ -13,9 +13,9 @@ import type { RecipeView } from '../recipe/recipeView';
 import s from './Library.module.css';
 
 type Source = 'all' | 'mine' | 'web';
-type LibrarySort = 'recent' | 'rating' | 'time' | 'kcal' | 'fewest';
+type LibrarySort = 'recent' | 'rating' | 'time' | 'kcal';
 
-const SORTS: LibrarySort[] = ['recent', 'rating', 'time', 'kcal', 'fewest'];
+const SORTS: LibrarySort[] = ['recent', 'rating', 'time', 'kcal'];
 
 function sortViews(views: RecipeView[], sort: LibrarySort): RecipeView[] {
   const byRating = (a: RecipeView, b: RecipeView): number => (b.rating ?? 0) - (a.rating ?? 0);
@@ -29,8 +29,6 @@ function sortViews(views: RecipeView[], sort: LibrarySort): RecipeView[] {
       return sorted.sort((a, b) => totalMinutes(a.recipe) - totalMinutes(b.recipe));
     case 'kcal':
       return sorted.sort((a, b) => (a.recipe.kcalPerServing ?? Infinity) - (b.recipe.kcalPerServing ?? Infinity));
-    case 'fewest':
-      return sorted.sort((a, b) => a.fit.missing - b.fit.missing || byRating(a, b));
   }
 }
 
@@ -45,13 +43,12 @@ export function Library(): JSX.Element {
 
   // The library never hides a conflicting recipe; it badges it instead.
   const views = useMemo(
-    () => kitchen.recipes.map((recipe) => recipeView({ ...recipe, inLibrary: true }, kitchen.pantry, kitchen.profile)),
-    [kitchen.recipes, kitchen.pantry, kitchen.profile],
+    () => kitchen.recipes.map((recipe) => recipeView({ ...recipe, inLibrary: true }, kitchen.profile)),
+    [kitchen.recipes, kitchen.profile],
   );
 
   const mine = views.filter((view) => view.recipe.source.kind === 'mine').length;
   const web = views.length - mine;
-  const ready = views.filter((view) => view.fit.missing === 0);
 
   const needle = query.trim().toLowerCase();
   const shown = sortViews(
@@ -157,31 +154,6 @@ export function Library(): JSX.Element {
           </div>
         )}
       </div>
-
-      {ready.length > 0 &&
-        (desktop ? (
-          // One line: the count, and the way to those recipes. Their names are one tap away.
-          <section className={s.banner} aria-label={t('library.ready.label')}>
-            <span className={s.bannerIcon} aria-hidden>
-              <Milk size={20} strokeWidth={2} />
-            </span>
-            <h2 className={s.bannerTitle}>{t('library.ready.compact', { count: ready.length })}</h2>
-            <ButtonLink to="/search?pantry=1" variant="sage" iconAfter={ForwardArrow}>
-              {t('library.ready.cook')}
-            </ButtonLink>
-          </section>
-        ) : (
-          <Link to="/search?pantry=1" className={s.bannerCompact}>
-            <span className={s.bannerIcon} aria-hidden>
-              <Milk size={22} strokeWidth={2} />
-            </span>
-            <span className={s.bannerText}>
-              <span className={s.bannerTitle}>{t('library.ready.compact', { count: ready.length })}</span>
-              <span className={s.bannerBody}>{t('library.ready.cook')}</span>
-            </span>
-            <ForwardChevron size={22} strokeWidth={2} aria-hidden className={s.bannerChevron} />
-          </Link>
-        ))}
 
       {shown.length === 0 && kitchen.loaded ? (
         <p className={s.none}>

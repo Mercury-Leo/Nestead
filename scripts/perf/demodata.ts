@@ -9,7 +9,7 @@
 
 import { writeFileSync } from 'node:fs';
 import type { Base } from '../../src/domain/types';
-import { COLUMNS, GROUPS, SIZES, TWELVE, listRows, pantryRows, recipeRows, showRows, taskRows } from './fixtures';
+import { COLUMNS, GROUPS, SIZES, TWELVE, listRows, recipeRows, showRows, taskRows } from './fixtures';
 
 const FAMILY = 'demo-family';
 let clock = Date.parse('2026-09-01T08:00:00Z');
@@ -28,7 +28,6 @@ function family(size: keyof typeof SIZES): Record<string, unknown[]> {
   const tasks = taskRows(0, target.tasks, columns, members[0]!.id).map(stamp);
   const library = recipeRows(0, target.recipes, members[0]!.id).map(stamp);
   const recipes = [stamp({ ...TWELVE }), ...library];
-  const pantry = pantryRows(0, target.pantry).map(stamp);
   const list = listRows(0, target.listItems, library, listGroups.map((group) => group.id)).map(stamp);
   const shows = showRows(0, target.shows, members[0]!.id).map(stamp);
   // Rules that flag some recipes, so screens that check them do real work.
@@ -37,7 +36,7 @@ function family(size: keyof typeof SIZES): Record<string, unknown[]> {
     custom: [{ id: 'no-mushrooms', label: 'No mushrooms', terms: ['mushroom'], hint: 'Sam will not eat them' }],
     conflictMode: 'warn' as const,
   })];
-  const collections: Record<string, unknown[]> = { members, columns, tasks, recipes, pantry, diet, list, listGroups, shows };
+  const collections: Record<string, unknown[]> = { members, columns, tasks, recipes, diet, list, listGroups, shows };
   return Object.fromEntries(Object.entries(collections).map(([name, rows]) => [`nestead:${FAMILY}:${name}`, rows]));
 }
 

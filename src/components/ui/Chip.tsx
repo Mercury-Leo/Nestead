@@ -32,7 +32,7 @@ export function Chip({
   );
 }
 
-/** A chip with a remove button: pantry items, tags, equipment, filters. */
+/** A chip with a remove button: tags, equipment, filters. */
 export function RemovableChip({
   children,
   onRemove,

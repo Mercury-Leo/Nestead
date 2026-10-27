@@ -1,5 +1,5 @@
 # import
-Bring in a recipe from a link, an online search or pasted text (`/import`), check it against pantry and diet, fix it, and save it.
+Bring in a recipe from a link, an online search or pasted text (`/import`), check it against the diet profile, fix it, and save it.
 
 ## Files
 | File | Responsibility |
@@ -7,7 +7,7 @@ Bring in a recipe from a link, an online search or pasted text (`/import`), chec
 | `ImportRecipe.tsx` (+ `ImportRecipe.test.tsx`, `ImportRecipe.module.css`, also used by `PreviewCard.tsx` and `WebResults.tsx`) | Paste a link, search online or, for a real account, paste text for AI to read; results and the preview (default export). |
 | `WebResults.tsx` | "Search online" hits: title, site and, where found, a picture; choosing one imports it. |
 | `webSearch.ts` (+ `webSearch.test.ts`) | `searchOnline()`: asks `/api/search` and sorts the answer into hits, unavailable or failed. |
-| `PreviewCard.tsx` | The recipe against pantry and diet, fixes for flagged lines, tags; Save, or "Edit before saving". |
+| `PreviewCard.tsx` | The recipe against the diet profile, fixes for flagged lines, tags; Save, or "Edit before saving". |
 | `imported.ts` (+ `imported.test.ts`) | `fromImported()`, `applyFixes()`, `whatWeRead()`, `mostlyUnrecognised()`, `suggestedTags()`. |
 
 ## How it works
@@ -21,7 +21,7 @@ Bring in a recipe from a link, an online search or pasted text (`/import`), chec
 - `not-found` from `/api/import`, for a pasted link or a chosen search hit, offers "Read it with AI", which reads the same URL through `extractRecipe()`. Other failures do not, because AI cannot read a page we cannot fetch.
 - An AI read fills the same preview an import does, with "Read by AI" first under "What we read". Each read remounts the preview (`reads` is part of its key), so fixes and tags from the last one do not carry over.
 - Save calls `saveToLibrary()`; "Edit before saving" goes to `/add` with an `ImportHandoff` in router state (`PreviewCard.tsx`).
-- The preview shows what needs checking and folds the rest: the fit as a bar and a to-buy count, "What we read" as ticked counts with each problem on its own line (`whatWeRead()` returns "Read by AI" first when an AI read the recipe, then the counts, then the other problems, and the preview sorts them into the two), and the steps behind a toggle (`PreviewCard.tsx`). Results are compact `RecipeRow`s whose title and thumbnail choose the recipe.
+- The preview shows what needs checking and folds the rest: the diet verdict, "What we read" as ticked counts with each problem on its own line (`whatWeRead()` returns "Read by AI" first when an AI read the recipe, then the counts, then the other problems, and the preview sorts them into the two), and the steps behind a toggle (`PreviewCard.tsx`). Results are compact `RecipeRow`s whose title and thumbnail choose the recipe.
 
 ## Connections
 - Uses: `server/import` and `server/search` (types only), `../add/AddRecipe.tsx` (the `ImportHandoff` type), `../add/draft.ts` (`UNITS`), `../actions.ts`, `../recipe/`, `../labels.ts`, `../KitchenContext.tsx`, `../../../ai/client.ts` (AI reads and their error messages).

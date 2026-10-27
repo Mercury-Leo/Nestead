@@ -11,7 +11,7 @@
  *
  * Where a word could be two items, it goes to the one a recipe most likely
  * means. A name stands for a product, not a guess at its flags: the item decides
- * what merges on the shopping list and what counts as in the pantry. Where the
+ * what merges on the shopping list and what counts as a staple. Where the
  * catalog has no such product (silan, baharat, pearl barley), the line stays
  * unmatched. Each name belongs to one item; hebrewNames.test.ts checks that, and
  * that every id exists.

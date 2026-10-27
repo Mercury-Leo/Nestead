@@ -11,7 +11,6 @@ import { loadShows, loadedShows } from './warm';
 const Library = lazy(() => import('../features/larder/library/Library').then((m) => ({ default: m.Library })));
 const Search = lazy(() => import('../features/larder/search/Search').then((m) => ({ default: m.Search })));
 const RecipeDetail = lazy(() => import('../features/larder/detail/RecipeDetail').then((m) => ({ default: m.RecipeDetail })));
-const Pantry = lazy(() => import('../features/larder/pantry/Pantry').then((m) => ({ default: m.Pantry })));
 const ShoppingList = lazy(() => import('../features/lists/ShoppingList').then((m) => ({ default: m.ShoppingList })));
 const DietProfilePage = lazy(() => import('../features/larder/profile/DietProfile').then((m) => ({ default: m.DietProfilePage })));
 const CookMode = lazy(() => import('../features/larder/cook/CookMode'));
@@ -59,7 +58,6 @@ export function AppRoutes(): JSX.Element {
       <Route path="/recipe/:id/cook" element={page(<CookMode />)} />
       <Route path="/add" element={page(<AddRecipe />)} />
       <Route path="/import" element={page(<ImportRecipe />)} />
-      <Route path="/pantry" element={page(<Pantry />)} />
       <Route path="/lists" element={page(<ShoppingList />)} />
       <Route path="/profile" element={page(<DietProfilePage />)} />
       {/* Not kitchen screens, so they do not wait for the kitchen's first read. Shows waits for its own. */}

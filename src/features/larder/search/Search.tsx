@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { ArrowUpDown, Eye, EyeOff, Milk, Plus, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
+import { ArrowUpDown, Eye, EyeOff, Plus, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import { PageHeader } from '../../../components/PageHeader';
-import { Button, ButtonLink, ForwardArrow, RemovableChip, Segmented, SelectButton, Sheet, Switch, cx } from '../../../components/ui';
+import { Button, ButtonLink, ForwardArrow, RemovableChip, Segmented, SelectButton, Sheet, cx } from '../../../components/ui';
 import { useIsDesktop } from '../../../hooks/useMediaQuery';
 import { activeFilters, defaultFilters, search, suggestions } from '../../../domain/kitchen/search';
 import type { SearchFilters, SearchHit, SearchQuery, SortKey } from '../../../domain/kitchen/search';
@@ -17,7 +17,7 @@ import { activeFilterLabel, loosenLabel } from './filterLabels';
 import { NameBox, TokenBox } from './TokenBox';
 import s from './Search.module.css';
 
-const SORT_KEYS: SortKey[] = ['fit', 'fewest', 'rating', 'kcal', 'time'];
+const SORT_KEYS: SortKey[] = ['match', 'rating', 'kcal', 'time'];
 
 export function Search(): JSX.Element {
   const { t } = useTranslation();
@@ -30,7 +30,6 @@ export function Search(): JSX.Element {
     (params.get('q') ?? '').split(',').map((token) => token.trim()).filter((token) => token !== ''),
   );
   const [text, setText] = useState('');
-  const [pantry, setPantry] = useState(params.get('pantry') === '1' || params.has('q'));
   const [baseFilters, setBaseFilters] = useState<SearchFilters>(() => defaultFilters());
   // Until someone picks, conflicts follow the profile's own setting.
   const [conflict, setConflict] = useState<'hide' | 'warn' | null>(null);
@@ -43,15 +42,14 @@ export function Search(): JSX.Element {
     setConflict(next.conflictMode);
   };
 
-  const query: SearchQuery = { mode, tokens, text, pantry };
+  const query: SearchQuery = { mode, tokens, text };
   const ctx = useMemo(
     () => ({
       library: kitchen.recipes.map((recipe) => ({ ...recipe, inLibrary: true })),
       web: kitchen.web,
-      pantry: kitchen.pantry,
       profile: kitchen.profile,
     }),
-    [kitchen.recipes, kitchen.web, kitchen.pantry, kitchen.profile],
+    [kitchen.recipes, kitchen.web, kitchen.profile],
   );
 
   const outcome = search(query, filters, ctx);
@@ -60,13 +58,12 @@ export function Search(): JSX.Element {
   const active = activeFilters(filters);
 
   const views = (hits: SearchHit[]) =>
-    hits.map((hit) => recipeView(hit.recipe, kitchen.pantry, kitchen.profile, { fit: hit.fit, diet: hit.diet }));
+    hits.map((hit) => recipeView(hit.recipe, kitchen.profile, { diet: hit.diet }));
 
   const apply = (next: SearchQuery, nextFilters: SearchFilters): void => {
     setMode(next.mode);
     setTokens(next.tokens);
     setText(next.text);
-    setPantry(next.pantry);
     setFilters(nextFilters);
   };
 
@@ -80,16 +77,6 @@ export function Search(): JSX.Element {
         : null;
   const thingWords = (hit: SearchHit): string[] => hit.diet.thingKeys.map((thing) => dietThingWord(t, thing));
   const hiddenThings = [...new Set(outcome.hidden.flatMap(thingWords))];
-
-  const pantryCard = (
-    <div className={s.pantryCard}>
-      <Milk size={22} strokeWidth={2} aria-hidden className={s.pantryIcon} />
-      <span className={s.pantryTitle} aria-hidden>
-        {t('search.pantry.title')}
-      </span>
-      <Switch label={t('search.pantry.title')} checked={pantry} onChange={setPantry} />
-    </div>
-  );
 
   // How many the diet hid and why; their titles appear with Show anyway.
   const hiddenLine = (
@@ -184,31 +171,17 @@ export function Search(): JSX.Element {
       </div>
 
       <div className={s.controls}>
-        {desktop && (
-          <Segmented
-            label={t('search.searchBy')}
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: 'ingredients', label: t('search.byIngredients') },
-              { value: 'name', label: t('search.byName') },
-            ]}
-          />
-        )}
-        {pantryCard}
-        {!desktop && (
-          <Segmented
-            label={t('search.searchBy')}
-            className={s.full}
-            size="sm"
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: 'ingredients', label: t('search.byIngredients') },
-              { value: 'name', label: t('search.byName') },
-            ]}
-          />
-        )}
+        <Segmented
+          label={t('search.searchBy')}
+          className={desktop ? undefined : s.full}
+          size={desktop ? 'md' : 'sm'}
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'ingredients', label: t('search.byIngredients') },
+            { value: 'name', label: t('search.byName') },
+          ]}
+        />
       </div>
 
       {desktop && empty && active.length > 0 && (

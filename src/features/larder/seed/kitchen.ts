@@ -3,23 +3,7 @@ import { catalogFor } from '../../../domain/kitchen/calories';
 import { GENERAL, SUPERMARKET } from '../../../domain/kitchen/list';
 import { canonicalId } from '../../../domain/kitchen/normalize';
 
-/** Pantry, staples, diet profile and shopping list for the demo family. */
-
-export const SEED_HAVE: readonly string[] = [
-  // Produce
-  'Lemons', 'Yellow onions', 'Garlic', 'Carrots', 'Celery', 'Baby spinach', 'Cherry tomatoes',
-  'Potatoes', 'Bananas', 'Sweet potatoes', 'Limes',
-  // Dairy & eggs
-  'Eggs', 'Butter', 'Parmesan', 'Milk',
-  // Meat & fish
-  'Chicken thighs', 'Salmon fillets',
-  // Grains & pasta
-  'Long-grain rice', 'Arborio rice', 'Brown lentils', 'Spaghetti', 'Rice noodles',
-  // Cans & jars
-  'Chicken stock', 'Vegetable stock', 'Crushed tomatoes', 'Black beans', 'Chickpeas', 'Coconut milk', 'Soy sauce',
-  // Spices & dried herbs
-  'Smoked paprika', 'Ground cumin', 'Dried oregano', 'Bay leaves', 'Cinnamon',
-];
+/** Diet profile and shopping list for the demo family. */
 
 export const SEED_PRESETS: Partial<Record<PresetId, boolean>> = { nutAllergy: true, peanutAllergy: true };
 

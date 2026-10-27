@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { Check, ChevronDown, Ellipsis, GripVertical, Milk, Plus, ShoppingBag, X } from 'lucide-react';
+import { Check, ChevronDown, Ellipsis, GripVertical, Plus, ShoppingBag, X } from 'lucide-react';
 import { useSession } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
 import { readPreference, writePreference } from '../../data/local/localStore';
@@ -16,21 +16,18 @@ import {
   groupEndPosition,
   groupOf,
   groupStepPosition,
-  isGrocery,
-  leftOffList,
   orderGroups,
   recipesOnList,
+  staplesLeftOff,
 } from '../../domain/kitchen/list';
-import { pantryFit } from '../../domain/kitchen/fit';
 import type { Box } from '../../hooks/pointerDrag';
-import { addOwnToList, moveToPantry, placeListGroup, removeRecipeFromList } from '../larder/actions';
+import { addOwnToList, placeListGroup, removeRecipeFromList } from '../larder/actions';
 import { useKitchen } from '../larder/KitchenContext';
 import { groupBySection } from '../../domain/kitchen/sections';
 import { formatList, formatNumber } from '../../i18n';
 import { groupName, sectionLabel } from '../larder/labels';
-import { RecipeCard, RecipeGrid, RecipeList, RecipeRow } from '../larder/recipe/RecipeCard';
 import { RecipePhoto } from '../larder/recipe/RecipePhoto';
-import { recipePath, recipeView } from '../larder/recipe/recipeView';
+import { recipePath } from '../larder/recipe/recipeView';
 import { GroupForm } from './GroupForm';
 import { ItemForm } from './ItemForm';
 import { AddItem, ItemRow } from './ListRows';
@@ -52,7 +49,6 @@ export function ShoppingList(): JSX.Element {
   const desktop = useIsDesktop();
   const justAdded = useJustAdded();
   const [showLeftOff, setShowLeftOff] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   /** 'new', a ListGroup id, or null when the sheet is shut. */
   const [groupSheet, setGroupSheet] = useState<string | null>(null);
@@ -110,14 +106,9 @@ export function ShoppingList(): JSX.Element {
   const placeOf = (item: ListItem): string => (known.has(groupOf(item)) ? groupOf(item) : GENERAL);
 
   const checked = items.filter((item) => item.checked);
-  const checkedGroceries = checked.filter(isGrocery);
   const recipes = recipesOnList(items);
   const recipeFor = (id: string) => kitchen.findRecipe(id);
-  const leftOff = leftOffList(
-    recipes.map((entry) => recipeFor(entry.recipeId)).filter((recipe) => recipe !== undefined),
-    kitchen.pantry,
-  );
-  const leftOffCount = leftOff.pantry.length + leftOff.staples.length;
+  const leftOff = staplesLeftOff(recipes.map((entry) => recipeFor(entry.recipeId)).filter((recipe) => recipe !== undefined));
   const editing = items.find((item) => item.id === editingId);
   const editingGroup = groups.find((group) => group.id === groupSheet)?.row ?? null;
 
@@ -134,14 +125,6 @@ export function ShoppingList(): JSX.Element {
   };
   const clearChecked = (): void => {
     for (const item of checked) void store.listItems.remove(item.id);
-  };
-  const move = async (): Promise<void> => {
-    setBusy(true);
-    try {
-      await moveToPantry(store, checkedGroceries, [...kitchen.have, ...kitchen.staples]);
-    } finally {
-      setBusy(false);
-    }
   };
 
   // The bar and "2/8"; the bar carries the words for screen readers.
@@ -175,11 +158,6 @@ export function ShoppingList(): JSX.Element {
       <Button variant="ghost" onClick={clearChecked}>
         {t('lists.clearChecked')}
       </Button>
-      {checkedGroceries.length > 0 && (
-        <Button variant="sage" size="lg" icon={Milk} disabled={busy} onClick={() => void move()}>
-          {t('lists.moveToPantry', { count: checkedGroceries.length })}
-        </Button>
-      )}
     </div>
   );
 
@@ -338,62 +316,28 @@ export function ShoppingList(): JSX.Element {
     </section>
   );
 
-  // What the recipes need that you already have: a count, and the names on demand.
-  const leftOffCard = leftOffCount > 0 && (
+  // The staples the recipes use, which stay off the list: a count, and the names on demand.
+  const leftOffCard = leftOff.length > 0 && (
     <section className={s.card} aria-labelledby="left-off-title">
       <h2 id="left-off-title" className={s.cardTitle}>
         <button type="button" className={s.groupToggle} aria-expanded={showLeftOff} aria-controls="left-off-body" onClick={() => setShowLeftOff(!showLeftOff)}>
           <ChevronDown size={20} strokeWidth={2.2} aria-hidden className={cx(s.groupChevron, !showLeftOff && s.groupChevronShut)} />
-          {t('lists.leftOffTitle')} <span className={cx(s.groupCount, 'tabular')}>{formatNumber(leftOffCount)}</span>
+          {t('lists.leftOffTitle')} <span className={cx(s.groupCount, 'tabular')}>{formatNumber(leftOff.length)}</span>
         </button>
       </h2>
       <div id="left-off-body" className={s.leftOffLists} hidden={!showLeftOff}>
-        {leftOff.pantry.length > 0 && (
-          <p>
-            <Trans i18nKey="lists.pantryNames" values={{ count: leftOff.pantry.length, names: formatList(leftOff.pantry, 'unit') }} />
-          </p>
-        )}
-        {leftOff.staples.length > 0 && (
-          <p>
-            <Trans i18nKey="lists.stapleNames" values={{ count: leftOff.staples.length, names: formatList(leftOff.staples, 'unit') }} />
-          </p>
-        )}
+        <p>
+          <Trans i18nKey="lists.stapleNames" values={{ count: leftOff.length, names: formatList(leftOff, 'unit') }} />
+        </p>
       </div>
     </section>
   );
 
-  // Nothing on the list: suggest what can be cooked without shopping.
-  const ready =
-    items.length === 0
-      ? kitchen.recipes
-          .map((recipe) => recipeView({ ...recipe, inLibrary: true }, kitchen.pantry, kitchen.profile, { fit: pantryFit(recipe, kitchen.pantry) }))
-          .filter((view) => view.fit.missing === 0)
-      : [];
   const empty = items.length === 0 && (
     <section className={cx(s.card, s.emptyCard)}>
       <EmptyState icon={ShoppingBag} title={t('lists.nothingToBuy')}>
         <p>{t('lists.emptyBody')}</p>
       </EmptyState>
-    </section>
-  );
-  const readySection = ready.length > 0 && (
-    <section className={s.ready} aria-labelledby="ready-title">
-      <h2 id="ready-title" className={s.sectionTitle}>
-        {t('lists.ready')}
-      </h2>
-      {desktop ? (
-        <RecipeGrid dense>
-          {ready.map((view) => (
-            <RecipeCard key={view.recipe.id} view={view} />
-          ))}
-        </RecipeGrid>
-      ) : (
-        <RecipeList>
-          {ready.map((view) => (
-            <RecipeRow key={view.recipe.id} view={view} />
-          ))}
-        </RecipeList>
-      )}
     </section>
   );
 
@@ -428,7 +372,6 @@ export function ShoppingList(): JSX.Element {
           <div className={s.groups}>
             {empty}
             {list}
-            {readySection}
           </div>
           <aside className={s.side}>
             {onList}
@@ -466,18 +409,12 @@ export function ShoppingList(): JSX.Element {
           {empty}
           {list}
           {leftOffCard}
-          {readySection}
           {checked.length > 0 && <div className={s.stickySpace} aria-hidden />}
           {checked.length > 0 && (
             <div className={s.stickyMove}>
-              <Button variant="ghost" size="bar" block={checkedGroceries.length === 0} onClick={clearChecked}>
-                {checkedGroceries.length > 0 ? t('lists.clear') : t('lists.clearCount', { count: checked.length })}
+              <Button variant="ghost" size="bar" block onClick={clearChecked}>
+                {t('lists.clearCount', { count: checked.length })}
               </Button>
-              {checkedGroceries.length > 0 && (
-                <Button variant="sage" size="bar" icon={Milk} disabled={busy} className={s.moveMobile} onClick={() => void move()}>
-                  {t('lists.moveToPantry', { count: checkedGroceries.length })}
-                </Button>
-              )}
             </div>
           )}
         </>

@@ -48,7 +48,6 @@ function useSectionCounts(): Record<string, number> {
     '/': tasks.filter((task) => !task.done).length,
     '/lists': kitchen.listItems.filter((item) => !item.checked).length,
     '/library': kitchen.recipes.length,
-    '/pantry': kitchen.have.length,
   };
 }
 

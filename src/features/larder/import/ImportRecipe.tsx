@@ -364,7 +364,7 @@ export default function ImportRecipe(): JSX.Element {
             ) : (
               <RecipeList>
                 {results.recipes.map((recipe) => (
-                  <RecipeRow key={recipe.id} view={recipeView(recipe, kitchen.pantry, kitchen.profile)} onChoose={() => choose(recipe)} />
+                  <RecipeRow key={recipe.id} view={recipeView(recipe, kitchen.profile)} onChoose={() => choose(recipe)} />
                 ))}
               </RecipeList>
             )}

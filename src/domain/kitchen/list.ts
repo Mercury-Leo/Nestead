@@ -2,8 +2,7 @@ import { POSITION_STEP, positionBetween } from '../position';
 import type { AnyRecipe, IngredientLine, ListGroup, ListItem, ListPart, NewRow, StoreSection, Unit } from '../types';
 import { catalogFor } from './calories';
 import { catalogItem } from './catalog';
-import { lineKey, lineStatus } from './fit';
-import type { PantryIndex } from './fit';
+import { isStaple, lineKey } from './staples';
 import { canonicalId, exactCatalogId } from './normalize';
 import { amountParts, formatAmountParts } from './quantity';
 import type { AmountParts } from './quantity';
@@ -13,8 +12,9 @@ import type { AmountParts } from './quantity';
  * Supermarket, where recipes put their groceries; General, for everything
  * else; and any groups the family adds (ListGroup rows).
  *
- * Only a recipe's missing lines go on it, merged across recipes by
- * ingredient. Adding a recipe again replaces its share rather than doubling it.
+ * A recipe's lines go on it, all but the staples (staples.ts), merged across
+ * recipes by ingredient. Adding a recipe again replaces its share rather than
+ * doubling it.
  *
  * Planning functions are pure: they return the writes to make, and the caller
  * makes them through the store.
@@ -94,14 +94,6 @@ export function groupEndPosition(slots: readonly GroupSlot[]): number {
   return positionBetween(slots[slots.length - 1]?.position);
 }
 
-/**
- * Food, so it belongs in the pantry once bought: anything from the
- * supermarket, from a recipe, or that the catalog knows. Batteries are not.
- */
-export function isGrocery(item: Pick<ListItem, 'groupId' | 'canonicalId' | 'parts'>): boolean {
-  return groupOf(item) === SUPERMARKET || item.canonicalId !== undefined || item.parts.length > 0;
-}
-
 export interface ListPlan {
   create: NewRow<ListItem>[];
   update: { id: string; patch: Partial<NewRow<ListItem>> }[];
@@ -151,7 +143,6 @@ export function planAddRecipe(
   items: readonly ListItem[],
   recipe: Pick<AnyRecipe, 'id' | 'title' | 'servings' | 'ingredients'>,
   servings: number,
-  pantry: PantryIndex,
 ): ListPlan {
   const { kept, plan } = withoutRecipe(items, recipe.id);
   const factor = servings / Math.max(1, recipe.servings);
@@ -164,7 +155,7 @@ export function planAddRecipe(
   const created = new Map<string, NewRow<ListItem>>();
 
   for (const line of recipe.ingredients) {
-    if (lineStatus(line, pantry) !== 'missing') continue;
+    if (isStaple(line)) continue;
     const part: ListPart = {
       recipeId: recipe.id,
       recipeTitle: recipe.title,
@@ -331,23 +322,14 @@ export function recipesOnList(items: readonly ListItem[]): ListRecipe[] {
   return [...found.values()];
 }
 
-export interface LeftOff {
-  pantry: string[];
-  staples: string[];
-}
-
-/** The ingredients those recipes need that you already have, counted once each. */
-export function leftOffList(recipes: readonly Pick<AnyRecipe, 'ingredients'>[], pantry: PantryIndex): LeftOff {
-  const pantryNames = new Map<string, string>();
-  const stapleNames = new Map<string, string>();
+/** The staples those recipes use, which they left off the list, counted once each. */
+export function staplesLeftOff(recipes: readonly Pick<AnyRecipe, 'ingredients'>[]): string[] {
+  const names = new Map<string, string>();
   for (const recipe of recipes) {
     for (const line of recipe.ingredients) {
-      const status = lineStatus(line, pantry);
       const key = lineKey(line);
-      const name = catalogFor(line)?.name ?? capitalise(line.item);
-      if (status === 'have' && !pantryNames.has(key)) pantryNames.set(key, name);
-      if (status === 'staple' && !stapleNames.has(key)) stapleNames.set(key, name);
+      if (isStaple(line) && !names.has(key)) names.set(key, catalogFor(line)?.name ?? capitalise(line.item));
     }
   }
-  return { pantry: [...pantryNames.values()], staples: [...stapleNames.values()] };
+  return [...names.values()];
 }

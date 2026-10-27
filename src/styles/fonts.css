@@ -1,6 +1,6 @@
 /*
- * Arabic and Hebrew fallbacks for text people type (recipe titles, pantry
- * items, list entries) when it is in a script Newsreader and Hanken Grotesk
+ * Arabic and Hebrew fallbacks for text people type (recipe titles, tags,
+ * list entries) when it is in a script Newsreader and Hanken Grotesk
  * don't cover. tokens.css puts these families right after the brand faces.
  *
  * Only the Arabic and Hebrew subsets are declared, not the packages' whole

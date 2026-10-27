@@ -127,7 +127,7 @@ try {
   await cdp.send('HeapProfiler.enable');
   await cdp.navigate(`${server.origin}/`);
   await go('/', `document.querySelector('.card') !== null`);
-  const LAP = ['/lists', '/library', '/search', '/pantry', '/profile', '/family', '/', '/library', 'recipe', '/lists', '/search', '/pantry', '/', '/family', '/profile', '/library', '/lists', '/search', 'recipe', '/'];
+  const LAP = ['/lists', '/library', '/search', '/profile', '/family', '/', '/library', 'recipe', '/lists', '/search', '/', '/family', '/profile', '/library', '/lists', '/search', 'recipe', '/'];
   const metrics = async () => {
     await cdp.send('HeapProfiler.collectGarbage');
     await sleep(300);

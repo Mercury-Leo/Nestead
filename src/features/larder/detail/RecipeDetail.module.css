@@ -163,16 +163,6 @@
   color: var(--ink-2);
 }
 
-.statAccent,
-.statAccent > svg {
-  color: var(--accent-ink);
-}
-
-.statSage,
-.statSage > svg {
-  color: var(--sage);
-}
-
 .statsToggle {
   display: inline-grid;
   flex-shrink: 0;
@@ -311,19 +301,12 @@
 
 .ingredient {
   display: grid;
-  grid-template-columns: 26px minmax(62px, auto) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(62px, auto) minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
   min-height: 58px;
   padding: 10px 10px;
   border-bottom: 1px solid var(--line);
-}
-
-.ingredientMissing {
-  margin: 6px 0;
-  border-bottom: 0;
-  border-radius: 12px;
-  background: var(--missing-row);
 }
 
 .qty {
@@ -348,16 +331,6 @@
   color: var(--ink-3);
   font-size: 12.5px;
   font-weight: 600;
-}
-
-.toBuy {
-  padding: 3px 9px;
-  border-radius: var(--radius-pill);
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .equipment {
@@ -557,7 +530,7 @@
 }
 
 .sheet .ingredient {
-  grid-template-columns: 24px minmax(52px, auto) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(52px, auto) minmax(0, 1fr) auto;
   gap: 10px;
   padding: 10px 6px;
 }

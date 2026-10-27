@@ -16,13 +16,13 @@ The family's shopping list (`/lists`), for everything, not only food: Supermarke
 - Rows come from `useKitchen()` (`listItems`, `listGroups`); writes go through `../larder/actions.ts` (`ShoppingList.tsx`).
 - Order is `orderGroups()`; a drag or the grip's arrow keys call `placeListGroup()`, which creates a `builtin` row the first time Supermarket or General moves (`ShoppingList.tsx`, `../larder/actions.ts`).
 - Typed items go through `addOwnToList()`; recipe items arrive from `addRecipeToList()` on the recipe page (`../larder/actions.ts`).
-- "Move to pantry" takes only checked groceries (`isGrocery()`); "Clear checked" removes everything checked (`ShoppingList.tsx`).
+- "Clear checked" removes everything checked (`ShoppingList.tsx`). There is no "Move to pantry": the pantry went on 2026-10-27.
 - Folded sections are a per-family device preference, `listCollapsed` (`ShoppingList.tsx`).
-- "Left off this list" folds like a section: a count, and the pantry and staple names when opened. It starts folded and is not remembered. There is no page subtitle: the progress bar counts the items ("2/8") and the recipes card lists the recipes, each with its item count (`ShoppingList.tsx`).
+- "Left off this list" folds like a section: a count, and when opened the staples the recipes use, which never go on the list (`staplesLeftOff()`). It starts folded and is not remembered. There is no page subtitle: the progress bar counts the items ("2/8") and the recipes card lists the recipes, each with its item count (`ShoppingList.tsx`).
 - Product rules: [LARDER.md](../../../docs/LARDER.md#where-it-differs-from-the-larder-brief).
 
 ## Connections
-- Uses: `../larder/` (`actions.ts`, `KitchenContext.tsx`, `labels.ts`, `recipe/`), `../../domain/kitchen/` (`list.ts`, `sections.ts`, `fit.ts`, `catalog.ts`, `normalize.ts`), `../../hooks/pointerDrag.ts`, `../board/dragDrop.ts`, `../../data/local/localStore.ts`.
+- Uses: `../larder/` (`actions.ts`, `KitchenContext.tsx`, `labels.ts`, `recipe/`), `../../domain/kitchen/` (`list.ts`, `sections.ts`, `catalog.ts`, `normalize.ts`), `../../hooks/pointerDrag.ts`, `../board/dragDrop.ts`, `../../data/local/localStore.ts`.
 - Used by: `../../app/AppRoutes.tsx`, `../larder/detail/RecipeDetail.tsx` (the `ListHandoff` type).
 
 ## Rules & gotchas

@@ -24,7 +24,6 @@
     "lists": "קניות",
     "library": "ספרייה",
     "search": "חיפוש",
-    "pantry": "מזווה",
     "diet": "תזונה",
     "larder": "מטבח",
     "activities": "פעילויות",
@@ -332,15 +331,13 @@
       "other": "אחר"
     },
     "sort": {
-      "fit": "ההתאמה הטובה ביותר למזווה",
-      "fewest": "הכי מעט פריטים לקנייה",
+      "match": "ההתאמה הטובה ביותר",
       "rating": "דירוג כוכבים",
       "kcal": "קלוריות (מהנמוך לגבוה)",
       "time": "זמן כולל (מהקצר לארוך)"
     },
     "sortShort": {
-      "fit": "התאמה",
-      "fewest": "מעט לקנייה",
+      "match": "התאמה",
       "rating": "דירוג",
       "kcal": "קלוריות",
       "time": "זמן כולל"
@@ -517,18 +514,7 @@
     "badge": {
       "mine": "שלי",
       "web": "מהרשת",
-      "nothingToBuy": "אין מה לקנות",
-      "toBuy": "{{count, number}} לקנייה",
       "estimated": "הערכה"
-    },
-    "status": {
-      "have": "יש",
-      "staple": "מצרך יסוד",
-      "toBuy": "לקנייה"
-    },
-    "match": {
-      "haveCompact": "יש לכם <strong>{{have, number}}/{{total, number}}</strong>",
-      "need": "חסרים: <strong>{{names}}</strong>"
     },
     "stars": "{{value}} מתוך 5 כוכבים",
     "rate_one": "דירוג בכוכב אחד",
@@ -540,7 +526,8 @@
     "kcalPer": "{{kcal, number}} קק״ל/{{unit}}",
     "card": {
       "more": "עוד על {{title}}"
-    }
+    },
+    "staple": "מצרך יסוד"
   },
   "library": {
     "title": "ספרייה",
@@ -561,22 +548,13 @@
       "recent": "נוספו לאחרונה",
       "rating": "דירוג",
       "time": "זמן כולל",
-      "kcal": "קלוריות",
-      "fewest": "הכי מעט לקנייה"
+      "kcal": "קלוריות"
     },
     "sortShort": {
       "recent": "חדשים",
       "rating": "דירוג",
       "time": "זמן",
-      "kcal": "קלוריות",
-      "fewest": "לקנייה"
-    },
-    "ready": {
-      "label": "אפשר לבשל בלי קניות",
-      "compact_one": "מתכון אחד לא צריך כלום מהחנות",
-      "compact_two": "{{count, number}} מתכונים לא צריכים כלום מהחנות",
-      "compact_other": "{{count, number}} מתכונים לא צריכים כלום מהחנות",
-      "cook": "בישול מהמזווה"
+      "kcal": "קלוריות"
     },
     "noMatch": "אין מתכונים שתואמים ל\"<bdi>{{query}}</bdi>\"."
   },
@@ -586,9 +564,6 @@
     "byIngredients": "לפי מצרכים",
     "byName": "לפי שם מתכון",
     "quoted": "\"{{text}}\"",
-    "pantry": {
-      "title": "בישול מהמזווה"
-    },
     "hiddenCompact": "{{count, number}} הוסתרו בגלל התזונה: <bdi>{{things}}</bdi>",
     "showAnyway": "להציג בכל זאת",
     "noResults": {
@@ -600,8 +575,6 @@
     "active": {
       "label": "מסננים פעילים",
       "remove": "הסרת {{label}}",
-      "buyZero": "0 לקנייה",
-      "buy": "עד {{count, number}} לקנייה",
       "kcalRange": "{{min, number}}–{{max, number}} קק״ל",
       "kcalUpTo": "עד {{max, number}} קק״ל",
       "rating": "דירוג {{rating}} ומעלה",
@@ -609,8 +582,7 @@
       "webOnly": "רק מהרשת"
     },
     "loosen": {
-      "remove": "הסרת \"{{label}}\"",
-      "pantryOff": "כיבוי בישול מהמזווה"
+      "remove": "הסרת \"{{label}}\""
     },
     "filters": "מסננים",
     "filtersCount": "מסננים · {{count, number}}",
@@ -634,9 +606,6 @@
       "namePlaceholder": "שם המתכון…"
     },
     "filter": {
-      "itemsToBuy": "פריטים לקנייה",
-      "itemsToBuyLabel": "פריטים לקנייה, לכל היותר",
-      "atMostOption": "{{count, number}}",
       "any": "הכול",
       "totalTime": "זמן כולל",
       "calories": "קלוריות למנה",
@@ -868,7 +837,7 @@
       "fits": "מתאים לפרופיל התזונה שלכם",
       "conflicts": "מתנגש עם פרופיל התזונה שלכם",
       "unchecked": "לא נבדק מול פרופיל התזונה שלכם",
-      "uncheckedWhy": "לא הצלחנו לזהות את המצרכים, ולכן הם לא נבדקו מול התזונה והמזווה שלכם. כדאי לעבור עליהם בעצמכם לפני הבישול.",
+      "uncheckedWhy": "לא הצלחנו לזהות את המצרכים, ולכן הם לא נבדקו מול התזונה שלכם. כדאי לעבור עליהם בעצמכם לפני הבישול.",
       "whatWeRead": "מה קראנו",
       "ingredients": "מצרכים · {{count, number}}",
       "cantRead": "לא הצלחנו לקרוא כמות עבור \"<item/>\"",
@@ -905,55 +874,13 @@
       "servings_other": "{{count, number}} מנות"
     }
   },
-  "pantry": {
-    "title": "מזווה",
-    "haveNow": "יש עכשיו",
-    "empty": {
-      "title": "המזווה ריק",
-      "body": "אפשר להוסיף את מה שיש במטבח ולראות מה אפשר לבשל בלי קניות.",
-      "placeholder": "הקלדת פריט — למשל ביצים"
-    },
-    "paste": "הדבקת רשימה להוספה מרוכזת",
-    "quickAdd": "הוספה מהירה",
-    "remove": "הסרת {{name}}",
-    "swipeHintLtr": "החלקה שמאלה להסרה",
-    "swipeHintRtl": "החלקה ימינה להסרה",
-    "alwaysHave": "תמיד יש",
-    "staplesNote": "לא נכנסים לרשימות קניות.",
-    "removeStaple": "הסרת {{name}} ממצרכי היסוד",
-    "addStaple": "הוספת מצרך יסוד",
-    "bulkAdd": "הוספה מרוכזת",
-    "tabs": "מזווה",
-    "haveTab": "יש עכשיו · {{count, number}}",
-    "alwaysTab": "תמיד יש · {{count, number}}",
-    "add": {
-      "placeholder": "הוספה — למשל ביצים, פטה, בזיליקום",
-      "label": "הוספה למזווה",
-      "suggestions": "הצעות",
-      "neededFor": "נדרש עבור {{recipe}}",
-      "hint": "Enter מוסיף · פסיקים מוסיפים כמה"
-    },
-    "bulk": {
-      "title": "הוספה מרוכזת",
-      "add_one": "הוספת פריט אחד",
-      "add_two": "הוספת {{count, number}} פריטים",
-      "add_other": "הוספת {{count, number}} פריטים",
-      "label": "אפשר להדביק או להקליד את מה שיש, פריט בכל שורה או מופרדים בפסיקים.",
-      "placeholder": "ביצים\nפטה\nבזיליקום, לימונים",
-      "preview": "תצוגה מקדימה",
-      "already": "כבר במזווה",
-      "newItem": "פריט חדש · {{section}}"
-    }
-  },
   "lists": {
     "title": "רשימת קניות",
     "progress": "{{checked, number}}/{{total, number}}",
     "progressLabel": "סומנו",
     "checked": "<strong>סומנו: {{count, number}}</strong>",
     "clearChecked": "ניקוי המסומנים",
-    "clear": "ניקוי",
     "clearCount": "ניקוי המסומנים ({{count, number}})",
-    "moveToPantry": "העברת {{count, number}} למזווה",
     "renameGroup": "שינוי שם או מחיקה של {{name}}",
     "moveSection": "הזזת {{name}}: גררו, או השתמשו במקשי החצים למעלה ולמטה",
     "supermarketEmpty": "אפשר להוסיף מתכון: רק מה שחסר עובר לכאן.",
@@ -967,11 +894,9 @@
     "addRecipe": "הוספת מתכון",
     "addAnother": "הוספת מתכון נוסף",
     "leftOffTitle": "לא נכנסו לרשימה",
-    "pantryNames": "<strong>מזווה · {{count, number}}</strong> <bdi>{{names}}</bdi>",
     "stapleNames": "<strong>מצרכי יסוד · {{count, number}}</strong> <bdi>{{names}}</bdi>",
     "nothingToBuy": "אין מה לקנות",
     "emptyBody": "אפשר להוסיף למטה כל דבר, או להוסיף מתכון.",
-    "ready": "אפשר לבשל בלי קניות",
     "item": "פריט",
     "addFromRecipe": "הוספה ממתכון",
     "forRecipes": "עבור {{recipes}}",

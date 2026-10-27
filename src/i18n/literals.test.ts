@@ -28,7 +28,6 @@ const ALLOWED = new Set([
   // Developer-facing console output.
   'Screen failed to render:',
   'Kitchen not set up:',
-  'Could not add the default staples:',
 ]);
 
 const ATTRIBUTES = ['aria-label', 'placeholder', 'title', 'alt', 'label', 'removeLabel', 'subtitle', 'caption', 'suffix', 'display'];
